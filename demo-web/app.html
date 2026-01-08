@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Home</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f5f5f5;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header h1 { font-size: 1.5em; margin-bottom: 5px; }
+        .header p { opacity: 0.9; font-size: 0.9em; }
+
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .stat-card .number { font-size: 1.8em; font-weight: bold; color: #667eea; margin-bottom: 5px; }
+        .stat-card .label { font-size: 0.85em; color: #666; }
+
+        .section-title {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title .badge {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7em;
+        }
+
+        .session-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .session-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .session-card.next { border-left: 4px solid #667eea; }
+        .session-card .time { font-size: 1.2em; font-weight: bold; color: #667eea; margin-bottom: 8px; }
+        .session-card .client { font-size: 1.1em; color: #333; margin-bottom: 5px; }
+        .session-card .details {
+            font-size: 0.9em;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 0.85em; font-weight: 600; }
+        .status-confirmado { background: #d1fae5; color: #065f46; }
+        .status-pendente { background: #fef3c7; color: #92400e; }
+        .status-pago { background: #d1fae5; color: #065f46; }
+        .status-faltou { background: #fee2e2; color: #991b1b; }
+        .status-realizado { background: #dbeafe; color: #1e40af; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .empty-state .icon { font-size: 4em; margin-bottom: 15px; }
+        .empty-state p { margin-bottom: 20px; }
+        .empty-state button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1em; cursor: pointer;
+        }
+
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex; justify-content: space-around; padding: 12px 0; z-index: 100;
+        }
+
+        .nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: #999; text-decoration: none; font-size: 0.75em; transition: color 0.2s;
+        }
+        .nav-item.active { color: #667eea; }
+        .nav-item .icon { font-size: 1.8em; margin-bottom: 3px; }
+
+        .fab {
+            position: fixed; bottom: 85px; right: 20px;
+            width: 60px; height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-size: 2em;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            cursor: pointer; transition: transform 0.2s; z-index: 100; border: none;
+        }
+        .fab:hover { transform: scale(1.1); }
+
+        .quick-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .quick-action-btn {
+            padding: 6px 12px; border: 1px solid #e0e0e0; border-radius: 20px;
+            background: white; font-size: 0.8em; cursor: pointer; transition: all 0.2s;
+        }
+        .quick-action-btn:hover { background: #667eea; color: white; border-color: #667eea; }
+        .quick-action-btn.success:hover { background: #10b981; border-color: #10b981; }
+        .quick-action-btn.danger:hover { background: #ef4444; border-color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Olá, <span id="userName">Terapeuta</span>! 👋</h1>
+        <p id="currentDate">Carregando...</p>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="number" id="todayCount">0</div>
+                <div class="label">Hoje</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="weekCount">0</div>
+                <div class="label">Esta semana</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="monthRevenue">R$ 0</div>
+                <div class="label">Este mês</div>
+            </div>
+        </div>
+
+        <div id="sessionsContainer"></div>
+    </div>
+
+    <button class="fab" onclick="showNewSessionModal()">+</button>
+
+    <nav class="bottom-nav">
+        <a href="app.html" class="nav-item active"><span class="icon">🏠</span><span>Início</span></a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👥</span><span>Clientes</span></a>
+        <a href="agenda.html" class="nav-item"><span class="icon">📅</span><span>Agenda</span></a>
+        <a href="financeiro.html" class="nav-item"><span class="icon">💰</span><span>Financeiro</span></a>
+        <a href="perfil.html" class="nav-item"><span class="icon">👤</span><span>Perfil</span></a>
+    </nav>
+
+    <script src="js/data.js"></script>
+    <script src="js/ui.js"></script>
+    <script>
+        // Verificar autenticação
+        if (!TheraFlowData.isLoggedIn()) {
+            window.location.href = 'index.html';
+        }
+
+        // Carregar dados do perfil
+        const profile = TheraFlowData.getProfile();
+        document.getElementById('userName').textContent = profile.displayName || 'Terapeuta';
+
+        // Data atual
+        const hoje = new Date();
+        const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+        const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+        document.getElementById('currentDate').textContent = `${diasSemana[hoje.getDay()]}, ${hoje.getDate()} de ${meses[hoje.getMonth()]} de ${hoje.getFullYear()}`;
+
+        function loadStats() {
+            const todaySessions = TheraFlowData.getTodaySessions();
+            document.getElementById('todayCount').textContent = todaySessions.length;
+
+            const startOfWeek = new Date(hoje);
+            startOfWeek.setDate(hoje.getDate() - hoje.getDay());
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
+            
+            const allSessions = TheraFlowData.getSessions();
+            const weekSessions = allSessions.filter(s => {
+                const d = new Date(s.data);
+                return d >= startOfWeek && d <= endOfWeek;
+            });
+            document.getElementById('weekCount').textContent = weekSessions.length;
+
+            const report = TheraFlowData.getFinanceReport(hoje.getFullYear(), hoje.getMonth() + 1);
+            const revenue = report.totalReceived;
+            document.getElementById('monthRevenue').textContent = revenue >= 1000 
+                ? `R$ ${(revenue/1000).toFixed(1)}k` : `R$ ${revenue}`;
+        }
+
+        function loadSessions() {
+            const sessions = TheraFlowData.getTodaySessions();
+            const container = document.getElementById('sessionsContainer');
+
+            if (sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📅</div>
+                        <p>Nenhum atendimento agendado para hoje</p>
+                        <button onclick="showNewSessionModal()">+ Agendar Sessão</button>
+                    </div>`;
+                return;
+            }
+
+            const now = new Date();
+            const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            let nextSessionId = null;
+            
+            for (const session of sessions) {
+                if (session.hora > currentTime && session.status === 'confirmado') {
+                    nextSessionId = session.id;
+                    break;
+                }
+            }
+
+            let html = '';
+            
+            if (nextSessionId) {
+                const nextSession = sessions.find(s => s.id === nextSessionId);
+                html += `<h2 class="section-title">Próximo Atendimento</h2>${renderSessionCard(nextSession, true)}`;
+            }
+
+            html += `<h2 class="section-title">Atendimentos do Dia<span class="badge">${sessions.length}</span></h2>`;
+            sessions.forEach(session => { html += renderSessionCard(session, false); });
+            container.innerHTML = html;
+        }
+
+        function renderSessionCard(session, isNext) {
+            const paymentClass = session.pagamento === 'pago' ? 'status-pago' : 'status-pendente';
+            return `
+                <div class="session-card ${isNext ? 'next' : ''}" onclick="showSessionDetails(${session.id})">
+                    <div class="time">${session.hora} - ${addMinutes(session.hora, session.duracao)}</div>
+                    <div class="client">${session.clienteNome}</div>
+                    <div class="details">
+                        <span>${session.tipo} • ${TheraFlowUI.formatCurrency(session.valor)}</span>
+                        <span class="status-badge ${paymentClass}">${session.pagamento === 'pago' ? '✓ Pago' : '⏳ Pendente'}</span>
+                    </div>
+                    <div class="quick-actions" onclick="event.stopPropagation()">
+                        ${session.status === 'confirmado' ? `
+                            <button class="quick-action-btn success" onclick="markDone(${session.id})">✓ Realizado</button>
+                            <button class="quick-action-btn danger" onclick="markNoShow(${session.id})">✗ Faltou</button>
+                        ` : `<span class="status-badge status-${session.status}">${session.status}</span>`}
+                        ${session.pagamento === 'pendente' ? `
+                            <button class="quick-action-btn" onclick="markPaid(${session.id})">💰 Marcar Pago</button>
+                        ` : ''}
+                    </div>
+                </div>`;
+        }
+
+        function addMinutes(time, minutes) {
+            const [h, m] = time.split(':').map(Number);
+            const totalMinutes = h * 60 + m + minutes;
+            return `${String(Math.floor(totalMinutes / 60)).padStart(2, '0')}:${String(totalMinutes % 60).padStart(2, '0')}`;
+        }
+
+        function markDone(id) {
+            TheraFlowData.markSessionDone(id);
+            TheraFlowUI.toast('Atendimento marcado como realizado!', 'success');
+            loadSessions(); loadStats();
+        }
+
+        function markNoShow(id) {
+            TheraFlowData.markSessionNoShow(id);
+            TheraFlowUI.toast('Falta registrada', 'warning');
+            loadSessions(); loadStats();
+        }
+
+        function markPaid(id) {
+            TheraFlowData.markSessionPaid(id);
+            TheraFlowUI.toast('Pagamento registrado!', 'success');
+            loadSessions(); loadStats();
+        }
+
+        function showSessionDetails(id) {
+            const session = TheraFlowData.getSessionById(id);
+            if (!session) return;
+
+            const content = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 3em; margin-bottom: 10px;">👤</div>
+                    <h2 style="margin-bottom: 5px;">${session.clienteNome}</h2>
+                    <p style="color: #666;">${session.tipo}</p>
+                </div>
+                <div style="background: #f8f9ff; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div><strong style="color: #666; font-size: 0.9em;">📅 Data</strong><p>${TheraFlowUI.formatDateBR(session.data)}</p></div>
+                        <div><strong style="color: #666; font-size: 0.9em;">⏰ Horário</strong><p>${session.hora}</p></div>
+                        <div><strong style="color: #666; font-size: 0.9em;">⏱ Duração</strong><p>${session.duracao} min</p></div>
+                        <div><strong style="color: #666; font-size: 0.9em;">💰 Valor</strong><p>${TheraFlowUI.formatCurrency(session.valor)}</p></div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
+                    <span class="status-badge status-${session.status}">${session.status}</span>
+                    <span class="status-badge ${session.pagamento === 'pago' ? 'status-pago' : 'status-pendente'}">${session.pagamento}</span>
+                </div>
+                ${session.notas ? `<div style="background: #fff3cd; padding: 15px; border-radius: 10px;"><strong>📝 Anotações:</strong><p>${session.notas}</p></div>` : ''}
+                <ul class="tf-action-list" style="margin-top: 20px;">
+                    ${session.status === 'confirmado' ? `
+                        <li class="tf-action-item" onclick="markDone(${id}); TheraFlowUI.closeModal();"><span class="icon">✅</span><div class="text"><strong>Marcar como Realizado</strong><span>Confirmar que o atendimento aconteceu</span></div></li>
+                        <li class="tf-action-item" onclick="markNoShow(${id}); TheraFlowUI.closeModal();"><span class="icon">❌</span><div class="text"><strong>Registrar Falta</strong><span>Cliente não compareceu</span></div></li>
+                    ` : ''}
+                    ${session.pagamento === 'pendente' ? `
+                        <li class="tf-action-item" onclick="markPaid(${id}); TheraFlowUI.closeModal();"><span class="icon">💰</span><div class="text"><strong>Marcar como Pago</strong><span>Registrar recebimento</span></div></li>
+                    ` : ''}
+                    <li class="tf-action-item" onclick="window.location.href='cliente-detalhe.html?id=${session.clienteId}'"><span class="icon">👤</span><div class="text"><strong>Ver Cliente</strong><span>Abrir perfil completo</span></div></li>
+                    <li class="tf-action-item" onclick="confirmDeleteSession(${id})" style="color: #ef4444;"><span class="icon">🗑️</span><div class="text"><strong>Excluir Sessão</strong><span>Remover este agendamento</span></div></li>
+                </ul>`;
+
+            TheraFlowUI.showModal({ title: 'Detalhes do Atendimento', content: content, size: 'medium' });
+        }
+
+        function confirmDeleteSession(id) {
+            TheraFlowUI.closeModal();
+            setTimeout(() => {
+                TheraFlowUI.confirm('Deseja realmente excluir esta sessão?', function() {
+                    TheraFlowData.deleteSession(id);
+                    TheraFlowUI.toast('Sessão excluída', 'success');
+                    loadSessions(); loadStats();
+                });
+            }, 250);
+        }
+
+        function showNewSessionModal() {
+            const clients = TheraFlowData.getClients();
+            
+            if (clients.length === 0) {
+                TheraFlowUI.showModal({
+                    title: 'Nenhum Cliente',
+                    content: `<div style="text-align: center; padding: 20px;"><div style="font-size: 4em; margin-bottom: 15px;">👥</div><p>Você precisa cadastrar um cliente primeiro!</p></div>`,
+                    buttons: [{ text: 'Cadastrar Cliente', class: 'tf-btn-primary', onclick: "window.location.href='clientes.html'" }]
+                });
+                return;
+            }
+
+            const clientOptions = clients.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+            const today = TheraFlowData.formatDate(new Date());
+            
+            // Carregar serviços do perfil
+            const profile = TheraFlowData.getProfile();
+            const servicos = profile.servicos || ['Massagem Relaxante', 'Massagem Desportiva', 'Drenagem Linfática', 'Shiatsu', 'Reiki', 'Reflexologia'];
+            const servicoOptions = servicos.map(s => `<option value="${s}">${s}</option>`).join('');
+
+            const content = `
+                <form id="newSessionForm">
+                    <div class="tf-form-group"><label>Cliente *</label><select name="clienteId" required><option value="">Selecione...</option>${clientOptions}</select></div>
+                    <div class="tf-form-group"><label>Data *</label><input type="date" name="data" value="${today}" required></div>
+                    <div class="tf-form-group"><label>Horário *</label><input type="time" name="hora" value="09:00" required></div>
+                    <div class="tf-form-group">
+                        <label>Tipo de Atendimento <a href="perfil.html" style="font-size: 0.8em; color: #667eea; float: right;">⚙️ Gerenciar</a></label>
+                        <select name="tipo">
+                            <option value="">Selecione...</option>
+                            ${servicoOptions}
+                        </select>
+                    </div>
+                    <div class="tf-form-group"><label>Duração</label><select name="duracao"><option value="30">30 min</option><option value="45">45 min</option><option value="60" selected>1 hora</option><option value="90">1h30</option><option value="120">2 horas</option></select></div>
+                    <div class="tf-form-group"><label>Valor (R$)</label><input type="number" name="valor" value="150" step="10"></div>
+                    <div class="tf-form-group"><label>Observações</label><textarea name="notas" rows="2" placeholder="Notas..."></textarea></div>
+                </form>`;
+
+            TheraFlowUI.showModal({
+                title: '➕ Novo Agendamento',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', class: 'tf-btn-secondary', onclick: 'TheraFlowUI.closeModal()' },
+                    { text: 'Agendar', class: 'tf-btn-primary', onclick: 'saveNewSession()' }
+                ]
+            });
+        }
+
+        function saveNewSession() {
+            const form = document.getElementById('newSessionForm');
+            const formData = new FormData(form);
+            const clienteId = formData.get('clienteId');
+            if (!clienteId) { TheraFlowUI.toast('Selecione um cliente', 'error'); return; }
+
+            const client = TheraFlowData.getClientById(clienteId);
+            const session = {
+                clienteId: parseInt(clienteId),
+                clienteNome: client.nome,
+                data: formData.get('data'),
+                hora: formData.get('hora'),
+                tipo: formData.get('tipo'),
+                duracao: parseInt(formData.get('duracao')),
+                valor: parseFloat(formData.get('valor')) || 0,
+                notas: formData.get('notas') || '',
+                status: 'confirmado',
+                pagamento: 'pendente'
+            };
+
+            TheraFlowData.addSession(session);
+            TheraFlowUI.closeModal();
+            TheraFlowUI.toast('Sessão agendada com sucesso!', 'success');
+            loadSessions(); loadStats();
+        }
+
+        loadStats();
+        loadSessions();
+    </script>
+</body>
+</html>

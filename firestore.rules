@@ -1,0 +1,55 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Função auxiliar para verificar autenticação
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Função auxiliar para verificar se o usuário é dono do recurso
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // Regras para coleção de usuários
+    match /users/{userId} {
+      // Usuário pode ler e escrever apenas seus próprios dados
+      allow read, write: if isSignedIn() && isOwner(userId);
+      
+      // Regras para subcoleção de clientes
+      match /clients/{clientId} {
+        // Usuário pode ler e escrever apenas seus próprios clientes
+        allow read, write: if isSignedIn() && isOwner(userId);
+        
+        // Validação: verificar limite de clientes baseado no plano
+        allow create: if isSignedIn() 
+                      && isOwner(userId)
+                      && validateClientLimit(userId);
+      }
+      
+      // Regras para subcoleção de sessões
+      match /sessions/{sessionId} {
+        // Usuário pode ler e escrever apenas suas próprias sessões
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+      
+      // Regras para subcoleção de pagamentos
+      match /payments/{paymentId} {
+        // Usuário pode ler e escrever apenas seus próprios pagamentos
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+    }
+    
+    // Função para validar limite de clientes por plano
+    function validateClientLimit(userId) {
+      let userDoc = get(/databases/$(database)/documents/users/$(userId));
+      let plan = userDoc.data.plan;
+      let clientsCount = get(/databases/$(database)/documents/users/$(userId)/clients).size();
+      
+      return (plan == 'free' && clientsCount < 5) ||
+             (plan == 'professional' && clientsCount < 50) ||
+             (plan == 'premium');
+    }
+  }
+}

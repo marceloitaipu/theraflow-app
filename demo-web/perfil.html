@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Perfil</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: #f5f5f5;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header .avatar {
+            width: 100px;
+            height: 100px;
+            background: white;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .header .avatar:hover {
+            transform: scale(1.05);
+        }
+
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-row .label {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .info-row .value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .plan-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 15px;
+        }
+
+        .plan-card .label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .plan-card .plan-name {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .plan-card .features {
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+
+        .upgrade-btn {
+            width: 100%;
+            padding: 15px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .upgrade-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .menu-item:last-child {
+            border-bottom: none;
+        }
+
+        .menu-item:hover {
+            background: #f9f9f9;
+            margin: 0 -20px;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        .menu-item .left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .menu-item .icon {
+            font-size: 1.3em;
+        }
+
+        .menu-item .text {
+            color: #333;
+        }
+
+        .menu-item .arrow {
+            color: #ccc;
+        }
+
+        .logout-btn {
+            width: 100%;
+            padding: 15px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-box .number {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .stat-box .label {
+            font-size: 0.85em;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #999;
+            text-decoration: none;
+            font-size: 0.75em;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: #667eea;
+        }
+
+        .nav-item .icon {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .service-list {
+            max-height: 250px;
+            overflow-y: auto;
+        }
+
+        .service-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .service-item .service-name {
+            font-weight: 500;
+        }
+
+        .service-item .service-value {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .service-item .delete-btn {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+
+        .add-service-btn {
+            width: 100%;
+            padding: 12px;
+            background: #f0f0f0;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            color: #666;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .add-service-btn:hover {
+            background: #e8e8e8;
+            border-color: #667eea;
+            color: #667eea;
+        }
+
+        .danger-zone {
+            border: 1px solid #fee2e2;
+            background: #fef2f2;
+        }
+
+        .danger-zone .section-title {
+            color: #dc2626;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="avatar" id="userAvatar" onclick="showEditProfileModal()">💆</div>
+        <h1 id="userName">Carregando...</h1>
+        <p id="userEmail">-</p>
+    </div>
+
+    <div class="container">
+        <div class="plan-card">
+            <div class="label">Plano Atual</div>
+            <div class="plan-name">Gratuito ✨</div>
+            <div class="features">
+                ✓ Clientes ilimitados (demo)<br>
+                ✓ Agenda completa<br>
+                ✓ Controle financeiro<br>
+                ✓ Dados no navegador
+            </div>
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="number" id="statClients">0</div>
+                    <div class="label">Clientes</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="statSessions">0</div>
+                    <div class="label">Sessões/mês</div>
+                </div>
+            </div>
+        </div>
+
+        <button class="upgrade-btn" onclick="showUpgradeModal()">
+            Fazer Upgrade para Professional 🚀
+        </button>
+
+        <div class="section" style="margin-top: 30px;" id="profileInfo">
+            <div class="section-title">📋 Informações</div>
+            <div id="infoContent">Carregando...</div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">⚙️ Configurações</div>
+            
+            <div class="menu-item" onclick="showEditProfileModal()">
+                <div class="left">
+                    <span class="icon">✏️</span>
+                    <span class="text">Editar Perfil</span>
+                </div>
+                <span class="arrow">›</span>
+            </div>
+
+            <div class="menu-item" onclick="showServicesModal()">
+                <div class="left">
+                    <span class="icon">💆</span>
+                    <span class="text">Meus Serviços</span>
+                </div>
+                <span class="arrow">›</span>
+            </div>
+
+            <div class="menu-item" onclick="showNotificationsModal()">
+                <div class="left">
+                    <span class="icon">🔔</span>
+                    <span class="text">Notificações</span>
+                </div>
+                <span class="arrow">›</span>
+            </div>
+
+            <div class="menu-item" onclick="showBackupModal()">
+                <div class="left">
+                    <span class="icon">💾</span>
+                    <span class="text">Backup de Dados</span>
+                </div>
+                <span class="arrow">›</span>
+            </div>
+
+            <div class="menu-item" onclick="showAboutModal()">
+                <div class="left">
+                    <span class="icon">ℹ️</span>
+                    <span class="text">Sobre o App</span>
+                </div>
+                <span class="arrow">›</span>
+            </div>
+        </div>
+
+        <div class="section danger-zone">
+            <div class="section-title">⚠️ Zona de Perigo</div>
+            
+            <div class="menu-item" onclick="resetData()">
+                <div class="left">
+                    <span class="icon">🗑️</span>
+                    <span class="text" style="color: #dc2626;">Limpar Todos os Dados</span>
+                </div>
+                <span class="arrow">›</span>
+            </div>
+        </div>
+
+        <button class="logout-btn" onclick="logout()">🚪 Sair da Conta</button>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="app.html" class="nav-item">
+            <span class="icon">🏠</span>
+            <span>Início</span>
+        </a>
+        <a href="clientes.html" class="nav-item">
+            <span class="icon">👥</span>
+            <span>Clientes</span>
+        </a>
+        <a href="agenda.html" class="nav-item">
+            <span class="icon">📅</span>
+            <span>Agenda</span>
+        </a>
+        <a href="financeiro.html" class="nav-item">
+            <span class="icon">💰</span>
+            <span>Financeiro</span>
+        </a>
+        <a href="perfil.html" class="nav-item active">
+            <span class="icon">👤</span>
+            <span>Perfil</span>
+        </a>
+    </nav>
+
+    <script src="js/data.js"></script>
+    <script src="js/ui.js"></script>
+    <script>
+        // Verificar autenticação
+        TheraFlowUI.checkAuth();
+
+        // Dados
+        var profile = {};
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadProfile();
+            loadStats();
+        });
+
+        function loadProfile() {
+            profile = TheraFlowData.getProfile();
+            
+            // Header
+            document.getElementById('userName').textContent = profile.nome || profile.displayName || 'Terapeuta';
+            document.getElementById('userEmail').textContent = profile.email || 'email@exemplo.com';
+            
+            // Avatar
+            var avatarEl = document.getElementById('userAvatar');
+            if (profile.avatar) {
+                avatarEl.textContent = profile.avatar;
+            }
+            
+            // Informações
+            var createdAt = profile.createdAt ? TheraFlowUI.formatDateBR(profile.createdAt) : 'Hoje';
+            
+            document.getElementById('infoContent').innerHTML = 
+                '<div class="info-row">' +
+                    '<span class="label">Nome</span>' +
+                    '<span class="value">' + (profile.nome || profile.displayName || '-') + '</span>' +
+                '</div>' +
+                '<div class="info-row">' +
+                    '<span class="label">Email</span>' +
+                    '<span class="value">' + (profile.email || '-') + '</span>' +
+                '</div>' +
+                '<div class="info-row">' +
+                    '<span class="label">Telefone</span>' +
+                    '<span class="value">' + (profile.telefone || '-') + '</span>' +
+                '</div>' +
+                '<div class="info-row">' +
+                    '<span class="label">Especialidade</span>' +
+                    '<span class="value">' + (profile.especialidade || '-') + '</span>' +
+                '</div>' +
+                '<div class="info-row">' +
+                    '<span class="label">Duração padrão</span>' +
+                    '<span class="value">' + (profile.duracaoPadrao || 60) + ' min</span>' +
+                '</div>' +
+                '<div class="info-row">' +
+                    '<span class="label">Cadastro</span>' +
+                    '<span class="value">' + createdAt + '</span>' +
+                '</div>';
+        }
+
+        function loadStats() {
+            var clients = TheraFlowData.getClients();
+            var sessions = TheraFlowData.getSessions();
+            
+            // Sessões do mês atual
+            var now = new Date();
+            var monthStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            var monthSessions = sessions.filter(function(s) {
+                return s.data && s.data.indexOf(monthStr) === 0;
+            });
+            
+            document.getElementById('statClients').textContent = clients.length;
+            document.getElementById('statSessions').textContent = monthSessions.length;
+        }
+
+        function showEditProfileModal() {
+            var content = 
+                '<form id="editProfileForm">' +
+                    '<div class="form-group">' +
+                        '<label>👤 Nome</label>' +
+                        '<input type="text" id="editName" value="' + (profile.nome || profile.displayName || '') + '" required>' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label>📧 Email</label>' +
+                        '<input type="email" id="editEmail" value="' + (profile.email || '') + '" required>' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label>📱 Telefone</label>' +
+                        '<input type="tel" id="editPhone" value="' + (profile.telefone || '') + '" placeholder="(00) 00000-0000">' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label>💆 Especialidade</label>' +
+                        '<select id="editSpecialty">' +
+                            '<option value="Massoterapia"' + (profile.especialidade === 'Massoterapia' ? ' selected' : '') + '>Massoterapia</option>' +
+                            '<option value="Reiki"' + (profile.especialidade === 'Reiki' ? ' selected' : '') + '>Reiki</option>' +
+                            '<option value="Acupuntura"' + (profile.especialidade === 'Acupuntura' ? ' selected' : '') + '>Acupuntura</option>' +
+                            '<option value="Quiropraxia"' + (profile.especialidade === 'Quiropraxia' ? ' selected' : '') + '>Quiropraxia</option>' +
+                            '<option value="Terapias Holísticas"' + (profile.especialidade === 'Terapias Holísticas' ? ' selected' : '') + '>Terapias Holísticas</option>' +
+                            '<option value="Fisioterapia"' + (profile.especialidade === 'Fisioterapia' ? ' selected' : '') + '>Fisioterapia</option>' +
+                            '<option value="Estética"' + (profile.especialidade === 'Estética' ? ' selected' : '') + '>Estética</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="form-group">' +
+                        '<label>⏱️ Duração padrão da sessão (min)</label>' +
+                        '<select id="editDuration">' +
+                            '<option value="30"' + (profile.duracaoPadrao === 30 ? ' selected' : '') + '>30 minutos</option>' +
+                            '<option value="45"' + (profile.duracaoPadrao === 45 ? ' selected' : '') + '>45 minutos</option>' +
+                            '<option value="60"' + (profile.duracaoPadrao === 60 || !profile.duracaoPadrao ? ' selected' : '') + '>60 minutos</option>' +
+                            '<option value="90"' + (profile.duracaoPadrao === 90 ? ' selected' : '') + '>90 minutos</option>' +
+                            '<option value="120"' + (profile.duracaoPadrao === 120 ? ' selected' : '') + '>120 minutos</option>' +
+                        '</select>' +
+                    '</div>' +
+                '</form>';
+            
+            TheraFlowUI.showModal({
+                title: '✏️ Editar Perfil',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', onClick: function() { TheraFlowUI.closeModal(); } },
+                    { text: 'Salvar', primary: true, onClick: saveProfile }
+                ]
+            });
+        }
+
+        function saveProfile() {
+            var nome = document.getElementById('editName').value;
+            var email = document.getElementById('editEmail').value;
+            var telefone = document.getElementById('editPhone').value;
+            var especialidade = document.getElementById('editSpecialty').value;
+            var duracaoPadrao = parseInt(document.getElementById('editDuration').value);
+            
+            if (!nome || !email) {
+                TheraFlowUI.toast('Nome e email são obrigatórios', 'error');
+                return;
+            }
+            
+            profile.nome = nome;
+            profile.displayName = nome;
+            profile.email = email;
+            profile.telefone = telefone;
+            profile.especialidade = especialidade;
+            profile.duracaoPadrao = duracaoPadrao;
+            
+            TheraFlowData.saveProfile(profile);
+            
+            TheraFlowUI.closeModal();
+            loadProfile();
+            TheraFlowUI.toast('Perfil atualizado!', 'success');
+        }
+
+        function showServicesModal() {
+            var services = profile.servicos || ['Massagem Relaxante', 'Massagem Desportiva', 'Drenagem Linfática'];
+            
+            var servicesList = services.map(function(s, i) {
+                return '<div class="service-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f8f9fa; border-radius: 8px; margin-bottom: 10px;">' +
+                    '<span class="service-name" style="font-weight: 500;">' + s + '</span>' +
+                    '<div style="display: flex; gap: 8px;">' +
+                        '<button onclick="editService(' + i + ')" style="background: none; border: none; cursor: pointer; font-size: 1.1em;" title="Editar">✏️</button>' +
+                        '<button onclick="removeService(' + i + ')" style="background: none; border: none; cursor: pointer; font-size: 1.1em; color: #ef4444;" title="Excluir">🗑️</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            
+            if (services.length === 0) {
+                servicesList = '<div style="text-align: center; padding: 30px; color: #999;"><p>Nenhum serviço cadastrado</p></div>';
+            }
+            
+            var content = 
+                '<p style="color: #666; font-size: 0.9em; margin-bottom: 15px;">Gerencie os tipos de atendimento que você oferece:</p>' +
+                '<div class="service-list" style="max-height: 300px; overflow-y: auto;">' +
+                    servicesList +
+                '</div>' +
+                '<button class="add-service-btn" onclick="addServicePrompt()" style="width: 100%; padding: 12px; background: #f0f0f0; border: 2px dashed #ccc; border-radius: 8px; color: #666; cursor: pointer; margin-top: 15px; font-size: 1em;">+ Adicionar Novo Serviço</button>';
+            
+            TheraFlowUI.showModal({
+                title: '💆 Meus Serviços (Tipos de Sessão)',
+                content: content,
+                buttons: [
+                    { text: 'Fechar', onClick: function() { TheraFlowUI.closeModal(); } }
+                ]
+            });
+        }
+
+        function editService(index) {
+            var services = profile.servicos || [];
+            var currentName = services[index] || '';
+            
+            TheraFlowUI.closeModal();
+            
+            var content = 
+                '<div class="form-group">' +
+                    '<label>Nome do Serviço</label>' +
+                    '<input type="text" id="editServiceName" value="' + currentName + '" placeholder="Ex: Massagem Relaxante">' +
+                '</div>';
+            
+            TheraFlowUI.showModal({
+                title: '✏️ Editar Serviço',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', onClick: function() { TheraFlowUI.closeModal(); showServicesModal(); } },
+                    { text: 'Salvar', primary: true, onClick: function() {
+                        var newName = document.getElementById('editServiceName').value.trim();
+                        if (!newName) {
+                            TheraFlowUI.toast('Digite o nome do serviço', 'error');
+                            return;
+                        }
+                        
+                        profile.servicos[index] = newName;
+                        TheraFlowData.saveProfile(profile);
+                        
+                        TheraFlowUI.closeModal();
+                        TheraFlowUI.toast('Serviço atualizado!', 'success');
+                        showServicesModal();
+                    }}
+                ]
+            });
+        }
+
+        function addServicePrompt() {
+            TheraFlowUI.closeModal();
+            
+            var content = 
+                '<div class="form-group">' +
+                    '<label>Nome do Serviço</label>' +
+                    '<input type="text" id="newServiceName" placeholder="Ex: Massagem Relaxante">' +
+                '</div>' +
+                '<p style="color: #666; font-size: 0.85em; margin-top: 10px;">💡 Dica: Adicione todos os tipos de atendimento que você oferece.</p>';
+            
+            TheraFlowUI.showModal({
+                title: '➕ Novo Serviço',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', onClick: function() { TheraFlowUI.closeModal(); showServicesModal(); } },
+                    { text: 'Adicionar', primary: true, onClick: function() {
+                        var name = document.getElementById('newServiceName').value.trim();
+                        if (!name) {
+                            TheraFlowUI.toast('Digite o nome do serviço', 'error');
+                            return;
+                        }
+                        
+                        if (!profile.servicos) profile.servicos = [];
+                        profile.servicos.push(name);
+                        TheraFlowData.saveProfile(profile);
+                        
+                        TheraFlowUI.closeModal();
+                        TheraFlowUI.toast('Serviço adicionado!', 'success');
+                        showServicesModal();
+                    }}
+                ]
+            });
+        }
+
+        function removeService(index) {
+            var serviceName = profile.servicos[index];
+            TheraFlowUI.confirm('Deseja excluir o serviço "' + serviceName + '"?', function() {
+                profile.servicos.splice(index, 1);
+                TheraFlowData.saveProfile(profile);
+                TheraFlowUI.toast('Serviço removido', 'success');
+                showServicesModal();
+            }, function() {
+                // Ao cancelar, reabrir modal de serviços
+            });
+        }
+
+        function showNotificationsModal() {
+            var prefs = profile.notifications || { reminder: true, summary: false };
+            
+            var content = 
+                '<div style="padding: 10px 0;">' +
+                    '<div class="menu-item" style="cursor: default;">' +
+                        '<div class="left">' +
+                            '<span class="icon">⏰</span>' +
+                            '<span class="text">Lembrete de atendimento</span>' +
+                        '</div>' +
+                        '<span style="color: ' + (prefs.reminder ? '#059669' : '#999') + ';">' + (prefs.reminder ? '✅ Ativo' : '❌ Inativo') + '</span>' +
+                    '</div>' +
+                    '<div class="menu-item" style="cursor: default;">' +
+                        '<div class="left">' +
+                            '<span class="icon">📊</span>' +
+                            '<span class="text">Resumo semanal</span>' +
+                        '</div>' +
+                        '<span style="color: ' + (prefs.summary ? '#059669' : '#999') + ';">' + (prefs.summary ? '✅ Ativo' : '❌ Inativo') + '</span>' +
+                    '</div>' +
+                '</div>' +
+                '<p style="color: #666; font-size: 0.9em; text-align: center; margin-top: 15px;">📱 Notificações push disponíveis no app mobile</p>';
+            
+            TheraFlowUI.showModal({
+                title: '🔔 Notificações',
+                content: content,
+                buttons: [
+                    { text: 'Fechar', onClick: function() { TheraFlowUI.closeModal(); } }
+                ]
+            });
+        }
+
+        function showBackupModal() {
+            var clients = TheraFlowData.getClients();
+            var sessions = TheraFlowData.getSessions();
+            
+            var content = 
+                '<div style="text-align: center; padding: 20px 0;">' +
+                    '<div style="font-size: 4em; margin-bottom: 20px;">💾</div>' +
+                    '<p style="margin-bottom: 20px;">Seus dados estão salvos localmente no navegador.</p>' +
+                    '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: left;">' +
+                        '<div style="margin-bottom: 8px;">👥 <strong>' + clients.length + '</strong> clientes</div>' +
+                        '<div style="margin-bottom: 8px;">📅 <strong>' + sessions.length + '</strong> sessões</div>' +
+                        '<div>💾 <strong>LocalStorage</strong></div>' +
+                    '</div>' +
+                '</div>';
+            
+            TheraFlowUI.showModal({
+                title: '💾 Backup de Dados',
+                content: content,
+                buttons: [
+                    { text: 'Fechar', onClick: function() { TheraFlowUI.closeModal(); } },
+                    { text: 'Exportar JSON', primary: true, onClick: exportData }
+                ]
+            });
+        }
+
+        function exportData() {
+            var data = {
+                profile: TheraFlowData.getProfile(),
+                clients: TheraFlowData.getClients(),
+                sessions: TheraFlowData.getSessions(),
+                exportDate: new Date().toISOString()
+            };
+            
+            var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'theraflow_backup_' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            
+            TheraFlowUI.toast('Backup exportado!', 'success');
+        }
+
+        function showAboutModal() {
+            var content = 
+                '<div style="text-align: center; padding: 20px 0;">' +
+                    '<div style="font-size: 4em; margin-bottom: 15px;">💆‍♀️</div>' +
+                    '<h3 style="margin-bottom: 5px;">TheraFlow</h3>' +
+                    '<p style="color: #666; margin-bottom: 20px;">Versão Demo 1.0.0</p>' +
+                    '<p style="font-size: 0.9em; color: #666; line-height: 1.6;">' +
+                        'Gestão completa para terapeutas holísticos.<br>' +
+                        'Agende, gerencie clientes e controle suas finanças em um só lugar.' +
+                    '</p>' +
+                    '<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">' +
+                        '<p style="font-size: 0.85em; color: #999;">© 2024 TheraFlow</p>' +
+                        '<p style="font-size: 0.85em; color: #999;">Desenvolvido com 💜</p>' +
+                    '</div>' +
+                '</div>';
+            
+            TheraFlowUI.showModal({
+                title: 'ℹ️ Sobre o App',
+                content: content,
+                buttons: [
+                    { text: 'Fechar', onClick: function() { TheraFlowUI.closeModal(); } }
+                ]
+            });
+        }
+
+        function showUpgradeModal() {
+            var content = 
+                '<div style="text-align: center; padding: 10px 0;">' +
+                    '<div style="font-size: 4em; margin-bottom: 15px;">🚀</div>' +
+                    '<h3 style="margin-bottom: 15px;">Plano Professional</h3>' +
+                    '<div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: left; margin-bottom: 20px;">' +
+                        '<div style="margin-bottom: 10px;">✅ Clientes ilimitados</div>' +
+                        '<div style="margin-bottom: 10px;">✅ Relatórios avançados</div>' +
+                        '<div style="margin-bottom: 10px;">✅ Backup na nuvem</div>' +
+                        '<div style="margin-bottom: 10px;">✅ Notificações push</div>' +
+                        '<div style="margin-bottom: 10px;">✅ Suporte prioritário</div>' +
+                        '<div>✅ App mobile completo</div>' +
+                    '</div>' +
+                    '<div style="font-size: 2em; font-weight: bold; color: #667eea;">R$ 29/mês</div>' +
+                    '<p style="color: #666; font-size: 0.9em; margin-top: 5px;">ou R$ 297 lifetime</p>' +
+                '</div>';
+            
+            TheraFlowUI.showModal({
+                title: '🚀 Upgrade',
+                content: content,
+                buttons: [
+                    { text: 'Agora não', onClick: function() { TheraFlowUI.closeModal(); } },
+                    { text: 'Quero fazer upgrade!', primary: true, onClick: function() {
+                        TheraFlowUI.closeModal();
+                        TheraFlowUI.toast('Em breve! Obrigado pelo interesse 💜', 'success');
+                    }}
+                ]
+            });
+        }
+
+        function resetData() {
+            TheraFlowUI.confirm(
+                '⚠️ Limpar Todos os Dados',
+                'Esta ação irá apagar TODOS os seus dados: clientes, sessões, configurações. Esta ação NÃO pode ser desfeita!',
+                function() {
+                    TheraFlowData.clearAll();
+                    TheraFlowUI.toast('Dados limpos! Redirecionando...', 'info');
+                    setTimeout(function() {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                }
+            );
+        }
+
+        function logout() {
+            TheraFlowUI.confirm(
+                '🚪 Sair da Conta',
+                'Deseja realmente sair? Seus dados permanecerão salvos.',
+                function() {
+                    TheraFlowData.logout();
+                    window.location.href = 'index.html';
+                }
+            );
+        }
+    </script>
+</body>
+</html>

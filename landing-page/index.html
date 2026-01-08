@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Organize seus atendimentos, clientes e pagamentos em um único aplicativo simples. Feito especialmente para massoterapeutas, terapeutas holísticos, reiki e acupuntura.">
+    <title>TheraFlow - Gestão Simples para Terapeutas Holísticos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 80px 20px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.5em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .cta-button {
+            background: #fff;
+            color: #667eea;
+            padding: 18px 40px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        /* Problemas */
+        .problems {
+            padding: 80px 20px;
+            background: #f8f9fa;
+        }
+
+        .problems h2 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 60px;
+            color: #2d3748;
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .problem-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .problem-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            color: #e53e3e;
+        }
+
+        /* Solução */
+        .solution {
+            padding: 80px 20px;
+        }
+
+        .solution h2 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 60px;
+            color: #2d3748;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-bottom: 60px;
+        }
+
+        .feature {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        .feature h3 {
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        /* Preços */
+        .pricing {
+            padding: 80px 20px;
+            background: #f8f9fa;
+        }
+
+        .pricing h2 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 60px;
+            color: #2d3748;
+        }
+
+        .price-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .price-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .price-card.featured {
+            border-color: #667eea;
+            transform: scale(1.05);
+        }
+
+        .price-card h3 {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .price {
+            font-size: 3em;
+            font-weight: 700;
+            margin: 20px 0;
+            color: #2d3748;
+        }
+
+        .price-card ul {
+            list-style: none;
+            margin: 30px 0;
+            text-align: left;
+        }
+
+        .price-card li {
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .price-card li::before {
+            content: "✓ ";
+            color: #48bb78;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        /* CTA Final */
+        .final-cta {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+        }
+
+        .final-cta h2 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+        }
+
+        .final-cta p {
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        /* Form */
+        .email-form {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .email-input {
+            flex: 1;
+            padding: 18px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 50px;
+        }
+
+        .submit-button {
+            background: #2d3748;
+            color: white;
+            padding: 18px 40px;
+            font-size: 1.1em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .submit-button:hover {
+            background: #1a202c;
+            transform: scale(1.05);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 20px;
+            background: #2d3748;
+            color: white;
+            text-align: center;
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            
+            .subtitle {
+                font-size: 1.2em;
+            }
+
+            .email-form {
+                flex-direction: column;
+            }
+
+            .price-card.featured {
+                transform: scale(1);
+            }
+        }
+
+        /* Badge Lifetime */
+        .badge {
+            background: #f56565;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <h1>📱 TheraFlow</h1>
+            <p class="subtitle">Organize seus atendimentos, clientes e pagamentos em um único aplicativo simples.</p>
+            <p style="font-size: 1em; margin-bottom: 30px; opacity: 0.95;">Para massoterapeutas, terapeutas holísticos, reiki, acupuntura e terapias energéticas.</p>
+            <a href="#cadastro" class="cta-button">Quero Testar Grátis</a>
+            <p style="margin-top: 20px; opacity: 0.9; font-size: 0.9em;">✨ Sem cartão de crédito. Sem pegadinhas.</p>
+        </div>
+    </header>
+
+    <!-- Problemas -->
+    <section class="problems">
+        <div class="container">
+            <h2>Você se identifica com isso?</h2>
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <h3>📓 Cadernos e papéis perdidos</h3>
+                    <p>Você anota tudo em cadernos, agendas ou até guardanapos. Aí perde, esquece ou não acha quando precisa.</p>
+                </div>
+                <div class="problem-card">
+                    <h3>💬 WhatsApp bagunçado</h3>
+                    <p>Mistura conversas pessoais com agendamentos. Esquece de responder clientes e perde sessões.</p>
+                </div>
+                <div class="problem-card">
+                    <h3>💰 Não sabe quanto ganhou</h3>
+                    <p>No final do mês, conta no papel quem pagou e quem não pagou. Dá trabalho e sempre erra.</p>
+                </div>
+                <div class="problem-card">
+                    <h3>⏰ Esquece horários</h3>
+                    <p>Cliente confirma por áudio às 2h da manhã e você só vê 10 minutos antes da sessão.</p>
+                </div>
+                <div class="problem-card">
+                    <h3>📊 Planilhas complicadas</h3>
+                    <p>Tentou usar Excel mas ficou confuso. Desistiu e voltou pro caderno.</p>
+                </div>
+                <div class="problem-card">
+                    <h3>🏥 Apps de clínica não servem</h3>
+                    <p>Apps de consultório médico são caros e cheios de funções que você não usa.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Solução -->
+    <section class="solution">
+        <div class="container">
+            <h2>Como o TheraFlow resolve isso?</h2>
+            <div class="feature-grid">
+                <div class="feature">
+                    <div class="feature-icon">📅</div>
+                    <h3>Agenda do Dia</h3>
+                    <p>Veja todas as suas sessões de hoje de uma vez. Simples assim.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">👥</div>
+                    <h3>Lista de Clientes</h3>
+                    <p>Todos os dados e histórico em um lugar só. Busca rápida por nome.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💰</div>
+                    <h3>Controle Financeiro</h3>
+                    <p>Marque quem pagou e quem não pagou. Veja quanto ganhou no mês.</p>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">📝</div>
+                    <h3>Anotações</h3>
+                    <p>Escreva observações sobre cada cliente e sessão.</p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 60px;">
+                <h3 style="font-size: 1.8em; margin-bottom: 20px; color: #667eea;">Feito para quem NÃO é técnico</h3>
+                <p style="font-size: 1.2em; color: #666;">Se você sabe usar WhatsApp, você sabe usar o TheraFlow.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Preços -->
+    <section class="pricing">
+        <div class="container">
+            <h2>Planos Simples e Justos</h2>
+            <div class="price-grid">
+                <div class="price-card">
+                    <h3>Free</h3>
+                    <div class="price">R$ 0</div>
+                    <p>para sempre</p>
+                    <ul>
+                        <li>Até 5 clientes</li>
+                        <li>Agenda ilimitada</li>
+                        <li>Controle financeiro</li>
+                        <li>Suporte por email</li>
+                    </ul>
+                </div>
+                <div class="price-card featured">
+                    <span class="badge">🔥 MAIS POPULAR</span>
+                    <h3>Profissional</h3>
+                    <div class="price">R$ 29</div>
+                    <p>por mês</p>
+                    <ul>
+                        <li>Até 50 clientes</li>
+                        <li>Tudo do Free +</li>
+                        <li>Relatórios mensais</li>
+                        <li>Lembretes automáticos</li>
+                        <li>Suporte prioritário</li>
+                    </ul>
+                </div>
+                <div class="price-card">
+                    <h3>Premium</h3>
+                    <div class="price">R$ 79</div>
+                    <p>por mês</p>
+                    <ul>
+                        <li>Clientes ilimitados</li>
+                        <li>Tudo do Profissional +</li>
+                        <li>Múltiplos terapeutas</li>
+                        <li>Exportar relatórios</li>
+                        <li>Suporte WhatsApp</li>
+                    </ul>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 60px; padding: 40px; background: white; border-radius: 12px;">
+                <span class="badge">⚡ OFERTA DE LANÇAMENTO</span>
+                <h3 style="font-size: 2em; margin: 20px 0; color: #667eea;">Lifetime Deal - R$ 297</h3>
+                <p style="font-size: 1.2em; margin-bottom: 10px;">Pague uma vez, use para sempre (plano Profissional)</p>
+                <p style="color: #e53e3e; font-weight: 600;">⏰ Apenas para os primeiros 50 cadastros</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Final -->
+    <section class="final-cta" id="cadastro">
+        <div class="container">
+            <h2>Comece Grátis Agora</h2>
+            <p>Sem cartão de crédito. Sem compromisso. Cancele quando quiser.</p>
+            <form class="email-form" id="emailForm">
+                <input type="email" name="email" id="emailInput" class="email-input" placeholder="Seu melhor e-mail" required>
+                <button type="submit" class="submit-button">Quero Testar →</button>
+            </form>
+            <p id="successMessage" style="margin-top: 20px; font-size: 1.1em; color: #4ade80; display: none; font-weight: bold;">
+                ✅ Email cadastrado! Você receberá acesso em breve.
+            </p>
+            <p style="margin-top: 30px; font-size: 0.9em; opacity: 0.9;">
+                🔒 Seus dados estão seguros. Sem spam.
+            </p>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 TheraFlow. Feito com ❤️ para terapeutas holísticos brasileiros.</p>
+            <p style="margin-top: 10px; opacity: 0.8; font-size: 0.9em;">
+                <a href="mailto:contato@theraflow.app" style="color: white;">contato@theraflow.app</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Script de conversão (opcional) -->
+    <script>
+        // Espera o HTML carregar completamente
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 TheraFlow Landing Page carregada!');
+            
+            const form = document.getElementById('emailForm');
+            const emailInput = document.getElementById('emailInput');
+            const successMessage = document.getElementById('successMessage');
+            
+            if (!form) {
+                console.error('❌ Formulário não encontrado!');
+                return;
+            }
+            
+            console.log('✅ Formulário encontrado, sistema ativo!');
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const email = emailInput.value.trim();
+                
+                if (!email) {
+                    alert('Por favor, digite seu email!');
+                    return false;
+                }
+                
+                const timestamp = new Date().toLocaleString('pt-BR');
+                
+                // Salva no localStorage
+                let emails = JSON.parse(localStorage.getItem('theraflow_emails') || '[]');
+                emails.push({ email, timestamp });
+                localStorage.setItem('theraflow_emails', JSON.stringify(emails));
+                
+                // Mostra sucesso
+                successMessage.style.display = 'block';
+                emailInput.value = '';
+                
+                // Logs
+                console.log('✅ Email cadastrado:', email);
+                console.log('📊 Total de emails:', emails.length);
+                console.log('📋 Todos os emails:', emails);
+                
+                // Esconde mensagem depois de 5s
+                setTimeout(() => {
+                    successMessage.style.display = 'none';
+                }, 5000);
+                
+                return false;
+            });
+        });
+        
+        // Para ver emails: JSON.parse(localStorage.getItem('theraflow_emails'))
+    </script>
+</body>
+</html>

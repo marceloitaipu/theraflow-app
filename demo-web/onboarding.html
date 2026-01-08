@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Bem-vindo!</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .onboarding-container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .step-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            transition: all 0.3s;
+        }
+
+        .step-dot.active {
+            background: #667eea;
+            transform: scale(1.2);
+        }
+
+        .step-dot.completed {
+            background: #10b981;
+        }
+
+        .step-content {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .step-title {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .step-subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e5e5;
+        }
+
+        .service-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .service-option {
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .service-option:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .service-option.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .service-option .icon {
+            font-size: 2em;
+            margin-bottom: 5px;
+        }
+
+        .skip-link {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .skip-link a {
+            color: #999;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .skip-link a:hover {
+            color: #667eea;
+        }
+
+        .welcome-icon {
+            text-align: center;
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .preferences-grid {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .preference-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 10px;
+        }
+
+        .preference-item label {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(24px);
+        }
+
+        .first-client-form {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .first-client-form h4 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .success-animation {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .success-animation .checkmark {
+            font-size: 5em;
+            animation: bounceIn 0.5s ease;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="onboarding-container">
+        <div class="step-indicator">
+            <div class="step-dot active" id="dot1"></div>
+            <div class="step-dot" id="dot2"></div>
+            <div class="step-dot" id="dot3"></div>
+        </div>
+
+        <!-- Step 1: Dados do Profissional -->
+        <div class="step-content active" id="step1">
+            <div class="welcome-icon">👋</div>
+            <h2 class="step-title">Bem-vindo ao TheraFlow!</h2>
+            <p class="step-subtitle">Vamos configurar seu perfil profissional</p>
+
+            <div class="form-group">
+                <label>Como você quer ser chamado(a)?</label>
+                <input type="text" id="displayName" placeholder="Ex: Dr. João, Dra. Maria, Terapeuta Ana...">
+            </div>
+
+            <div class="form-group">
+                <label>Qual sua especialidade principal?</label>
+                <select id="specialty">
+                    <option value="">Selecione...</option>
+                    <option value="massoterapia">Massoterapia</option>
+                    <option value="fisioterapia">Fisioterapia</option>
+                    <option value="psicologia">Psicologia</option>
+                    <option value="nutricao">Nutrição</option>
+                    <option value="acupuntura">Acupuntura</option>
+                    <option value="quiropraxia">Quiropraxia</option>
+                    <option value="estetica">Estética</option>
+                    <option value="outro">Outro</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Qual o valor médio da sua sessão?</label>
+                <input type="text" id="sessionValue" placeholder="R$ 150,00">
+            </div>
+
+            <button class="btn btn-primary" onclick="nextStep(2)">Continuar →</button>
+        </div>
+
+        <!-- Step 2: Preferências -->
+        <div class="step-content" id="step2">
+            <div class="welcome-icon">⚙️</div>
+            <h2 class="step-title">Suas Preferências</h2>
+            <p class="step-subtitle">Personalize como o app funciona para você</p>
+
+            <div class="preferences-grid">
+                <div class="preference-item">
+                    <label>Lembretes de sessão</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="reminders" checked>
+                        <span class="toggle-slider"></span>
+                    </div>
+                </div>
+
+                <div class="preference-item">
+                    <label>Lembrar 2h antes</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="reminder2h" checked>
+                        <span class="toggle-slider"></span>
+                    </div>
+                </div>
+
+                <div class="preference-item">
+                    <label>Resumo diário</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="dailySummary">
+                        <span class="toggle-slider"></span>
+                    </div>
+                </div>
+
+                <div class="preference-item">
+                    <label>Relatório semanal</label>
+                    <div class="toggle-switch">
+                        <input type="checkbox" id="weeklyReport" checked>
+                        <span class="toggle-slider"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Duração padrão da sessão</label>
+                <select id="defaultDuration">
+                    <option value="30">30 minutos</option>
+                    <option value="45">45 minutos</option>
+                    <option value="60" selected>1 hora</option>
+                    <option value="90">1h30</option>
+                    <option value="120">2 horas</option>
+                </select>
+            </div>
+
+            <button class="btn btn-primary" onclick="nextStep(3)">Continuar →</button>
+            <button class="btn btn-secondary" onclick="prevStep(1)">← Voltar</button>
+        </div>
+
+        <!-- Step 3: Primeiro Cliente -->
+        <div class="step-content" id="step3">
+            <div class="welcome-icon">👤</div>
+            <h2 class="step-title">Seu Primeiro Cliente</h2>
+            <p class="step-subtitle">Que tal adicionar um cliente agora? (Opcional)</p>
+
+            <div class="first-client-form">
+                <h4>➕ Adicionar Cliente</h4>
+                <div class="form-group">
+                    <label>Nome do cliente</label>
+                    <input type="text" id="firstClientName" placeholder="Ex: Maria Silva">
+                </div>
+                <div class="form-group">
+                    <label>Telefone</label>
+                    <input type="tel" id="firstClientPhone" placeholder="(11) 99999-9999">
+                </div>
+                <div class="form-group">
+                    <label>Email (opcional)</label>
+                    <input type="email" id="firstClientEmail" placeholder="cliente@email.com">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="finishOnboarding()">🎉 Começar a usar!</button>
+            <button class="btn btn-secondary" onclick="prevStep(2)">← Voltar</button>
+            
+            <div class="skip-link">
+                <a href="#" onclick="skipFirstClient()">Pular e adicionar clientes depois</a>
+            </div>
+        </div>
+
+        <!-- Step 4: Sucesso -->
+        <div class="step-content" id="step4">
+            <div class="success-animation">
+                <div class="checkmark">✅</div>
+            </div>
+            <h2 class="step-title">Tudo Pronto!</h2>
+            <p class="step-subtitle">Seu TheraFlow está configurado e pronto para usar</p>
+
+            <div style="background: #f0fdf4; padding: 20px; border-radius: 15px; margin: 20px 0;">
+                <p style="color: #166534; margin-bottom: 10px;"><strong>✨ Próximos passos:</strong></p>
+                <ul style="color: #166534; margin-left: 20px; line-height: 1.8;">
+                    <li>Adicione mais clientes</li>
+                    <li>Agende sua primeira sessão</li>
+                    <li>Explore o calendário</li>
+                </ul>
+            </div>
+
+            <button class="btn btn-primary" onclick="goToApp()">Ir para o App →</button>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script>
+        let currentStep = 1;
+
+        // Verifica se já fez onboarding
+        if (TheraFlowData.hasCompletedOnboarding()) {
+            window.location.href = 'app.html';
+        }
+
+        function nextStep(step) {
+            // Validação básica
+            if (currentStep === 1) {
+                const name = document.getElementById('displayName').value.trim();
+                if (!name) {
+                    alert('Por favor, informe como você quer ser chamado(a)');
+                    return;
+                }
+            }
+
+            // Atualiza dots
+            document.getElementById('dot' + currentStep).classList.remove('active');
+            document.getElementById('dot' + currentStep).classList.add('completed');
+            if (document.getElementById('dot' + step)) {
+                document.getElementById('dot' + step).classList.add('active');
+            }
+
+            // Troca de step
+            document.getElementById('step' + currentStep).classList.remove('active');
+            document.getElementById('step' + step).classList.add('active');
+            currentStep = step;
+        }
+
+        function prevStep(step) {
+            document.getElementById('dot' + currentStep).classList.remove('active');
+            document.getElementById('dot' + step).classList.remove('completed');
+            document.getElementById('dot' + step).classList.add('active');
+
+            document.getElementById('step' + currentStep).classList.remove('active');
+            document.getElementById('step' + step).classList.add('active');
+            currentStep = step;
+        }
+
+        function finishOnboarding() {
+            // Salva dados do perfil usando TheraFlowData
+            var displayName = document.getElementById('displayName').value.trim();
+            var specialty = document.getElementById('specialty').value;
+            var sessionValue = document.getElementById('sessionValue').value;
+            var defaultDuration = parseInt(document.getElementById('defaultDuration').value) || 60;
+            
+            var profile = TheraFlowData.getProfile();
+            profile.displayName = displayName;
+            profile.nome = displayName;
+            profile.especialidade = specialty;
+            profile.valorSessao = sessionValue;
+            profile.duracaoPadrao = defaultDuration;
+            profile.preferences = {
+                reminders: document.getElementById('reminders').checked,
+                reminder2h: document.getElementById('reminder2h').checked,
+                dailySummary: document.getElementById('dailySummary').checked,
+                weeklyReport: document.getElementById('weeklyReport').checked
+            };
+            
+            TheraFlowData.saveProfile(profile);
+
+            // Salva primeiro cliente se preenchido
+            var clientName = document.getElementById('firstClientName').value.trim();
+            if (clientName) {
+                TheraFlowData.addClient({
+                    nome: clientName,
+                    telefone: document.getElementById('firstClientPhone').value.trim(),
+                    email: document.getElementById('firstClientEmail').value.trim(),
+                    notas: ''
+                });
+            }
+
+            // Marca onboarding como feito
+            TheraFlowData.completeOnboarding();
+
+            // Mostra tela de sucesso
+            document.getElementById('step3').classList.remove('active');
+            document.getElementById('step4').classList.add('active');
+        }
+
+        function skipFirstClient() {
+            document.getElementById('firstClientName').value = '';
+            finishOnboarding();
+        }
+
+        function goToApp() {
+            window.location.href = 'app.html';
+        }
+    </script>
+</body>
+</html>

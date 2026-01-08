@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Financeiro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #f5f5f5; padding-bottom: 80px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
+        .header h1 { font-size: 1.5em; margin-bottom: 15px; }
+        .month-selector {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px;
+        }
+        .month-selector button { background: none; border: none; color: white; font-size: 1.5em; cursor: pointer; }
+        .month-selector span { font-weight: 600; }
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+        .summary-card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; }
+        .summary-total { text-align: center; margin-bottom: 25px; }
+        .summary-total .label { font-size: 0.9em; color: #666; margin-bottom: 8px; }
+        .summary-total .value { font-size: 3em; font-weight: bold; color: #10b981; }
+        .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .summary-item { text-align: center; padding: 15px; background: #f9f9f9; border-radius: 10px; }
+        .summary-item .label { font-size: 0.85em; color: #666; margin-bottom: 8px; }
+        .summary-item .value { font-size: 1.5em; font-weight: bold; }
+        .summary-item .value.green { color: #10b981; }
+        .summary-item .value.orange { color: #f59e0b; }
+        .summary-item .value.purple { color: #667eea; }
+        .section { margin-bottom: 30px; }
+        .section-title { font-size: 1.2em; margin-bottom: 15px; color: #333; display: flex; justify-content: space-between; align-items: center; }
+        .section-title .count { font-size: 0.75em; color: #999; font-weight: normal; background: #f0f0f0; padding: 4px 10px; border-radius: 10px; }
+        .payment-card {
+            background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px;
+            cursor: pointer; transition: all 0.2s; border-left: 4px solid #f59e0b;
+        }
+        .payment-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .payment-card.paid { border-left-color: #10b981; cursor: default; }
+        .payment-card .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .payment-card .client { font-weight: 600; color: #333; }
+        .payment-card .pay-value { font-size: 1.2em; font-weight: bold; color: #f59e0b; }
+        .payment-card.paid .pay-value { color: #10b981; }
+        .payment-card .details { font-size: 0.9em; color: #666; }
+        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 600; background: #d1fae5; color: #065f46; margin-left: 8px; }
+        .empty-state { text-align: center; padding: 40px; color: #999; }
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-around; padding: 12px 0; z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #999; text-decoration: none; font-size: 0.75em; }
+        .nav-item.active { color: #667eea; }
+        .nav-item .icon { font-size: 1.8em; margin-bottom: 3px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Financeiro</h1>
+        <div class="month-selector">
+            <button onclick="changeMonth(-1)">◀</button>
+            <span id="currentMonth">Janeiro 2026</span>
+            <button onclick="changeMonth(1)">▶</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="summary-card">
+            <div class="summary-total">
+                <div class="label">Total do Mês</div>
+                <div class="value" id="totalValue">R$ 0</div>
+            </div>
+            <div class="summary-grid">
+                <div class="summary-item"><div class="label">✓ Recebido</div><div class="value green" id="receivedValue">R$ 0</div></div>
+                <div class="summary-item"><div class="label">⏳ Pendente</div><div class="value orange" id="pendingValue">R$ 0</div></div>
+                <div class="summary-item"><div class="label">📅 Sessões</div><div class="value purple" id="sessionsCount">0</div></div>
+                <div class="summary-item"><div class="label">📊 Ticket Médio</div><div class="value purple" id="averageValue">R$ 0</div></div>
+            </div>
+        </div>
+
+        <div class="section" id="pendingSection">
+            <h2 class="section-title">Pagamentos Pendentes <span class="count" id="pendingCount">0</span></h2>
+            <div id="pendingList"></div>
+        </div>
+
+        <div class="section" id="paidSection">
+            <h2 class="section-title">Pagamentos Recebidos <span class="count" id="paidCount">0</span></h2>
+            <div id="paidList"></div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="app.html" class="nav-item"><span class="icon">🏠</span><span>Início</span></a>
+        <a href="clientes.html" class="nav-item"><span class="icon">👥</span><span>Clientes</span></a>
+        <a href="agenda.html" class="nav-item"><span class="icon">📅</span><span>Agenda</span></a>
+        <a href="financeiro.html" class="nav-item active"><span class="icon">💰</span><span>Financeiro</span></a>
+        <a href="perfil.html" class="nav-item"><span class="icon">👤</span><span>Perfil</span></a>
+    </nav>
+
+    <script src="js/data.js"></script>
+    <script src="js/ui.js"></script>
+    <script>
+        if (!TheraFlowData.isLoggedIn()) { window.location.href = 'index.html'; }
+
+        var currentYear = new Date().getFullYear();
+        var currentMonth = new Date().getMonth() + 1;
+
+        var meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+            if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+            loadFinanceData();
+        }
+
+        function loadFinanceData() {
+            document.getElementById('currentMonth').textContent = meses[currentMonth] + ' ' + currentYear;
+            
+            var report = TheraFlowData.getFinanceReport(currentYear, currentMonth);
+            
+            document.getElementById('totalValue').textContent = TheraFlowUI.formatCurrency(report.total);
+            document.getElementById('receivedValue').textContent = TheraFlowUI.formatCurrency(report.totalReceived);
+            document.getElementById('pendingValue').textContent = TheraFlowUI.formatCurrency(report.totalPending);
+            document.getElementById('sessionsCount').textContent = report.totalSessions;
+            document.getElementById('averageValue').textContent = report.totalSessions > 0 
+                ? TheraFlowUI.formatCurrency(report.total / report.totalSessions) : 'R$ 0';
+
+            // Buscar sessões do mês
+            var monthStr = currentYear + '-' + String(currentMonth).padStart(2, '0');
+            var allSessions = TheraFlowData.getSessions();
+            var monthSessions = [];
+            var pendingSessions = [];
+            var paidSessions = [];
+            
+            for (var i = 0; i < allSessions.length; i++) {
+                var s = allSessions[i];
+                if (s.data && s.data.indexOf(monthStr) === 0) {
+                    monthSessions.push(s);
+                    if (s.pagamento === 'pendente') {
+                        pendingSessions.push(s);
+                    } else if (s.pagamento === 'pago') {
+                        paidSessions.push(s);
+                    }
+                }
+            }
+
+            document.getElementById('pendingCount').textContent = pendingSessions.length;
+            document.getElementById('paidCount').textContent = paidSessions.length;
+
+            // Renderizar pendentes
+            var pendingList = document.getElementById('pendingList');
+            if (pendingSessions.length === 0) {
+                pendingList.innerHTML = '<div class="empty-state">🎉 Nenhum pagamento pendente!</div>';
+            } else {
+                var pendingHtml = '';
+                for (var j = 0; j < pendingSessions.length; j++) {
+                    var ps = pendingSessions[j];
+                    pendingHtml += '<div class="payment-card" onclick="confirmPayment(' + ps.id + ')">' +
+                        '<div class="header-row">' +
+                            '<span class="client">' + ps.clienteNome + '</span>' +
+                            '<span class="pay-value">' + TheraFlowUI.formatCurrency(ps.valor) + '</span>' +
+                        '</div>' +
+                        '<div class="details">' + TheraFlowUI.formatDateBR(ps.data) + ' • ' + ps.tipo + '</div>' +
+                    '</div>';
+                }
+                pendingList.innerHTML = pendingHtml;
+            }
+
+            // Renderizar pagos
+            var paidList = document.getElementById('paidList');
+            if (paidSessions.length === 0) {
+                paidList.innerHTML = '<div class="empty-state">Nenhum pagamento recebido neste mês</div>';
+            } else {
+                var paidHtml = '';
+                for (var k = 0; k < paidSessions.length; k++) {
+                    var pds = paidSessions[k];
+                    paidHtml += '<div class="payment-card paid">' +
+                        '<div class="header-row">' +
+                            '<span class="client">' + pds.clienteNome + ' <span class="status-badge">✓ Pago</span></span>' +
+                            '<span class="pay-value">' + TheraFlowUI.formatCurrency(pds.valor) + '</span>' +
+                        '</div>' +
+                        '<div class="details">' + TheraFlowUI.formatDateBR(pds.data) + ' • ' + pds.tipo + '</div>' +
+                    '</div>';
+                }
+                paidList.innerHTML = paidHtml;
+            }
+        }
+
+        function confirmPayment(sessionId) {
+            var session = TheraFlowData.getSessionById(sessionId);
+            if (!session) return;
+
+            var content = 
+                '<div style="text-align: center; padding: 20px;">' +
+                    '<div style="font-size: 4em; margin-bottom: 15px;">💰</div>' +
+                    '<h2 style="margin-bottom: 10px;">Confirmar Pagamento</h2>' +
+                    '<p style="color: #666; margin-bottom: 20px;">' +
+                        '<strong>' + session.clienteNome + '</strong><br>' +
+                        session.tipo + ' - ' + TheraFlowUI.formatDateBR(session.data) +
+                    '</p>' +
+                    '<div style="font-size: 2.5em; font-weight: bold; color: #10b981;">' +
+                        TheraFlowUI.formatCurrency(session.valor) +
+                    '</div>' +
+                '</div>';
+
+            TheraFlowUI.showModal({
+                title: 'Receber Pagamento',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', class: 'tf-btn-secondary', onClick: function() { TheraFlowUI.closeModal(); } },
+                    { text: '✓ Confirmar Recebimento', class: 'tf-btn-success', onClick: function() { markAsPaid(sessionId); } }
+                ]
+            });
+        }
+
+        function markAsPaid(sessionId) {
+            TheraFlowData.markSessionPaid(sessionId);
+            TheraFlowUI.closeModal();
+            TheraFlowUI.toast('Pagamento registrado com sucesso!', 'success');
+            loadFinanceData();
+        }
+
+        loadFinanceData();
+    </script>
+</body>
+</html>

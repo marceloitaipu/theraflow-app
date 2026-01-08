@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Clientes</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #f5f5f5; padding-bottom: 80px; }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 1.5em; margin-bottom: 15px; }
+        .search-bar { display: flex; gap: 10px; align-items: center; }
+        .search-bar input { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 1em; }
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+        .stats {
+            background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; justify-content: space-around;
+        }
+        .stat-item { text-align: center; }
+        .stat-item .number { font-size: 2em; font-weight: bold; color: #667eea; }
+        .stat-item .label { font-size: 0.85em; color: #666; margin-top: 5px; }
+        .client-card {
+            background: white; padding: 20px; border-radius: 15px; margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s;
+        }
+        .client-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .client-card .name { font-size: 1.2em; font-weight: 600; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+        .client-card .avatar {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;
+        }
+        .client-card .info { font-size: 0.9em; color: #666; margin-bottom: 5px; margin-left: 50px; }
+        .client-card .stats-row {
+            display: flex; justify-content: space-between; margin-top: 12px; padding-top: 12px;
+            border-top: 1px solid #f0f0f0; font-size: 0.85em; color: #888;
+        }
+        .empty-state { text-align: center; padding: 60px 20px; color: #999; }
+        .empty-state .icon { font-size: 4em; margin-bottom: 15px; }
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0; background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-around; padding: 12px 0; z-index: 100;
+        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #999; text-decoration: none; font-size: 0.75em; }
+        .nav-item.active { color: #667eea; }
+        .nav-item .icon { font-size: 1.8em; margin-bottom: 3px; }
+        .fab {
+            position: fixed; bottom: 85px; right: 20px; width: 60px; height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; color: white; font-size: 2em;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); cursor: pointer; z-index: 100; border: none;
+        }
+        .fab:hover { transform: scale(1.1); }
+        .tf-form-group { margin-bottom: 15px; }
+        .tf-form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #333; }
+        .tf-form-group input, .tf-form-group textarea { 
+            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1em; 
+        }
+        .tf-form-group input:focus, .tf-form-group textarea:focus { 
+            outline: none; border-color: #667eea; 
+        }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.8em; }
+        .tf-badge-success { background: #d1fae5; color: #059669; }
+        .tf-badge-warning { background: #fef3c7; color: #d97706; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Meus Clientes</h1>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="🔍 Buscar cliente...">
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat-item"><div class="number" id="totalClients">0</div><div class="label">Total</div></div>
+            <div class="stat-item"><div class="number" id="activeClients">0</div><div class="label">Ativos</div></div>
+            <div class="stat-item"><div class="number" id="totalSessions">0</div><div class="label">Sessões</div></div>
+        </div>
+        <div id="clientList"></div>
+    </div>
+
+    <button class="fab" onclick="showAddClientModal()">+</button>
+
+    <nav class="bottom-nav">
+        <a href="app.html" class="nav-item"><span class="icon">🏠</span><span>Início</span></a>
+        <a href="clientes.html" class="nav-item active"><span class="icon">👥</span><span>Clientes</span></a>
+        <a href="agenda.html" class="nav-item"><span class="icon">📅</span><span>Agenda</span></a>
+        <a href="financeiro.html" class="nav-item"><span class="icon">💰</span><span>Finanças</span></a>
+        <a href="perfil.html" class="nav-item"><span class="icon">👤</span><span>Perfil</span></a>
+    </nav>
+
+    <script src="js/data.js"></script>
+    <script src="js/ui.js"></script>
+    <script>
+        // Verificar login
+        if (!TheraFlowData.isLoggedIn()) { 
+            window.location.href = 'index.html'; 
+        }
+
+        // Garantir que os dados de exemplo existam
+        if (TheraFlowData.getClients().length === 0) {
+            TheraFlowData.resetData();
+        }
+
+        function loadClients() {
+            var clients = TheraFlowData.getClients();
+            var container = document.getElementById('clientList');
+            
+            console.log('Clientes carregados:', clients);
+            
+            // Stats
+            document.getElementById('totalClients').textContent = clients.length;
+            var totalSessions = 0;
+            var activeCount = 0;
+            for (var i = 0; i < clients.length; i++) {
+                totalSessions += (clients[i].sessoes || 0);
+                if (clients[i].sessoes > 0) activeCount++;
+            }
+            document.getElementById('totalSessions').textContent = totalSessions;
+            document.getElementById('activeClients').textContent = activeCount;
+
+            if (clients.length === 0) {
+                container.innerHTML = 
+                    '<div class="empty-state">' +
+                        '<div class="icon">👥</div>' +
+                        '<p>Nenhum cliente cadastrado</p>' +
+                        '<button onclick="showAddClientModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1em; cursor: pointer; margin-top: 15px;">+ Adicionar Cliente</button>' +
+                    '</div>';
+                return;
+            }
+
+            var html = '';
+            for (var i = 0; i < clients.length; i++) {
+                var client = clients[i];
+                var initial = client.nome ? client.nome.charAt(0).toUpperCase() : '?';
+                var createdDate = client.createdAt ? TheraFlowUI.formatDateBR(client.createdAt.split('T')[0]) : 'N/A';
+                
+                html += '<div class="client-card" onclick="showClientDetails(' + client.id + ')">' +
+                    '<div class="name">' +
+                        '<div class="avatar">' + initial + '</div>' +
+                        (client.nome || 'Sem nome') +
+                    '</div>' +
+                    '<div class="info">📱 ' + (client.telefone || 'Não informado') + '</div>' +
+                    '<div class="info">📧 ' + (client.email || 'Não informado') + '</div>' +
+                    '<div class="stats-row">' +
+                        '<span>' + (client.sessoes || 0) + ' sessões</span>' +
+                        '<span>Desde ' + createdDate + '</span>' +
+                    '</div>' +
+                '</div>';
+            }
+            container.innerHTML = html;
+        }
+
+        function showClientDetails(id) {
+            var client = TheraFlowData.getClientById(id);
+            if (!client) {
+                TheraFlowUI.toast('Cliente não encontrado', 'error');
+                return;
+            }
+
+            var sessions = TheraFlowData.getSessionsByClient(id);
+            var sessionsHtml = '';
+            
+            if (sessions.length === 0) {
+                sessionsHtml = '<p style="color: #999; text-align: center;">Nenhuma sessão registrada</p>';
+            } else {
+                var displaySessions = sessions.slice(0, 5);
+                for (var i = 0; i < displaySessions.length; i++) {
+                    var s = displaySessions[i];
+                    var badgeClass = s.pagamento === 'pago' ? 'tf-badge-success' : 'tf-badge-warning';
+                    sessionsHtml += '<div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">' +
+                        '<span>' + TheraFlowUI.formatDateBR(s.data) + ' - ' + s.tipo + '</span>' +
+                        '<span class="status-badge ' + badgeClass + '">' + TheraFlowUI.formatCurrency(s.valor) + '</span>' +
+                    '</div>';
+                }
+            }
+
+            var initial = client.nome ? client.nome.charAt(0).toUpperCase() : '?';
+            var content = 
+                '<div style="text-align: center; margin-bottom: 20px;">' +
+                    '<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 2em; font-weight: bold; margin: 0 auto 15px;">' +
+                        initial +
+                    '</div>' +
+                    '<h2 style="margin-bottom: 5px;">' + client.nome + '</h2>' +
+                    '<p style="color: #666;">' + (client.sessoes || 0) + ' atendimentos</p>' +
+                '</div>' +
+
+                '<div style="background: #f8f9ff; padding: 15px; border-radius: 10px; margin-bottom: 20px;">' +
+                    '<p style="margin-bottom: 8px;"><strong>📱</strong> ' + (client.telefone || 'Não informado') + '</p>' +
+                    '<p style="margin-bottom: 8px;"><strong>📧</strong> ' + (client.email || 'Não informado') + '</p>' +
+                    (client.notas ? '<p><strong>📝</strong> ' + client.notas + '</p>' : '') +
+                '</div>' +
+
+                '<h4 style="margin-bottom: 10px;">Últimas Sessões</h4>' +
+                '<div style="max-height: 200px; overflow-y: auto;">' + sessionsHtml + '</div>' +
+
+                '<ul style="margin-top: 20px; list-style: none; padding: 0;">' +
+                    '<li onclick="scheduleForClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f8f9fa; border-radius: 10px; cursor: pointer;">' +
+                        '<span style="font-size: 1.5em;">📅</span>' +
+                        '<div><strong style="display: block;">Agendar Atendimento</strong><span style="font-size: 0.85em; color: #666;">Criar nova sessão</span></div>' +
+                    '</li>' +
+                    '<li onclick="editClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f8f9fa; border-radius: 10px; cursor: pointer;">' +
+                        '<span style="font-size: 1.5em;">✏️</span>' +
+                        '<div><strong style="display: block;">Editar Cliente</strong><span style="font-size: 0.85em; color: #666;">Alterar informações</span></div>' +
+                    '</li>' +
+                    '<li onclick="confirmDeleteClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #fff5f5; border-radius: 10px; cursor: pointer; color: #ef4444;">' +
+                        '<span style="font-size: 1.5em;">🗑️</span>' +
+                        '<div><strong style="display: block;">Excluir Cliente</strong><span style="font-size: 0.85em; color: #666;">Remover cadastro</span></div>' +
+                    '</li>' +
+                '</ul>';
+
+            TheraFlowUI.showModal({ title: 'Detalhes do Cliente', content: content });
+        }
+
+        function showAddClientModal() {
+            var content = 
+                '<form id="addClientForm">' +
+                    '<div class="tf-form-group"><label>Nome *</label><input type="text" name="nome" required placeholder="Nome completo"></div>' +
+                    '<div class="tf-form-group"><label>Telefone</label><input type="tel" name="telefone" placeholder="(11) 99999-9999"></div>' +
+                    '<div class="tf-form-group"><label>Email</label><input type="email" name="email" placeholder="cliente@email.com"></div>' +
+                    '<div class="tf-form-group"><label>Observações</label><textarea name="notas" rows="3" placeholder="Anotações sobre o cliente..."></textarea></div>' +
+                '</form>';
+
+            TheraFlowUI.showModal({
+                title: '➕ Novo Cliente',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', class: 'tf-btn-secondary', onClick: function() { TheraFlowUI.closeModal(); } },
+                    { text: 'Salvar', class: 'tf-btn-primary', onClick: function() { saveNewClient(); } }
+                ]
+            });
+        }
+
+        function saveNewClient() {
+            var form = document.getElementById('addClientForm');
+            var nome = form.nome.value.trim();
+            
+            if (!nome) { 
+                TheraFlowUI.toast('Nome é obrigatório', 'error'); 
+                return; 
+            }
+
+            TheraFlowData.addClient({
+                nome: nome,
+                telefone: form.telefone.value.trim() || '',
+                email: form.email.value.trim() || '',
+                notas: form.notas.value.trim() || ''
+            });
+
+            TheraFlowUI.closeModal();
+            TheraFlowUI.toast('Cliente adicionado com sucesso!', 'success');
+            loadClients();
+        }
+
+        function editClient(id) {
+            TheraFlowUI.closeModal();
+            var client = TheraFlowData.getClientById(id);
+            if (!client) return;
+            
+            setTimeout(function() {
+                var content = 
+                    '<form id="editClientForm">' +
+                        '<div class="tf-form-group"><label>Nome *</label><input type="text" name="nome" value="' + (client.nome || '') + '" required></div>' +
+                        '<div class="tf-form-group"><label>Telefone</label><input type="tel" name="telefone" value="' + (client.telefone || '') + '"></div>' +
+                        '<div class="tf-form-group"><label>Email</label><input type="email" name="email" value="' + (client.email || '') + '"></div>' +
+                        '<div class="tf-form-group"><label>Observações</label><textarea name="notas" rows="3">' + (client.notas || '') + '</textarea></div>' +
+                    '</form>';
+
+                TheraFlowUI.showModal({
+                    title: '✏️ Editar Cliente',
+                    content: content,
+                    buttons: [
+                        { text: 'Cancelar', class: 'tf-btn-secondary', onClick: function() { TheraFlowUI.closeModal(); } },
+                        { text: 'Salvar', class: 'tf-btn-primary', onClick: function() { updateClient(id); } }
+                    ]
+                });
+            }, 250);
+        }
+
+        function updateClient(id) {
+            var form = document.getElementById('editClientForm');
+            
+            TheraFlowData.updateClient(id, {
+                nome: form.nome.value.trim(),
+                telefone: form.telefone.value.trim(),
+                email: form.email.value.trim(),
+                notas: form.notas.value.trim()
+            });
+
+            TheraFlowUI.closeModal();
+            TheraFlowUI.toast('Cliente atualizado!', 'success');
+            loadClients();
+        }
+
+        function confirmDeleteClient(id) {
+            TheraFlowUI.closeModal();
+            setTimeout(function() {
+                TheraFlowUI.confirm('Deseja realmente excluir este cliente?', function() {
+                    TheraFlowData.deleteClient(id);
+                    TheraFlowUI.toast('Cliente excluído', 'success');
+                    loadClients();
+                });
+            }, 250);
+        }
+
+        function scheduleForClient(id) {
+            TheraFlowUI.closeModal();
+            localStorage.setItem('theraflow_schedule_client', id.toString());
+            window.location.href = 'app.html';
+        }
+
+        // Busca
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            var query = e.target.value.toLowerCase();
+            var cards = document.querySelectorAll('.client-card');
+            for (var i = 0; i < cards.length; i++) {
+                var name = cards[i].querySelector('.name').textContent.toLowerCase();
+                cards[i].style.display = name.indexOf(query) !== -1 ? 'block' : 'none';
+            }
+        });
+
+        // Inicializar
+        loadClients();
+    </script>
+</body>
+</html>
