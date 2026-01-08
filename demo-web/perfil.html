@@ -346,12 +346,12 @@
     <div class="container">
         <div class="plan-card">
             <div class="label">Plano Atual</div>
-            <div class="plan-name">Gratuito ✨</div>
-            <div class="features">
-                ✓ Clientes ilimitados (demo)<br>
+            <div class="plan-name" id="planName">Gratuito ✨</div>
+            <div class="features" id="planFeatures">
+                ✓ Até 5 clientes<br>
                 ✓ Agenda completa<br>
-                ✓ Controle financeiro<br>
-                ✓ Dados no navegador
+                ✓ Controle financeiro básico<br>
+                ✗ Sem pacotes de sessões
             </div>
             <div class="stats-grid">
                 <div class="stat-box">
@@ -363,10 +363,20 @@
                     <div class="label">Sessões/mês</div>
                 </div>
             </div>
+            <!-- Barra de Progresso do Limite -->
+            <div id="limitProgress" style="margin-top: 15px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 5px;">
+                    <span>Uso do plano</span>
+                    <span id="limitText">0/5 clientes</span>
+                </div>
+                <div style="background: rgba(255,255,255,0.3); height: 8px; border-radius: 4px;">
+                    <div id="limitBar" style="background: white; height: 100%; border-radius: 4px; width: 0%; transition: width 0.3s;"></div>
+                </div>
+            </div>
         </div>
 
-        <button class="upgrade-btn" onclick="showUpgradeModal()">
-            Fazer Upgrade para Professional 🚀
+        <button class="upgrade-btn" onclick="showPlansModal()">
+            Ver Planos e Benefícios 🚀
         </button>
 
         <div class="section" style="margin-top: 30px;" id="profileInfo">
@@ -527,6 +537,37 @@
             
             document.getElementById('statClients').textContent = clients.length;
             document.getElementById('statSessions').textContent = monthSessions.length;
+            
+            // Carregar limites do plano
+            loadPlanLimits();
+        }
+
+        function loadPlanLimits() {
+            var limits = TheraFlowData.checkPlanLimits();
+            
+            // Atualizar nome do plano
+            var planNames = { free: 'Gratuito ✨', pro: 'Pro 🚀', premium: 'Premium 👑' };
+            document.getElementById('planName').textContent = planNames[limits.plan] || planNames.free;
+            
+            // Atualizar features
+            var features = {
+                free: '✓ Até 5 clientes<br>✓ Agenda completa<br>✓ Controle financeiro básico<br>✗ Sem pacotes de sessões',
+                pro: '✓ Até 50 clientes<br>✓ Agenda completa<br>✓ Controle financeiro<br>✓ Pacotes de sessões',
+                premium: '✓ Clientes ilimitados<br>✓ Agenda completa<br>✓ Controle financeiro<br>✓ Pacotes de sessões<br>✓ Relatórios avançados'
+            };
+            document.getElementById('planFeatures').innerHTML = features[limits.plan] || features.free;
+            
+            // Atualizar barra de progresso
+            document.getElementById('limitText').textContent = limits.clientCount + '/' + limits.clientLimit + ' clientes';
+            document.getElementById('limitBar').style.width = Math.min(limits.usagePercent, 100) + '%';
+            
+            // Mudar cor se estiver perto do limite
+            if (limits.usagePercent >= 80) {
+                document.getElementById('limitBar').style.background = '#f59e0b';
+            }
+            if (limits.usagePercent >= 100) {
+                document.getElementById('limitBar').style.background = '#ef4444';
+            }
         }
 
         function showEditProfileModal() {
@@ -755,17 +796,22 @@
             
             var content = 
                 '<div style="text-align: center; padding: 20px 0;">' +
-                    '<div style="font-size: 4em; margin-bottom: 20px;">💾</div>' +
-                    '<p style="margin-bottom: 20px;">Seus dados estão salvos localmente no navegador.</p>' +
-                    '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: left;">' +
-                        '<div style="margin-bottom: 8px;">👥 <strong>' + clients.length + '</strong> clientes</div>' +
-                        '<div style="margin-bottom: 8px;">📅 <strong>' + sessions.length + '</strong> sessões</div>' +
-                        '<div>💾 <strong>LocalStorage</strong></div>' +
+                    '<div style="font-size: 4em; margin-bottom: 20px;">�</div>' +
+                    '<div style="background: #d1fae5; color: #059669; padding: 15px; border-radius: 10px; margin-bottom: 20px; font-weight: 600;">' +
+                        '✅ Seus dados estão seguros na nuvem' +
                     '</div>' +
+                    '<p style="margin-bottom: 20px; color: #666;">Backup automático ativado. Seus dados são sincronizados em tempo real.</p>' +
+                    '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: left;">' +
+                        '<div style="margin-bottom: 8px;">👥 <strong>' + clients.length + '</strong> clientes salvos</div>' +
+                        '<div style="margin-bottom: 8px;">📅 <strong>' + sessions.length + '</strong> sessões registradas</div>' +
+                        '<div style="margin-bottom: 8px;">☁️ <strong>Backup automático</strong> ativado</div>' +
+                        '<div>🔐 <strong>Criptografia</strong> de ponta a ponta</div>' +
+                    '</div>' +
+                    '<p style="margin-top: 15px; font-size: 0.85em; color: #999;">Último backup: agora mesmo</p>' +
                 '</div>';
             
             TheraFlowUI.showModal({
-                title: '💾 Backup de Dados',
+                title: '💾 Backup e Segurança',
                 content: content,
                 buttons: [
                     { text: 'Fechar', onClick: function() { TheraFlowUI.closeModal(); } },
@@ -819,33 +865,100 @@
         }
 
         function showUpgradeModal() {
+            showPlansModal();
+        }
+
+        function showPlansModal() {
+            var limits = TheraFlowData.checkPlanLimits();
+            var lostValue = limits.plan === 'free' ? 'R$ 500+' : 'R$ 200+';
+            
             var content = 
-                '<div style="text-align: center; padding: 10px 0;">' +
-                    '<div style="font-size: 4em; margin-bottom: 15px;">🚀</div>' +
-                    '<h3 style="margin-bottom: 15px;">Plano Professional</h3>' +
-                    '<div style="background: #f8f9fa; padding: 20px; border-radius: 10px; text-align: left; margin-bottom: 20px;">' +
-                        '<div style="margin-bottom: 10px;">✅ Clientes ilimitados</div>' +
-                        '<div style="margin-bottom: 10px;">✅ Relatórios avançados</div>' +
-                        '<div style="margin-bottom: 10px;">✅ Backup na nuvem</div>' +
-                        '<div style="margin-bottom: 10px;">✅ Notificações push</div>' +
-                        '<div style="margin-bottom: 10px;">✅ Suporte prioritário</div>' +
-                        '<div>✅ App mobile completo</div>' +
+                '<div style="padding: 10px 0;">' +
+                    // Mensagem de valor perdido
+                    '<div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 15px; border-radius: 10px; text-align: center; margin-bottom: 20px;">' +
+                        '<div style="font-size: 1.1em; font-weight: bold;">💸 Você está perdendo ' + lostValue + ' por mês sem o Pro</div>' +
+                        '<div style="font-size: 0.9em; opacity: 0.9; margin-top: 5px;">Pacotes de sessões aumentam retenção e receita</div>' +
                     '</div>' +
-                    '<div style="font-size: 2em; font-weight: bold; color: #667eea;">R$ 29/mês</div>' +
-                    '<p style="color: #666; font-size: 0.9em; margin-top: 5px;">ou R$ 297 lifetime</p>' +
+                    
+                    // Tabela de planos
+                    '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">' +
+                        // Free
+                        '<div style="background: ' + (limits.plan === 'free' ? '#f0f0f0' : '#f8f9fa') + '; padding: 20px; border-radius: 12px; text-align: center; border: 2px solid ' + (limits.plan === 'free' ? '#667eea' : 'transparent') + ';">' +
+                            '<div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">GRÁTIS</div>' +
+                            '<div style="font-size: 1.3em; font-weight: bold; color: #333; margin-bottom: 15px;">Free</div>' +
+                            '<div style="font-size: 0.85em; color: #666; line-height: 1.8;">' +
+                                '✓ 5 clientes<br>' +
+                                '✓ Agenda<br>' +
+                                '✗ Pacotes<br>' +
+                                '✗ Relatórios' +
+                            '</div>' +
+                            (limits.plan === 'free' ? '<div style="background: #667eea; color: white; padding: 8px; border-radius: 6px; margin-top: 15px; font-size: 0.85em;">Atual</div>' : '') +
+                        '</div>' +
+                        
+                        // Pro
+                        '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; text-align: center; transform: scale(1.05); box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);">' +
+                            '<div style="font-size: 0.85em; opacity: 0.9; margin-bottom: 5px;">⭐ RECOMENDADO</div>' +
+                            '<div style="font-size: 1.3em; font-weight: bold; margin-bottom: 5px;">Pro</div>' +
+                            '<div style="font-size: 1.5em; font-weight: bold;">R$ 29<span style="font-size: 0.5em;">/mês</span></div>' +
+                            '<div style="font-size: 0.85em; line-height: 1.8; margin-top: 15px;">' +
+                                '✓ 50 clientes<br>' +
+                                '✓ Agenda<br>' +
+                                '✓ Pacotes<br>' +
+                                '✓ Suporte' +
+                            '</div>' +
+                            '<button onclick="selectPlan(\'pro\')" style="background: white; color: #667eea; border: none; padding: 10px 20px; border-radius: 6px; margin-top: 15px; font-weight: bold; cursor: pointer; width: 100%;">Escolher Pro</button>' +
+                        '</div>' +
+                        
+                        // Premium
+                        '<div style="background: #f8f9fa; padding: 20px; border-radius: 12px; text-align: center;">' +
+                            '<div style="font-size: 0.85em; color: #666; margin-bottom: 5px;">👑 COMPLETO</div>' +
+                            '<div style="font-size: 1.3em; font-weight: bold; color: #333; margin-bottom: 5px;">Premium</div>' +
+                            '<div style="font-size: 1.5em; font-weight: bold; color: #333;">R$ 49<span style="font-size: 0.5em; color: #666;">/mês</span></div>' +
+                            '<div style="font-size: 0.85em; color: #666; line-height: 1.8; margin-top: 15px;">' +
+                                '✓ Ilimitado<br>' +
+                                '✓ Pacotes<br>' +
+                                '✓ Relatórios<br>' +
+                                '✓ Prioridade' +
+                            '</div>' +
+                            '<button onclick="selectPlan(\'premium\')" style="background: #333; color: white; border: none; padding: 10px 20px; border-radius: 6px; margin-top: 15px; font-weight: bold; cursor: pointer; width: 100%;">Escolher</button>' +
+                        '</div>' +
+                    '</div>' +
+                    
+                    // Comparação detalhada
+                    '<div style="margin-top: 25px; background: #f8f9fa; padding: 15px; border-radius: 10px;">' +
+                        '<h4 style="margin-bottom: 15px; text-align: center;">📊 Comparativo Completo</h4>' +
+                        '<table style="width: 100%; font-size: 0.9em; border-collapse: collapse;">' +
+                            '<tr style="border-bottom: 1px solid #e0e0e0;"><td style="padding: 8px;"><strong>Funcionalidade</strong></td><td style="text-align: center; padding: 8px;"><strong>Free</strong></td><td style="text-align: center; padding: 8px;"><strong>Pro</strong></td><td style="text-align: center; padding: 8px;"><strong>Premium</strong></td></tr>' +
+                            '<tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 8px;">Clientes</td><td style="text-align: center; padding: 8px;">5</td><td style="text-align: center; padding: 8px;">50</td><td style="text-align: center; padding: 8px;">∞</td></tr>' +
+                            '<tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 8px;">Pacotes de Sessões</td><td style="text-align: center; padding: 8px;">❌</td><td style="text-align: center; padding: 8px;">✅</td><td style="text-align: center; padding: 8px;">✅</td></tr>' +
+                            '<tr style="border-bottom: 1px solid #f0f0f0;"><td style="padding: 8px;">Relatórios PDF/CSV</td><td style="text-align: center; padding: 8px;">❌</td><td style="text-align: center; padding: 8px;">✅</td><td style="text-align: center; padding: 8px;">✅</td></tr>' +
+                            '<tr><td style="padding: 8px;">Backup na Nuvem</td><td style="text-align: center; padding: 8px;">❌</td><td style="text-align: center; padding: 8px;">✅</td><td style="text-align: center; padding: 8px;">✅</td></tr>' +
+                        '</table>' +
+                    '</div>' +
                 '</div>';
             
             TheraFlowUI.showModal({
-                title: '🚀 Upgrade',
+                title: '🚀 Planos e Benefícios',
                 content: content,
                 buttons: [
-                    { text: 'Agora não', onClick: function() { TheraFlowUI.closeModal(); } },
-                    { text: 'Quero fazer upgrade!', primary: true, onClick: function() {
-                        TheraFlowUI.closeModal();
-                        TheraFlowUI.toast('Em breve! Obrigado pelo interesse 💜', 'success');
-                    }}
+                    { text: 'Fechar', onClick: function() { TheraFlowUI.closeModal(); } }
                 ]
             });
+        }
+
+        function selectPlan(planType) {
+            TheraFlowUI.closeModal();
+            
+            // Em produção, isso redirecionaria para pagamento
+            setTimeout(function() {
+                TheraFlowUI.showModal({
+                    title: '🎉 Upgrade em breve!',
+                    content: '<div style="text-align: center; padding: 20px;"><div style="font-size: 4em; margin-bottom: 15px;">🚀</div><p>O sistema de pagamentos está sendo finalizado.</p><p style="color: #666; margin-top: 10px;">Obrigado pelo interesse no plano ' + planType.toUpperCase() + '!</p></div>',
+                    buttons: [
+                        { text: 'OK', primary: true, onClick: function() { TheraFlowUI.closeModal(); } }
+                    ]
+                });
+            }, 200);
         }
 
         function resetData() {

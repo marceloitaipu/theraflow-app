@@ -218,13 +218,54 @@
         }
 
         function showAddClientModal() {
+            // Verificar limite do plano
+            var limits = TheraFlowData.checkPlanLimits();
+            
+            if (limits.isAtLimit) {
+                var content = 
+                    '<div style="text-align: center; padding: 20px;">' +
+                        '<div style="font-size: 4em; margin-bottom: 15px;">🚫</div>' +
+                        '<h3 style="margin-bottom: 15px; color: #ef4444;">Limite de Clientes Atingido</h3>' +
+                        '<p style="color: #666; margin-bottom: 20px;">Você atingiu o limite de <strong>' + limits.clientLimit + ' clientes</strong> do plano ' + limits.plan.toUpperCase() + '.</p>' +
+                        '<div style="background: #fef3c7; padding: 15px; border-radius: 10px; margin-bottom: 20px;">' +
+                            '<p style="color: #92400e; font-weight: 600;">💡 Faça upgrade para continuar crescendo!</p>' +
+                        '</div>' +
+                        '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">' +
+                            '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center;">' +
+                                '<div style="font-weight: bold; color: #667eea;">Pro</div>' +
+                                '<div style="font-size: 1.3em; font-weight: bold;">R$ 29/mês</div>' +
+                                '<div style="font-size: 0.85em; color: #666;">50 clientes + Pacotes</div>' +
+                            '</div>' +
+                            '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; text-align: center;">' +
+                                '<div style="font-weight: bold; color: #333;">Premium</div>' +
+                                '<div style="font-size: 1.3em; font-weight: bold;">R$ 49/mês</div>' +
+                                '<div style="font-size: 0.85em; color: #666;">Ilimitado + Relatórios</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                
+                TheraFlowUI.showModal({
+                    title: '⚠️ Limite Atingido',
+                    content: content,
+                    buttons: [
+                        { text: 'Fechar', onClick: function() { TheraFlowUI.closeModal(); } },
+                        { text: 'Ver Planos', primary: true, onClick: function() {
+                            TheraFlowUI.closeModal();
+                            window.location.href = 'perfil.html';
+                        }}
+                    ]
+                });
+                return;
+            }
+            
             var content = 
                 '<form id="addClientForm">' +
                     '<div class="tf-form-group"><label>Nome *</label><input type="text" name="nome" required placeholder="Nome completo"></div>' +
                     '<div class="tf-form-group"><label>Telefone</label><input type="tel" name="telefone" placeholder="(11) 99999-9999"></div>' +
                     '<div class="tf-form-group"><label>Email</label><input type="email" name="email" placeholder="cliente@email.com"></div>' +
                     '<div class="tf-form-group"><label>Observações</label><textarea name="notas" rows="3" placeholder="Anotações sobre o cliente..."></textarea></div>' +
-                '</form>';
+                '</form>' +
+                (limits.clientsRemaining <= 2 ? '<div style="background: #fef3c7; padding: 10px; border-radius: 8px; margin-top: 15px; font-size: 0.9em; color: #92400e;">⚠️ Restam apenas ' + limits.clientsRemaining + ' clientes no seu plano</div>' : '');
 
             TheraFlowUI.showModal({
                 title: '➕ Novo Cliente',

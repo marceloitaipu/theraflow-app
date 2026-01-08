@@ -27,6 +27,31 @@
         .summary-item .value.green { color: #10b981; }
         .summary-item .value.orange { color: #f59e0b; }
         .summary-item .value.purple { color: #667eea; }
+        .summary-item .value.blue { color: #3b82f6; }
+        
+        /* Resumo Inteligente */
+        .smart-summary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .smart-summary-title { font-size: 1.1em; margin-bottom: 15px; opacity: 0.95; }
+        .smart-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .smart-summary-item { text-align: center; background: rgba(255,255,255,0.15); padding: 15px; border-radius: 10px; }
+        .smart-summary-item .icon { font-size: 1.5em; margin-bottom: 8px; }
+        .smart-summary-item .value { font-size: 1.4em; font-weight: bold; }
+        .smart-summary-item .label { font-size: 0.8em; opacity: 0.9; margin-top: 5px; }
+        
+        /* Pacotes */
+        .packages-section { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
+        .package-card { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; }
+        .package-card .client-name { font-weight: 600; margin-bottom: 8px; }
+        .package-card .progress-bar { background: rgba(255,255,255,0.3); height: 8px; border-radius: 4px; margin: 10px 0; }
+        .package-card .progress-fill { background: white; height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .package-card .package-info { display: flex; justify-content: space-between; font-size: 0.9em; opacity: 0.95; }
+        .package-alert { background: #fef3c7; color: #92400e; padding: 10px 15px; border-radius: 8px; font-size: 0.9em; margin-top: 10px; }
+        
+        /* Botões de ação */
+        .action-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .action-btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-size: 0.9em; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .action-btn.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .action-btn.secondary { background: #f0f0f0; color: #333; }
         .section { margin-bottom: 30px; }
         .section-title { font-size: 1.2em; margin-bottom: 15px; color: #333; display: flex; justify-content: space-between; align-items: center; }
         .section-title .count { font-size: 0.75em; color: #999; font-weight: normal; background: #f0f0f0; padding: 4px 10px; border-radius: 10px; }
@@ -63,6 +88,42 @@
     </div>
 
     <div class="container">
+        <!-- Resumo Financeiro Inteligente -->
+        <div class="smart-summary">
+            <div class="smart-summary-title">📊 Resumo Financeiro Inteligente</div>
+            <div class="smart-summary-grid">
+                <div class="smart-summary-item">
+                    <div class="icon">💰</div>
+                    <div class="value" id="smartReceived">R$ 0</div>
+                    <div class="label">Recebido este mês</div>
+                </div>
+                <div class="smart-summary-item">
+                    <div class="icon">⏳</div>
+                    <div class="value" id="smartPending">R$ 0</div>
+                    <div class="label">Pendente</div>
+                </div>
+                <div class="smart-summary-item">
+                    <div class="icon">📅</div>
+                    <div class="value" id="smartNext7Days">R$ 0</div>
+                    <div class="label">Próximos 7 dias</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pacotes de Sessões -->
+        <div class="packages-section" id="packagesSection">
+            <h2 class="section-title">📦 Pacotes de Sessões <span class="count" id="packagesCount">0</span></h2>
+            <div id="packagesList"></div>
+            <button class="action-btn primary" style="width: 100%; margin-top: 15px;" onclick="showAddPackageModal()">
+                + Novo Pacote
+            </button>
+        </div>
+
+        <!-- Botões de Ação -->
+        <div class="action-buttons">
+            <button class="action-btn secondary" onclick="showExportModal()">📄 Exportar Relatório</button>
+        </div>
+
         <div class="summary-card">
             <div class="summary-total">
                 <div class="label">Total do Mês</div>
@@ -217,8 +278,184 @@
             TheraFlowUI.closeModal();
             TheraFlowUI.toast('Pagamento registrado com sucesso!', 'success');
             loadFinanceData();
+            loadSmartSummary();
         }
 
+        // Carregar Resumo Inteligente
+        function loadSmartSummary() {
+            var smartReport = TheraFlowData.getSmartFinanceReport();
+            document.getElementById('smartReceived').textContent = TheraFlowUI.formatCurrency(smartReport.receivedThisMonth);
+            document.getElementById('smartPending').textContent = TheraFlowUI.formatCurrency(smartReport.pendingThisMonth);
+            document.getElementById('smartNext7Days').textContent = TheraFlowUI.formatCurrency(smartReport.next7Days);
+        }
+
+        // Carregar Pacotes
+        function loadPackages() {
+            var packages = TheraFlowData.getPackages();
+            var activePackages = packages.filter(function(p) { return p.sessoesRestantes > 0; });
+            
+            document.getElementById('packagesCount').textContent = activePackages.length;
+            var packagesList = document.getElementById('packagesList');
+            
+            if (activePackages.length === 0) {
+                packagesList.innerHTML = '<div class="empty-state" style="padding: 20px;">📦 Nenhum pacote ativo. Crie pacotes para seus clientes!</div>';
+                return;
+            }
+            
+            var html = '';
+            for (var i = 0; i < activePackages.length; i++) {
+                var pkg = activePackages[i];
+                var progress = ((pkg.sessoesTotal - pkg.sessoesRestantes) / pkg.sessoesTotal) * 100;
+                var alertHtml = '';
+                
+                if (pkg.sessoesRestantes <= 2) {
+                    alertHtml = '<div class="package-alert">⚠️ Atenção: Restam apenas ' + pkg.sessoesRestantes + ' sessões!</div>';
+                }
+                
+                html += '<div class="package-card">' +
+                    '<div class="client-name">👤 ' + pkg.clienteNome + '</div>' +
+                    '<div><strong>' + pkg.nome + '</strong></div>' +
+                    '<div class="progress-bar"><div class="progress-fill" style="width: ' + progress + '%"></div></div>' +
+                    '<div class="package-info">' +
+                        '<span>' + (pkg.sessoesTotal - pkg.sessoesRestantes) + ' de ' + pkg.sessoesTotal + ' usadas</span>' +
+                        '<span>Restam: ' + pkg.sessoesRestantes + '</span>' +
+                    '</div>' +
+                    alertHtml +
+                '</div>';
+            }
+            packagesList.innerHTML = html;
+        }
+
+        // Modal para adicionar pacote
+        function showAddPackageModal() {
+            var clients = TheraFlowData.getClients();
+            
+            if (clients.length === 0) {
+                TheraFlowUI.alert('Atenção', 'Você precisa cadastrar clientes primeiro!');
+                return;
+            }
+            
+            var clientOptions = clients.map(function(c) {
+                return '<option value="' + c.id + '">' + c.nome + '</option>';
+            }).join('');
+            
+            var content = 
+                '<form id="packageForm">' +
+                    '<div class="tf-form-group">' +
+                        '<label>Cliente *</label>' +
+                        '<select name="clienteId" required>' +
+                            '<option value="">Selecione...</option>' +
+                            clientOptions +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="tf-form-group">' +
+                        '<label>Nome do Pacote *</label>' +
+                        '<select name="nome">' +
+                            '<option value="Pacote 5 sessões">Pacote 5 sessões</option>' +
+                            '<option value="Pacote 10 sessões">Pacote 10 sessões</option>' +
+                            '<option value="Pacote Mensal">Pacote Mensal (4 sessões)</option>' +
+                            '<option value="Pacote Trimestral">Pacote Trimestral (12 sessões)</option>' +
+                        '</select>' +
+                    '</div>' +
+                    '<div class="tf-form-group">' +
+                        '<label>Quantidade de Sessões *</label>' +
+                        '<input type="number" name="sessoesTotal" value="5" min="1" required>' +
+                    '</div>' +
+                    '<div class="tf-form-group">' +
+                        '<label>Valor Total (R$) *</label>' +
+                        '<input type="number" name="valorTotal" value="500" step="10" required>' +
+                    '</div>' +
+                '</form>';
+            
+            TheraFlowUI.showModal({
+                title: '📦 Novo Pacote de Sessões',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', onClick: function() { TheraFlowUI.closeModal(); } },
+                    { text: 'Criar Pacote', primary: true, onClick: savePackage }
+                ]
+            });
+        }
+
+        function savePackage() {
+            var form = document.getElementById('packageForm');
+            var formData = new FormData(form);
+            var clienteId = formData.get('clienteId');
+            
+            if (!clienteId) {
+                TheraFlowUI.toast('Selecione um cliente', 'error');
+                return;
+            }
+            
+            var client = TheraFlowData.getClientById(clienteId);
+            var pkg = {
+                clienteId: parseInt(clienteId),
+                clienteNome: client.nome,
+                nome: formData.get('nome'),
+                sessoesTotal: parseInt(formData.get('sessoesTotal')),
+                valorTotal: parseFloat(formData.get('valorTotal')),
+                valorPorSessao: parseFloat(formData.get('valorTotal')) / parseInt(formData.get('sessoesTotal'))
+            };
+            
+            TheraFlowData.addPackage(pkg);
+            TheraFlowUI.closeModal();
+            TheraFlowUI.toast('Pacote criado com sucesso!', 'success');
+            loadPackages();
+        }
+
+        // Modal de Exportação
+        function showExportModal() {
+            var content = 
+                '<div style="text-align: center; padding: 20px;">' +
+                    '<div style="font-size: 4em; margin-bottom: 20px;">📊</div>' +
+                    '<h3 style="margin-bottom: 20px;">Exportar Relatório Mensal</h3>' +
+                    '<p style="color: #666; margin-bottom: 20px;">Período: ' + meses[currentMonth] + ' ' + currentYear + '</p>' +
+                    '<div style="display: flex; gap: 15px; justify-content: center;">' +
+                        '<button onclick="exportPDF()" style="padding: 15px 30px; background: #667eea; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1em;">📄 Gerar PDF</button>' +
+                        '<button onclick="exportCSV()" style="padding: 15px 30px; background: #10b981; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1em;">📊 Exportar CSV</button>' +
+                    '</div>' +
+                '</div>';
+            
+            TheraFlowUI.showModal({
+                title: '📄 Exportar Relatório',
+                content: content,
+                buttons: [
+                    { text: 'Fechar', onClick: function() { TheraFlowUI.closeModal(); } }
+                ]
+            });
+        }
+
+        function exportPDF() {
+            var reportData = TheraFlowData.generateMonthlyReport(currentYear, currentMonth);
+            reportData.period = meses[currentMonth] + ' ' + currentYear;
+            TheraFlowUI.generatePDFReport(reportData);
+            TheraFlowUI.toast('Relatório gerado!', 'success');
+        }
+
+        function exportCSV() {
+            var reportData = TheraFlowData.generateMonthlyReport(currentYear, currentMonth);
+            var csvData = reportData.sessions.map(function(s) {
+                return {
+                    Data: s.data,
+                    Cliente: s.clienteNome,
+                    Tipo: s.tipo,
+                    Valor: s.valor,
+                    Status: s.status,
+                    Pagamento: s.pagamento
+                };
+            });
+            
+            if (csvData.length === 0) {
+                TheraFlowUI.toast('Nenhuma sessão para exportar', 'warning');
+                return;
+            }
+            
+            TheraFlowUI.exportToCSV(csvData, 'relatorio_' + currentYear + '_' + currentMonth + '.csv');
+            TheraFlowUI.toast('CSV exportado!', 'success');
+        }
+
+        loadSmartSummary();
+        loadPackages();
         loadFinanceData();
     </script>
 </body>

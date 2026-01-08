@@ -323,6 +323,225 @@ var TheraFlowData = {
     resetData: function() {
         this.clearAll();
         this.init();
+    },
+
+    // === PACOTES DE SESSÕES ===
+    getPackages: function() {
+        try {
+            return JSON.parse(localStorage.getItem('theraflow_packages')) || [];
+        } catch(e) {
+            return [];
+        }
+    },
+
+    getPackageById: function(id) {
+        var packages = this.getPackages();
+        for (var i = 0; i < packages.length; i++) {
+            if (packages[i].id == id) return packages[i];
+        }
+        return null;
+    },
+
+    getPackagesByClient: function(clienteId) {
+        var packages = this.getPackages();
+        var result = [];
+        for (var i = 0; i < packages.length; i++) {
+            if (packages[i].clienteId == clienteId) result.push(packages[i]);
+        }
+        return result;
+    },
+
+    getActivePackagesByClient: function(clienteId) {
+        var packages = this.getPackagesByClient(clienteId);
+        var result = [];
+        for (var i = 0; i < packages.length; i++) {
+            if (packages[i].sessoesRestantes > 0) result.push(packages[i]);
+        }
+        return result;
+    },
+
+    addPackage: function(pkg) {
+        var packages = this.getPackages();
+        pkg.id = this.generateId();
+        pkg.createdAt = this.formatDate(new Date());
+        pkg.sessoesRestantes = pkg.sessoesTotal;
+        packages.unshift(pkg);
+        localStorage.setItem('theraflow_packages', JSON.stringify(packages));
+        return pkg;
+    },
+
+    usePackageSession: function(packageId) {
+        var packages = this.getPackages();
+        for (var i = 0; i < packages.length; i++) {
+            if (packages[i].id == packageId && packages[i].sessoesRestantes > 0) {
+                packages[i].sessoesRestantes--;
+                packages[i].sessoesUsadas = (packages[i].sessoesUsadas || 0) + 1;
+                packages[i].ultimoUso = this.formatDate(new Date());
+                localStorage.setItem('theraflow_packages', JSON.stringify(packages));
+                return packages[i];
+            }
+        }
+        return null;
+    },
+
+    deletePackage: function(id) {
+        var packages = this.getPackages();
+        var filtered = [];
+        for (var i = 0; i < packages.length; i++) {
+            if (packages[i].id != id) filtered.push(packages[i]);
+        }
+        localStorage.setItem('theraflow_packages', JSON.stringify(filtered));
+    },
+
+    // === LEMBRETES E CONFIRMAÇÕES ===
+    getReminders: function() {
+        try {
+            return JSON.parse(localStorage.getItem('theraflow_reminders')) || [];
+        } catch(e) {
+            return [];
+        }
+    },
+
+    addReminder: function(reminder) {
+        var reminders = this.getReminders();
+        reminder.id = this.generateId();
+        reminder.createdAt = new Date().toISOString();
+        reminder.status = 'pendente';
+        reminders.push(reminder);
+        localStorage.setItem('theraflow_reminders', JSON.stringify(reminders));
+        return reminder;
+    },
+
+    updateReminder: function(id, data) {
+        var reminders = this.getReminders();
+        for (var i = 0; i < reminders.length; i++) {
+            if (reminders[i].id == id) {
+                for (var key in data) {
+                    reminders[i][key] = data[key];
+                }
+                localStorage.setItem('theraflow_reminders', JSON.stringify(reminders));
+                return reminders[i];
+            }
+        }
+        return null;
+    },
+
+    getTomorrowSessions: function() {
+        var tomorrow = this.addDays(new Date(), 1);
+        return this.getSessionsByDate(this.formatDate(tomorrow));
+    },
+
+    getNext7DaysSessions: function() {
+        var sessions = this.getSessions();
+        var today = new Date();
+        var next7 = this.addDays(today, 7);
+        var todayStr = this.formatDate(today);
+        var next7Str = this.formatDate(next7);
+        var result = [];
+        
+        for (var i = 0; i < sessions.length; i++) {
+            if (sessions[i].data >= todayStr && sessions[i].data <= next7Str) {
+                result.push(sessions[i]);
+            }
+        }
+        result.sort(function(a, b) { return a.data.localeCompare(b.data); });
+        return result;
+    },
+
+    // === RELATÓRIO FINANCEIRO INTELIGENTE ===
+    getSmartFinanceReport: function() {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth() + 1;
+        var report = this.getFinanceReport(year, month);
+        var next7Days = this.getNext7DaysSessions();
+        
+        var next7DaysValue = 0;
+        for (var i = 0; i < next7Days.length; i++) {
+            if (next7Days[i].pagamento !== 'pago' && next7Days[i].status !== 'faltou') {
+                next7DaysValue += (next7Days[i].valor || 0);
+            }
+        }
+        
+        return {
+            receivedThisMonth: report.totalReceived,
+            pendingThisMonth: report.totalPending,
+            next7Days: next7DaysValue,
+            next7DaysSessions: next7Days.length,
+            totalSessions: report.totalSessions,
+            averageTicket: report.totalSessions > 0 ? (report.total / report.totalSessions) : 0
+        };
+    },
+
+    // === PLANO E LIMITES ===
+    getUserPlan: function() {
+        try {
+            return JSON.parse(localStorage.getItem('theraflow_plan')) || { type: 'free', clientLimit: 5, hasPackages: false };
+        } catch(e) {
+            return { type: 'free', clientLimit: 5, hasPackages: false };
+        }
+    },
+
+    setUserPlan: function(plan) {
+        localStorage.setItem('theraflow_plan', JSON.stringify(plan));
+        return plan;
+    },
+
+    checkPlanLimits: function() {
+        var plan = this.getUserPlan();
+        var clients = this.getClients();
+        
+        var limits = {
+            free: { clients: 5, hasPackages: false, hasReports: false },
+            pro: { clients: 50, hasPackages: true, hasReports: false },
+            premium: { clients: 999999, hasPackages: true, hasReports: true }
+        };
+        
+        var currentLimits = limits[plan.type] || limits.free;
+        
+        return {
+            plan: plan.type,
+            clientCount: clients.length,
+            clientLimit: currentLimits.clients,
+            clientsRemaining: currentLimits.clients - clients.length,
+            isAtLimit: clients.length >= currentLimits.clients,
+            hasPackages: currentLimits.hasPackages,
+            hasReports: currentLimits.hasReports,
+            usagePercent: Math.round((clients.length / currentLimits.clients) * 100)
+        };
+    },
+
+    // === EXPORTAR RELATÓRIO ===
+    generateMonthlyReport: function(year, month) {
+        var report = this.getFinanceReport(year, month);
+        var clients = this.getClients();
+        var sessions = this.getSessions();
+        
+        var monthStr = year + '-' + String(month).padStart(2, '0');
+        var monthSessions = [];
+        var clientsAttended = {};
+        
+        for (var i = 0; i < sessions.length; i++) {
+            if (sessions[i].data && sessions[i].data.indexOf(monthStr) === 0) {
+                monthSessions.push(sessions[i]);
+                if (sessions[i].status === 'realizado') {
+                    clientsAttended[sessions[i].clienteId] = true;
+                }
+            }
+        }
+        
+        return {
+            period: monthStr,
+            totalReceived: report.totalReceived,
+            totalPending: report.totalPending,
+            totalExpected: report.total,
+            sessionsCount: monthSessions.length,
+            sessionsCompleted: report.sessionsCompleted,
+            sessionsMissed: report.sessionsMissed,
+            uniqueClientsAttended: Object.keys(clientsAttended).length,
+            averageTicket: monthSessions.length > 0 ? (report.total / monthSessions.length) : 0,
+            sessions: monthSessions
+        };
     }
 };
 

@@ -47,6 +47,44 @@
         .stat-card .number { font-size: 1.8em; font-weight: bold; color: #667eea; margin-bottom: 5px; }
         .stat-card .label { font-size: 0.85em; color: #666; }
 
+        /* Resumo Financeiro Inteligente */
+        .finance-summary { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+            color: white; border-radius: 15px; padding: 20px; margin-bottom: 25px; 
+        }
+        .finance-summary-title { font-size: 1em; opacity: 0.9; margin-bottom: 12px; }
+        .finance-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .finance-summary-item { text-align: center; }
+        .finance-summary-item .value { font-size: 1.2em; font-weight: bold; }
+        .finance-summary-item .label { font-size: 0.75em; opacity: 0.85; }
+
+        /* Card de Lembrete */
+        .reminder-card {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white; border-radius: 15px; padding: 20px; margin-bottom: 20px;
+        }
+        .reminder-card h3 { margin-bottom: 15px; font-size: 1.1em; }
+        .reminder-session { 
+            background: rgba(255,255,255,0.2); padding: 12px; border-radius: 10px; 
+            margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .reminder-session:last-child { margin-bottom: 0; }
+        .reminder-session .info { font-size: 0.95em; }
+        .reminder-session .actions { display: flex; gap: 8px; }
+        .reminder-session .btn { 
+            padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; 
+            font-size: 0.85em; font-weight: 600;
+        }
+        .reminder-session .btn-confirm { background: white; color: #10b981; }
+        .reminder-session .btn-reschedule { background: rgba(255,255,255,0.3); color: white; }
+
+        /* Segurança/Backup Badge */
+        .security-badge {
+            background: #d1fae5; color: #059669; padding: 10px 15px; border-radius: 10px;
+            display: flex; align-items: center; gap: 10px; margin-bottom: 20px; font-size: 0.9em;
+        }
+        .security-badge .icon { font-size: 1.3em; }
+
         .section-title {
             font-size: 1.3em;
             margin-bottom: 15px;
@@ -149,6 +187,34 @@
     </div>
 
     <div class="container">
+        <!-- Badge de Segurança -->
+        <div class="security-badge">
+            <span class="icon">🔒</span>
+            <span>Seus dados estão seguros na nuvem</span>
+        </div>
+
+        <!-- Resumo Financeiro Inteligente -->
+        <div class="finance-summary">
+            <div class="finance-summary-title">💰 Resumo Financeiro do Mês</div>
+            <div class="finance-summary-grid">
+                <div class="finance-summary-item">
+                    <div class="value" id="financeReceived">R$ 0</div>
+                    <div class="label">Recebido</div>
+                </div>
+                <div class="finance-summary-item">
+                    <div class="value" id="financePending">R$ 0</div>
+                    <div class="label">Pendente</div>
+                </div>
+                <div class="finance-summary-item">
+                    <div class="value" id="financeNext7">R$ 0</div>
+                    <div class="label">Próx. 7 dias</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lembretes de Amanhã -->
+        <div id="reminderSection"></div>
+
         <div class="stats-grid">
             <div class="stat-card">
                 <div class="number" id="todayCount">0</div>
@@ -371,7 +437,15 @@
 
             const content = `
                 <form id="newSessionForm">
-                    <div class="tf-form-group"><label>Cliente *</label><select name="clienteId" required><option value="">Selecione...</option>${clientOptions}</select></div>
+                    <div class="tf-form-group"><label>Cliente *</label><select name="clienteId" required onchange="checkClientPackages(this.value)"><option value="">Selecione...</option>${clientOptions}</select></div>
+                    <div id="packageOption" style="display: none; background: #f0fdf4; padding: 15px; border-radius: 10px; margin-bottom: 15px;">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" name="usePackage" id="usePackageCheck" onchange="togglePackageValue()">
+                            <span>📦 <strong>Usar sessão do pacote</strong></span>
+                        </label>
+                        <div id="packageInfo" style="margin-top: 10px; font-size: 0.9em; color: #059669;"></div>
+                        <input type="hidden" name="packageId" id="selectedPackageId" value="">
+                    </div>
                     <div class="tf-form-group"><label>Data *</label><input type="date" name="data" value="${today}" required></div>
                     <div class="tf-form-group"><label>Horário *</label><input type="time" name="hora" value="09:00" required></div>
                     <div class="tf-form-group">
@@ -382,7 +456,7 @@
                         </select>
                     </div>
                     <div class="tf-form-group"><label>Duração</label><select name="duracao"><option value="30">30 min</option><option value="45">45 min</option><option value="60" selected>1 hora</option><option value="90">1h30</option><option value="120">2 horas</option></select></div>
-                    <div class="tf-form-group"><label>Valor (R$)</label><input type="number" name="valor" value="150" step="10"></div>
+                    <div class="tf-form-group" id="valorGroup"><label>Valor (R$)</label><input type="number" name="valor" value="150" step="10"></div>
                     <div class="tf-form-group"><label>Observações</label><textarea name="notas" rows="2" placeholder="Notas..."></textarea></div>
                 </form>`;
 
@@ -396,6 +470,44 @@
             });
         }
 
+        function checkClientPackages(clienteId) {
+            var packageOption = document.getElementById('packageOption');
+            var packageInfo = document.getElementById('packageInfo');
+            var selectedPackageId = document.getElementById('selectedPackageId');
+            
+            if (!clienteId) {
+                packageOption.style.display = 'none';
+                return;
+            }
+            
+            var packages = TheraFlowData.getActivePackagesByClient(clienteId);
+            
+            if (packages.length > 0) {
+                var pkg = packages[0]; // Usa o primeiro pacote ativo
+                packageOption.style.display = 'block';
+                packageInfo.innerHTML = pkg.nome + ' - Restam <strong>' + pkg.sessoesRestantes + '</strong> sessões';
+                selectedPackageId.value = pkg.id;
+            } else {
+                packageOption.style.display = 'none';
+                selectedPackageId.value = '';
+            }
+        }
+
+        function togglePackageValue() {
+            var usePackage = document.getElementById('usePackageCheck').checked;
+            var valorGroup = document.getElementById('valorGroup');
+            
+            if (usePackage) {
+                valorGroup.style.opacity = '0.5';
+                valorGroup.querySelector('input').value = '0';
+                valorGroup.querySelector('input').disabled = true;
+            } else {
+                valorGroup.style.opacity = '1';
+                valorGroup.querySelector('input').value = '150';
+                valorGroup.querySelector('input').disabled = false;
+            }
+        }
+
         function saveNewSession() {
             const form = document.getElementById('newSessionForm');
             const formData = new FormData(form);
@@ -403,6 +515,9 @@
             if (!clienteId) { TheraFlowUI.toast('Selecione um cliente', 'error'); return; }
 
             const client = TheraFlowData.getClientById(clienteId);
+            const usePackage = document.getElementById('usePackageCheck') && document.getElementById('usePackageCheck').checked;
+            const packageId = document.getElementById('selectedPackageId') ? document.getElementById('selectedPackageId').value : '';
+            
             const session = {
                 clienteId: parseInt(clienteId),
                 clienteNome: client.nome,
@@ -410,20 +525,113 @@
                 hora: formData.get('hora'),
                 tipo: formData.get('tipo'),
                 duracao: parseInt(formData.get('duracao')),
-                valor: parseFloat(formData.get('valor')) || 0,
+                valor: usePackage ? 0 : (parseFloat(formData.get('valor')) || 0),
                 notas: formData.get('notas') || '',
                 status: 'confirmado',
-                pagamento: 'pendente'
+                pagamento: usePackage ? 'pago' : 'pendente',
+                usouPacote: usePackage,
+                pacoteId: usePackage ? parseInt(packageId) : null
             };
+
+            // Se usou pacote, descontar sessão
+            if (usePackage && packageId) {
+                var pkg = TheraFlowData.usePackageSession(parseInt(packageId));
+                if (pkg && pkg.sessoesRestantes <= 2) {
+                    setTimeout(function() {
+                        TheraFlowUI.toast('⚠️ Atenção: Restam apenas ' + pkg.sessoesRestantes + ' sessões no pacote!', 'warning');
+                    }, 1500);
+                }
+            }
 
             TheraFlowData.addSession(session);
             TheraFlowUI.closeModal();
-            TheraFlowUI.toast('Sessão agendada com sucesso!', 'success');
-            loadSessions(); loadStats();
+            TheraFlowUI.toast('Sessão agendada com sucesso!' + (usePackage ? ' (Pacote)' : ''), 'success');
+            loadSessions(); loadStats(); loadFinanceSummary();
         }
 
         loadStats();
         loadSessions();
+        loadFinanceSummary();
+        loadReminders();
+
+        // Carregar Resumo Financeiro Inteligente
+        function loadFinanceSummary() {
+            var smartReport = TheraFlowData.getSmartFinanceReport();
+            document.getElementById('financeReceived').textContent = TheraFlowUI.formatCurrency(smartReport.receivedThisMonth);
+            document.getElementById('financePending').textContent = TheraFlowUI.formatCurrency(smartReport.pendingThisMonth);
+            document.getElementById('financeNext7').textContent = TheraFlowUI.formatCurrency(smartReport.next7Days);
+        }
+
+        // Carregar Lembretes (sessões de amanhã)
+        function loadReminders() {
+            var tomorrowSessions = TheraFlowData.getTomorrowSessions();
+            var reminderSection = document.getElementById('reminderSection');
+            
+            if (tomorrowSessions.length === 0) {
+                reminderSection.innerHTML = '';
+                return;
+            }
+            
+            var sessionsHtml = tomorrowSessions.map(function(s) {
+                return '<div class="reminder-session">' +
+                    '<div class="info">' +
+                        '<strong>' + s.hora + '</strong> - ' + s.clienteNome + '<br>' +
+                        '<small>' + s.tipo + '</small>' +
+                    '</div>' +
+                    '<div class="actions">' +
+                        '<button class="btn btn-confirm" onclick="confirmSession(' + s.id + ')">✓ Confirmar</button>' +
+                        '<button class="btn btn-reschedule" onclick="rescheduleSession(' + s.id + ')">📅</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+            
+            reminderSection.innerHTML = 
+                '<div class="reminder-card">' +
+                    '<h3>🔔 Sessões Amanhã às 18h</h3>' +
+                    sessionsHtml +
+                '</div>';
+        }
+
+        function confirmSession(id) {
+            TheraFlowData.updateSession(id, { status: 'confirmado', confirmadoPeloCliente: true });
+            TheraFlowUI.toast('Sessão confirmada!', 'success');
+            loadReminders();
+        }
+
+        function rescheduleSession(id) {
+            var session = TheraFlowData.getSessionById(id);
+            if (!session) return;
+            
+            var content = 
+                '<div style="text-align: center; padding: 10px;">' +
+                    '<p style="margin-bottom: 20px;">Reagendar sessão de <strong>' + session.clienteNome + '</strong></p>' +
+                    '<div class="tf-form-group">' +
+                        '<label>Nova Data</label>' +
+                        '<input type="date" id="newDate" value="' + session.data + '">' +
+                    '</div>' +
+                    '<div class="tf-form-group">' +
+                        '<label>Novo Horário</label>' +
+                        '<input type="time" id="newTime" value="' + session.hora + '">' +
+                    '</div>' +
+                '</div>';
+            
+            TheraFlowUI.showModal({
+                title: '📅 Reagendar Sessão',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', onClick: function() { TheraFlowUI.closeModal(); } },
+                    { text: 'Reagendar', primary: true, onClick: function() {
+                        var newDate = document.getElementById('newDate').value;
+                        var newTime = document.getElementById('newTime').value;
+                        TheraFlowData.updateSession(id, { data: newDate, hora: newTime });
+                        TheraFlowUI.closeModal();
+                        TheraFlowUI.toast('Sessão reagendada!', 'success');
+                        loadReminders();
+                        loadSessions();
+                    }}
+                ]
+            });
+        }
     </script>
 </body>
 </html>

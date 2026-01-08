@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Testes de Validação</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #f5f5f5; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { color: #667eea; margin-bottom: 20px; }
+        .test-section { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .test-section h2 { margin-bottom: 15px; font-size: 1.2em; display: flex; align-items: center; gap: 10px; }
+        .test-item { padding: 12px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .test-item.pass { background: #d1fae5; }
+        .test-item.fail { background: #fee2e2; }
+        .test-item.pending { background: #fef3c7; }
+        .status { font-weight: bold; }
+        .status.pass { color: #059669; }
+        .status.fail { color: #dc2626; }
+        .status.pending { color: #d97706; }
+        .run-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 1em; cursor: pointer; margin-bottom: 20px; }
+        .run-btn:hover { opacity: 0.9; }
+        .summary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; text-align: center; }
+        .summary h3 { margin-bottom: 10px; }
+        .summary .stats { display: flex; justify-content: center; gap: 30px; }
+        .summary .stat { text-align: center; }
+        .summary .stat .number { font-size: 2em; font-weight: bold; }
+        .log { background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 10px; font-family: monospace; font-size: 0.85em; max-height: 300px; overflow-y: auto; margin-top: 20px; }
+        .log-entry { margin-bottom: 5px; }
+        .log-entry.error { color: #ff6b6b; }
+        .log-entry.success { color: #69db7c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Testes de Validação - Melhorias Essenciais</h1>
+        
+        <button class="run-btn" onclick="runAllTests()">▶️ Executar Todos os Testes</button>
+        
+        <div class="summary" id="summary" style="display: none;">
+            <h3>Resultado dos Testes</h3>
+            <div class="stats">
+                <div class="stat"><div class="number" id="passCount">0</div><div>Passou</div></div>
+                <div class="stat"><div class="number" id="failCount">0</div><div>Falhou</div></div>
+                <div class="stat"><div class="number" id="totalCount">0</div><div>Total</div></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 1. Resumo Financeiro Inteligente</h2>
+            <div id="tests-finance"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📦 2. Sistema de Pacotes de Sessões</h2>
+            <div id="tests-packages"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔔 3. Lembretes e Confirmação</h2>
+            <div id="tests-reminders"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🚫 4. Limites do Plano Free</h2>
+            <div id="tests-limits"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>📄 5. Exportar Relatório</h2>
+            <div id="tests-export"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔒 6. Backup e Segurança</h2>
+            <div id="tests-backup"></div>
+        </div>
+
+        <div class="log" id="logContainer">
+            <div class="log-entry">🧪 Console de Testes - Aguardando execução...</div>
+        </div>
+    </div>
+
+    <script src="../js/data.js"></script>
+    <script src="../js/ui.js"></script>
+    <script>
+        var testResults = { pass: 0, fail: 0, total: 0 };
+        var logContainer = document.getElementById('logContainer');
+
+        function log(message, type) {
+            var entry = document.createElement('div');
+            entry.className = 'log-entry ' + (type || '');
+            entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + message;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function addTestResult(containerId, testName, passed, details) {
+            var container = document.getElementById(containerId);
+            var div = document.createElement('div');
+            div.className = 'test-item ' + (passed ? 'pass' : 'fail');
+            div.innerHTML = '<span>' + testName + (details ? ' <small style="color: #666;">(' + details + ')</small>' : '') + '</span>' +
+                '<span class="status ' + (passed ? 'pass' : 'fail') + '">' + (passed ? '✅ PASSOU' : '❌ FALHOU') + '</span>';
+            container.appendChild(div);
+            
+            testResults.total++;
+            if (passed) testResults.pass++;
+            else testResults.fail++;
+            
+            log((passed ? '✅ ' : '❌ ') + testName, passed ? 'success' : 'error');
+        }
+
+        function runAllTests() {
+            // Limpar resultados anteriores
+            testResults = { pass: 0, fail: 0, total: 0 };
+            document.querySelectorAll('[id^="tests-"]').forEach(function(el) { el.innerHTML = ''; });
+            logContainer.innerHTML = '';
+            
+            log('🚀 Iniciando testes de validação...');
+            
+            // Inicializar dados de teste
+            TheraFlowData.resetData();
+            TheraFlowData.login('teste@theraflow.com');
+            log('📦 Dados de teste inicializados');
+
+            // Executar testes
+            testFinanceReport();
+            testPackages();
+            testReminders();
+            testPlanLimits();
+            testExport();
+            testBackup();
+
+            // Mostrar resumo
+            document.getElementById('summary').style.display = 'block';
+            document.getElementById('passCount').textContent = testResults.pass;
+            document.getElementById('failCount').textContent = testResults.fail;
+            document.getElementById('totalCount').textContent = testResults.total;
+            
+            log('');
+            log('='.repeat(50));
+            log('📊 RESUMO: ' + testResults.pass + '/' + testResults.total + ' testes passaram (' + Math.round(testResults.pass/testResults.total*100) + '%)', testResults.fail === 0 ? 'success' : 'error');
+        }
+
+        // ========== TESTES: RESUMO FINANCEIRO ==========
+        function testFinanceReport() {
+            log('');
+            log('📊 Testando Resumo Financeiro Inteligente...');
+            
+            // Teste 1: Função getSmartFinanceReport existe
+            var hasFunction = typeof TheraFlowData.getSmartFinanceReport === 'function';
+            addTestResult('tests-finance', 'Função getSmartFinanceReport existe', hasFunction);
+            
+            // Teste 2: Retorna objeto com propriedades corretas
+            if (hasFunction) {
+                var report = TheraFlowData.getSmartFinanceReport();
+                var hasProps = report.hasOwnProperty('receivedThisMonth') && 
+                               report.hasOwnProperty('pendingThisMonth') && 
+                               report.hasOwnProperty('next7Days');
+                addTestResult('tests-finance', 'Retorna receivedThisMonth, pendingThisMonth, next7Days', hasProps);
+                
+                // Teste 3: Valores são numéricos
+                var valuesAreNumeric = typeof report.receivedThisMonth === 'number' && 
+                                       typeof report.pendingThisMonth === 'number';
+                addTestResult('tests-finance', 'Valores financeiros são numéricos', valuesAreNumeric);
+            }
+            
+            // Teste 4: Próximos 7 dias retorna sessões
+            var next7Sessions = TheraFlowData.getNext7DaysSessions();
+            addTestResult('tests-finance', 'getNext7DaysSessions retorna array', Array.isArray(next7Sessions), next7Sessions.length + ' sessões');
+        }
+
+        // ========== TESTES: PACOTES ==========
+        function testPackages() {
+            log('');
+            log('📦 Testando Sistema de Pacotes...');
+            
+            // Teste 1: Função getPackages existe
+            var hasGetPackages = typeof TheraFlowData.getPackages === 'function';
+            addTestResult('tests-packages', 'Função getPackages existe', hasGetPackages);
+            
+            // Teste 2: Função addPackage existe
+            var hasAddPackage = typeof TheraFlowData.addPackage === 'function';
+            addTestResult('tests-packages', 'Função addPackage existe', hasAddPackage);
+            
+            // Teste 3: Criar pacote
+            var clients = TheraFlowData.getClients();
+            if (clients.length > 0 && hasAddPackage) {
+                var newPackage = TheraFlowData.addPackage({
+                    clienteId: clients[0].id,
+                    clienteNome: clients[0].nome,
+                    nome: 'Pacote 5 sessões',
+                    sessoesTotal: 5,
+                    valorTotal: 500
+                });
+                var packageCreated = newPackage && newPackage.id && newPackage.sessoesRestantes === 5;
+                addTestResult('tests-packages', 'Criar pacote com 5 sessões', packageCreated);
+                
+                // Teste 4: Usar sessão do pacote
+                if (packageCreated) {
+                    var usedPackage = TheraFlowData.usePackageSession(newPackage.id);
+                    var sessionUsed = usedPackage && usedPackage.sessoesRestantes === 4;
+                    addTestResult('tests-packages', 'Usar sessão do pacote (5→4)', sessionUsed);
+                    
+                    // Teste 5: Verificar pacotes ativos do cliente
+                    var activePackages = TheraFlowData.getActivePackagesByClient(clients[0].id);
+                    var hasActivePackages = activePackages.length > 0;
+                    addTestResult('tests-packages', 'Listar pacotes ativos do cliente', hasActivePackages, activePackages.length + ' pacotes');
+                }
+            }
+        }
+
+        // ========== TESTES: LEMBRETES ==========
+        function testReminders() {
+            log('');
+            log('🔔 Testando Lembretes e Confirmação...');
+            
+            // Teste 1: Função getTomorrowSessions existe
+            var hasTomorrowFunc = typeof TheraFlowData.getTomorrowSessions === 'function';
+            addTestResult('tests-reminders', 'Função getTomorrowSessions existe', hasTomorrowFunc);
+            
+            // Teste 2: Retorna array
+            if (hasTomorrowFunc) {
+                var tomorrowSessions = TheraFlowData.getTomorrowSessions();
+                var isArray = Array.isArray(tomorrowSessions);
+                addTestResult('tests-reminders', 'getTomorrowSessions retorna array', isArray, tomorrowSessions.length + ' sessões');
+            }
+            
+            // Teste 3: Função addReminder existe
+            var hasAddReminder = typeof TheraFlowData.addReminder === 'function';
+            addTestResult('tests-reminders', 'Função addReminder existe', hasAddReminder);
+            
+            // Teste 4: Função updateSession existe (para confirmação)
+            var hasUpdateSession = typeof TheraFlowData.updateSession === 'function';
+            addTestResult('tests-reminders', 'Função updateSession existe (para confirmação)', hasUpdateSession);
+        }
+
+        // ========== TESTES: LIMITES DO PLANO ==========
+        function testPlanLimits() {
+            log('');
+            log('🚫 Testando Limites do Plano...');
+            
+            // Teste 1: Função checkPlanLimits existe
+            var hasCheckLimits = typeof TheraFlowData.checkPlanLimits === 'function';
+            addTestResult('tests-limits', 'Função checkPlanLimits existe', hasCheckLimits);
+            
+            if (hasCheckLimits) {
+                var limits = TheraFlowData.checkPlanLimits();
+                
+                // Teste 2: Retorna objeto com propriedades
+                var hasProps = limits.hasOwnProperty('plan') && 
+                               limits.hasOwnProperty('clientLimit') && 
+                               limits.hasOwnProperty('isAtLimit');
+                addTestResult('tests-limits', 'Retorna plan, clientLimit, isAtLimit', hasProps);
+                
+                // Teste 3: Plano Free tem limite de 5
+                var freeLimit = limits.plan === 'free' && limits.clientLimit === 5;
+                addTestResult('tests-limits', 'Plano Free tem limite de 5 clientes', freeLimit, 'Limite: ' + limits.clientLimit);
+                
+                // Teste 4: Calcula porcentagem de uso
+                var hasUsagePercent = typeof limits.usagePercent === 'number';
+                addTestResult('tests-limits', 'Calcula porcentagem de uso', hasUsagePercent, limits.usagePercent + '%');
+            }
+            
+            // Teste 5: Função getUserPlan existe
+            var hasGetPlan = typeof TheraFlowData.getUserPlan === 'function';
+            addTestResult('tests-limits', 'Função getUserPlan existe', hasGetPlan);
+        }
+
+        // ========== TESTES: EXPORTAR RELATÓRIO ==========
+        function testExport() {
+            log('');
+            log('📄 Testando Exportação de Relatório...');
+            
+            // Teste 1: Função generateMonthlyReport existe
+            var hasGenerate = typeof TheraFlowData.generateMonthlyReport === 'function';
+            addTestResult('tests-export', 'Função generateMonthlyReport existe', hasGenerate);
+            
+            if (hasGenerate) {
+                var now = new Date();
+                var report = TheraFlowData.generateMonthlyReport(now.getFullYear(), now.getMonth() + 1);
+                
+                // Teste 2: Retorna objeto com dados
+                var hasData = report && report.hasOwnProperty('totalReceived') && 
+                              report.hasOwnProperty('sessionsCount');
+                addTestResult('tests-export', 'Relatório contém totalReceived e sessionsCount', hasData);
+                
+                // Teste 3: Inclui lista de sessões
+                var hasSessions = report && Array.isArray(report.sessions);
+                addTestResult('tests-export', 'Relatório inclui lista de sessões', hasSessions, (report.sessions || []).length + ' sessões');
+            }
+            
+            // Teste 4: Função exportToCSV existe no UI
+            var hasExportCSV = typeof TheraFlowUI.exportToCSV === 'function';
+            addTestResult('tests-export', 'Função exportToCSV existe (UI)', hasExportCSV);
+            
+            // Teste 5: Função generatePDFReport existe no UI
+            var hasExportPDF = typeof TheraFlowUI.generatePDFReport === 'function';
+            addTestResult('tests-export', 'Função generatePDFReport existe (UI)', hasExportPDF);
+        }
+
+        // ========== TESTES: BACKUP ==========
+        function testBackup() {
+            log('');
+            log('🔒 Testando Backup e Segurança...');
+            
+            // Teste 1: Dados persistem no localStorage
+            var clients = TheraFlowData.getClients();
+            var hasData = clients.length > 0;
+            addTestResult('tests-backup', 'Dados persistem no localStorage', hasData, clients.length + ' clientes');
+            
+            // Teste 2: Função getProfile retorna dados
+            var profile = TheraFlowData.getProfile();
+            var hasProfile = profile && (profile.nome || profile.displayName);
+            addTestResult('tests-backup', 'Perfil do usuário existe', hasProfile);
+            
+            // Teste 3: Pode exportar dados JSON
+            var canExport = TheraFlowData.getClients && TheraFlowData.getSessions && TheraFlowData.getProfile;
+            addTestResult('tests-backup', 'APIs de exportação disponíveis', !!canExport);
+            
+            // Teste 4: Função resetData existe
+            var hasReset = typeof TheraFlowData.resetData === 'function';
+            addTestResult('tests-backup', 'Função resetData existe', hasReset);
+        }
+    </script>
+</body>
+</html>

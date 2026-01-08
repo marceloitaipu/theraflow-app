@@ -316,6 +316,72 @@ var TheraFlowUI = {
 
     getDuracaoOptions: function() {
         return [30, 45, 60, 90, 120];
+    },
+
+    // === EXPORTAR RELATÓRIO ===
+    exportToCSV: function(data, filename) {
+        var csv = '';
+        var headers = Object.keys(data[0] || {});
+        csv += headers.join(';') + '\n';
+        
+        for (var i = 0; i < data.length; i++) {
+            var row = [];
+            for (var j = 0; j < headers.length; j++) {
+                var value = data[i][headers[j]];
+                if (typeof value === 'string' && value.indexOf(';') > -1) {
+                    value = '"' + value + '"';
+                }
+                row.push(value || '');
+            }
+            csv += row.join(';') + '\n';
+        }
+        
+        var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename || 'relatorio.csv';
+        a.click();
+        URL.revokeObjectURL(url);
+    },
+
+    generatePDFReport: function(reportData) {
+        // Gera HTML para impressão/PDF
+        var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório TheraFlow</title>' +
+            '<style>body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:0 auto;}' +
+            '.header{text-align:center;margin-bottom:30px;border-bottom:2px solid #667eea;padding-bottom:20px;}' +
+            '.header h1{color:#667eea;margin:0 0 10px 0;}' +
+            '.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:30px;}' +
+            '.summary-item{background:#f8f9fa;padding:20px;border-radius:10px;text-align:center;}' +
+            '.summary-item .value{font-size:2em;font-weight:bold;color:#667eea;}' +
+            '.summary-item .label{color:#666;margin-top:5px;}' +
+            'table{width:100%;border-collapse:collapse;margin-top:20px;}' +
+            'th,td{padding:12px;text-align:left;border-bottom:1px solid #eee;}' +
+            'th{background:#667eea;color:white;}' +
+            '.footer{margin-top:40px;text-align:center;color:#999;font-size:0.9em;}' +
+            '@media print{body{padding:20px;}}</style></head><body>' +
+            '<div class="header"><h1>💆 TheraFlow</h1><p>Relatório Mensal - ' + reportData.period + '</p></div>' +
+            '<div class="summary">' +
+            '<div class="summary-item"><div class="value">R$ ' + (reportData.totalReceived || 0).toFixed(2).replace('.', ',') + '</div><div class="label">✅ Recebido</div></div>' +
+            '<div class="summary-item"><div class="value">R$ ' + (reportData.totalPending || 0).toFixed(2).replace('.', ',') + '</div><div class="label">⏳ Pendente</div></div>' +
+            '<div class="summary-item"><div class="value">' + (reportData.uniqueClientsAttended || 0) + '</div><div class="label">👥 Clientes Atendidos</div></div>' +
+            '</div>' +
+            '<h3>📊 Resumo</h3>' +
+            '<table><tr><th>Métrica</th><th>Valor</th></tr>' +
+            '<tr><td>Total de Sessões</td><td>' + (reportData.sessionsCount || 0) + '</td></tr>' +
+            '<tr><td>Sessões Realizadas</td><td>' + (reportData.sessionsCompleted || 0) + '</td></tr>' +
+            '<tr><td>Faltas</td><td>' + (reportData.sessionsMissed || 0) + '</td></tr>' +
+            '<tr><td>Ticket Médio</td><td>R$ ' + (reportData.averageTicket || 0).toFixed(2).replace('.', ',') + '</td></tr>' +
+            '<tr><td>Total Esperado</td><td>R$ ' + (reportData.totalExpected || 0).toFixed(2).replace('.', ',') + '</td></tr>' +
+            '</table>' +
+            '<div class="footer"><p>Relatório gerado em ' + new Date().toLocaleDateString('pt-BR') + '</p><p>TheraFlow - Gestão para Terapeutas</p></div>' +
+            '</body></html>';
+        
+        var printWindow = window.open('', '_blank');
+        printWindow.document.write(html);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(function() { printWindow.print(); }, 500);
     }
 };
 
