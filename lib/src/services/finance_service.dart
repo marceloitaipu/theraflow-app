@@ -118,7 +118,7 @@ class FinanceService {
 
   // Sessões pendentes de pagamento
   Future<List<Session>> getPendingSessions() async {
-    final collection = _sessionService._sessionsCollection();
+    final collection = _sessionService.sessionsCollection();
     if (collection == null) return [];
 
     final snapshot = await collection
@@ -141,9 +141,13 @@ class FinanceService {
       end: end,
     );
 
-    return sessions
-        .where((s) => s.paymentStatus == 'pago')
-        .fold(0.0, (sum, s) => sum + s.value);
+    double total = 0.0;
+    for (final s in sessions) {
+      if (s.paymentStatus == 'pago') {
+        total += s.value;
+      }
+    }
+    return total;
   }
 }
 

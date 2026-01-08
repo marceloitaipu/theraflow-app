@@ -10,7 +10,7 @@ class SessionService {
   final AuthService _auth = AuthService.instance;
 
   // Referência da coleção de sessões do usuário atual
-  CollectionReference<Map<String, dynamic>>? _sessionsCollection() {
+  CollectionReference<Map<String, dynamic>>? sessionsCollection() {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return null;
     return _firestore.collection('users').doc(userId).collection('sessions');
@@ -18,7 +18,7 @@ class SessionService {
 
   // Stream de todas as sessões
   Stream<List<Session>> getSessionsStream() {
-    final collection = _sessionsCollection();
+    final collection = sessionsCollection();
     if (collection == null) return Stream.value([]);
 
     return collection
@@ -31,7 +31,7 @@ class SessionService {
 
   // Buscar sessões de um cliente
   Stream<List<Session>> getClientSessionsStream(String clientId) {
-    final collection = _sessionsCollection();
+    final collection = sessionsCollection();
     if (collection == null) return Stream.value([]);
 
     return collection
@@ -45,7 +45,7 @@ class SessionService {
 
   // Buscar sessões do dia
   Future<List<Session>> getTodaySessions() async {
-    final collection = _sessionsCollection();
+    final collection = sessionsCollection();
     if (collection == null) return [];
 
     final now = DateTime.now();
@@ -69,7 +69,7 @@ class SessionService {
     required DateTime start,
     required DateTime end,
   }) async {
-    final collection = _sessionsCollection();
+    final collection = sessionsCollection();
     if (collection == null) return [];
 
     final snapshot = await collection
@@ -85,7 +85,7 @@ class SessionService {
 
   // Buscar sessão por ID
   Future<Session?> getSessionById(String id) async {
-    final collection = _sessionsCollection();
+    final collection = sessionsCollection();
     if (collection == null) return null;
 
     final doc = await collection.doc(id).get();
@@ -103,7 +103,7 @@ class SessionService {
     String status = 'confirmado',
     String paymentStatus = 'pendente',
   }) async {
-    final collection = _sessionsCollection();
+    final collection = sessionsCollection();
     if (collection == null) throw Exception('Usuário não autenticado.');
 
     final userId = _auth.currentUser!.uid;
@@ -134,7 +134,7 @@ class SessionService {
     String? notes,
     String? paymentStatus,
   }) async {
-    final collection = _sessionsCollection();
+    final collection = sessionsCollection();
     if (collection == null) throw Exception('Usuário não autenticado.');
 
     final updates = <String, dynamic>{};
@@ -152,7 +152,7 @@ class SessionService {
 
   // Deletar sessão
   Future<void> deleteSession(String id) async {
-    final collection = _sessionsCollection();
+    final collection = sessionsCollection();
     if (collection == null) throw Exception('Usuário não autenticado.');
 
     await collection.doc(id).delete();
