@@ -110,13 +110,13 @@
             </div>
         </div>
 
-        <!-- Pacotes de Sessões -->
+        <!-- Pacotes de Sessões (visualização) -->
         <div class="packages-section" id="packagesSection">
-            <h2 class="section-title">📦 Pacotes de Sessões <span class="count" id="packagesCount">0</span></h2>
+            <h2 class="section-title">📦 Pacotes Ativos <span class="count" id="packagesCount">0</span></h2>
             <div id="packagesList"></div>
-            <button class="action-btn primary" style="width: 100%; margin-top: 15px;" onclick="showAddPackageModal()">
-                + Novo Pacote
-            </button>
+            <p style="text-align: center; color: #666; font-size: 0.85em; margin-top: 10px;">
+                💡 Crie pacotes na página de <a href="clientes.html" style="color: #667eea;">Clientes</a>
+            </p>
         </div>
 
         <!-- Botões de Ação -->
@@ -324,83 +324,6 @@
                 '</div>';
             }
             packagesList.innerHTML = html;
-        }
-
-        // Modal para adicionar pacote
-        function showAddPackageModal() {
-            var clients = TheraFlowData.getClients();
-            
-            if (clients.length === 0) {
-                TheraFlowUI.alert('Atenção', 'Você precisa cadastrar clientes primeiro!');
-                return;
-            }
-            
-            var clientOptions = clients.map(function(c) {
-                return '<option value="' + c.id + '">' + c.nome + '</option>';
-            }).join('');
-            
-            var content = 
-                '<form id="packageForm">' +
-                    '<div class="tf-form-group">' +
-                        '<label>Cliente *</label>' +
-                        '<select name="clienteId" required>' +
-                            '<option value="">Selecione...</option>' +
-                            clientOptions +
-                        '</select>' +
-                    '</div>' +
-                    '<div class="tf-form-group">' +
-                        '<label>Nome do Pacote *</label>' +
-                        '<select name="nome">' +
-                            '<option value="Pacote 5 sessões">Pacote 5 sessões</option>' +
-                            '<option value="Pacote 10 sessões">Pacote 10 sessões</option>' +
-                            '<option value="Pacote Mensal">Pacote Mensal (4 sessões)</option>' +
-                            '<option value="Pacote Trimestral">Pacote Trimestral (12 sessões)</option>' +
-                        '</select>' +
-                    '</div>' +
-                    '<div class="tf-form-group">' +
-                        '<label>Quantidade de Sessões *</label>' +
-                        '<input type="number" name="sessoesTotal" value="5" min="1" required>' +
-                    '</div>' +
-                    '<div class="tf-form-group">' +
-                        '<label>Valor Total (R$) *</label>' +
-                        '<input type="number" name="valorTotal" value="500" step="10" required>' +
-                    '</div>' +
-                '</form>';
-            
-            TheraFlowUI.showModal({
-                title: '📦 Novo Pacote de Sessões',
-                content: content,
-                buttons: [
-                    { text: 'Cancelar', onClick: function() { TheraFlowUI.closeModal(); } },
-                    { text: 'Criar Pacote', primary: true, onClick: savePackage }
-                ]
-            });
-        }
-
-        function savePackage() {
-            var form = document.getElementById('packageForm');
-            var formData = new FormData(form);
-            var clienteId = formData.get('clienteId');
-            
-            if (!clienteId) {
-                TheraFlowUI.toast('Selecione um cliente', 'error');
-                return;
-            }
-            
-            var client = TheraFlowData.getClientById(clienteId);
-            var pkg = {
-                clienteId: parseInt(clienteId),
-                clienteNome: client.nome,
-                nome: formData.get('nome'),
-                sessoesTotal: parseInt(formData.get('sessoesTotal')),
-                valorTotal: parseFloat(formData.get('valorTotal')),
-                valorPorSessao: parseFloat(formData.get('valorTotal')) / parseInt(formData.get('sessoesTotal'))
-            };
-            
-            TheraFlowData.addPackage(pkg);
-            TheraFlowUI.closeModal();
-            TheraFlowUI.toast('Pacote criado com sucesso!', 'success');
-            loadPackages();
         }
 
         // Modal de Exportação

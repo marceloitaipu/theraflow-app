@@ -199,10 +199,17 @@
                 '<h4 style="margin-bottom: 10px;">Últimas Sessões</h4>' +
                 '<div style="max-height: 200px; overflow-y: auto;">' + sessionsHtml + '</div>' +
 
+                // Mostrar pacotes ativos do cliente
+                '<div id="clientPackagesSection" style="margin-top: 20px;">' + getClientPackagesHtml(id) + '</div>' +
+
                 '<ul style="margin-top: 20px; list-style: none; padding: 0;">' +
                     '<li onclick="scheduleForClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f8f9fa; border-radius: 10px; cursor: pointer;">' +
                         '<span style="font-size: 1.5em;">📅</span>' +
                         '<div><strong style="display: block;">Agendar Atendimento</strong><span style="font-size: 0.85em; color: #666;">Criar nova sessão</span></div>' +
+                    '</li>' +
+                    '<li onclick="showAddPackageModal(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f0fdf4; border-radius: 10px; cursor: pointer; color: #059669;">' +
+                        '<span style="font-size: 1.5em;">📦</span>' +
+                        '<div><strong style="display: block;">Criar Pacote de Sessões</strong><span style="font-size: 0.85em; color: #666;">Pacote 5, 10 sessões...</span></div>' +
                     '</li>' +
                     '<li onclick="editClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f8f9fa; border-radius: 10px; cursor: pointer;">' +
                         '<span style="font-size: 1.5em;">✏️</span>' +
@@ -215,6 +222,136 @@
                 '</ul>';
 
             TheraFlowUI.showModal({ title: 'Detalhes do Cliente', content: content });
+        }
+
+        function getClientPackagesHtml(clienteId) {
+            var packages = TheraFlowData.getActivePackagesByClient(clienteId);
+            if (packages.length === 0) return '';
+            
+            var html = '<h4 style="margin-bottom: 10px;">📦 Pacotes Ativos</h4>';
+            for (var i = 0; i < packages.length; i++) {
+                var pkg = packages[i];
+                var progress = ((pkg.sessoesTotal - pkg.sessoesRestantes) / pkg.sessoesTotal) * 100;
+                var alertStyle = pkg.sessoesRestantes <= 2 ? 'border: 2px solid #f59e0b;' : '';
+                
+                html += '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; border-radius: 10px; margin-bottom: 8px; ' + alertStyle + '">' +
+                    '<div style="font-weight: 600; margin-bottom: 5px;">' + pkg.nome + '</div>' +
+                    '<div style="background: rgba(255,255,255,0.3); height: 6px; border-radius: 3px; margin: 8px 0;">' +
+                        '<div style="background: white; height: 100%; border-radius: 3px; width: ' + progress + '%;"></div>' +
+                    '</div>' +
+                    '<div style="display: flex; justify-content: space-between; font-size: 0.85em;">' +
+                        '<span>' + (pkg.sessoesTotal - pkg.sessoesRestantes) + '/' + pkg.sessoesTotal + ' usadas</span>' +
+                        '<span>Restam: ' + pkg.sessoesRestantes + '</span>' +
+                    '</div>' +
+                    (pkg.sessoesRestantes <= 2 ? '<div style="background: rgba(255,255,255,0.2); padding: 5px 8px; border-radius: 5px; margin-top: 8px; font-size: 0.8em;">⚠️ Pacote acabando!</div>' : '') +
+                '</div>';
+            }
+            return html;
+        }
+
+        function showAddPackageModal(clienteId) {
+            TheraFlowUI.closeModal();
+            var client = TheraFlowData.getClientById(clienteId);
+            if (!client) return;
+            
+            setTimeout(function() {
+                var content = 
+                    '<div style="text-align: center; margin-bottom: 20px;">' +
+                        '<div style="font-size: 3em; margin-bottom: 10px;">📦</div>' +
+                        '<p style="color: #666;">Criar pacote para <strong>' + client.nome + '</strong></p>' +
+                    '</div>' +
+                    '<form id="packageForm">' +
+                        '<input type="hidden" name="clienteId" value="' + clienteId + '">' +
+                        '<div class="tf-form-group">' +
+                            '<label>Tipo de Pacote *</label>' +
+                            '<select name="tipo" onchange="updatePackageFields(this.value)">' +
+                                '<option value="5">Pacote 5 sessões</option>' +
+                                '<option value="10">Pacote 10 sessões</option>' +
+                                '<option value="4">Pacote Mensal (4 sessões)</option>' +
+                                '<option value="12">Pacote Trimestral (12 sessões)</option>' +
+                                '<option value="custom">Personalizado</option>' +
+                            '</select>' +
+                        '</div>' +
+                        '<div class="tf-form-group">' +
+                            '<label>Quantidade de Sessões</label>' +
+                            '<input type="number" name="sessoesTotal" id="sessoesTotal" value="5" min="1">' +
+                        '</div>' +
+                        '<div class="tf-form-group">' +
+                            '<label>Valor Total (R$)</label>' +
+                            '<input type="number" name="valorTotal" id="valorTotal" value="500" step="10">' +
+                        '</div>' +
+                        '<div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px;">' +
+                            '<div style="display: flex; justify-content: space-between;">' +
+                                '<span>Valor por sessão:</span>' +
+                                '<strong id="valorPorSessao">R$ 100,00</strong>' +
+                            '</div>' +
+                            '<div style="display: flex; justify-content: space-between; margin-top: 5px; color: #059669;">' +
+                                '<span>Economia vs avulso:</span>' +
+                                '<strong id="economia">~17%</strong>' +
+                            '</div>' +
+                        '</div>' +
+                    '</form>';
+                
+                TheraFlowUI.showModal({
+                    title: '📦 Novo Pacote de Sessões',
+                    content: content,
+                    buttons: [
+                        { text: 'Cancelar', onClick: function() { TheraFlowUI.closeModal(); showClientDetails(clienteId); } },
+                        { text: 'Criar Pacote', primary: true, onClick: function() { savePackage(clienteId); } }
+                    ]
+                });
+                
+                // Atualizar campos ao carregar
+                updatePackageFields('5');
+            }, 300);
+        }
+
+        function updatePackageFields(tipo) {
+            var sessoes = parseInt(tipo);
+            var valores = { 5: 500, 10: 900, 4: 400, 12: 1080 };
+            var precoAvulso = 120;
+            
+            if (tipo === 'custom') {
+                document.getElementById('sessoesTotal').disabled = false;
+                return;
+            }
+            
+            document.getElementById('sessoesTotal').value = sessoes;
+            document.getElementById('sessoesTotal').disabled = true;
+            document.getElementById('valorTotal').value = valores[sessoes] || sessoes * 100;
+            
+            var valor = valores[sessoes] || sessoes * 100;
+            var valorPorSessao = valor / sessoes;
+            var economia = Math.round((1 - valorPorSessao / precoAvulso) * 100);
+            
+            document.getElementById('valorPorSessao').textContent = 'R$ ' + valorPorSessao.toFixed(2).replace('.', ',');
+            document.getElementById('economia').textContent = '~' + economia + '%';
+        }
+
+        function savePackage(clienteId) {
+            var form = document.getElementById('packageForm');
+            var formData = new FormData(form);
+            var client = TheraFlowData.getClientById(clienteId);
+            
+            var sessoesTotal = parseInt(formData.get('sessoesTotal'));
+            var valorTotal = parseFloat(formData.get('valorTotal'));
+            
+            var pkg = {
+                clienteId: parseInt(clienteId),
+                clienteNome: client.nome,
+                nome: 'Pacote ' + sessoesTotal + ' sessões',
+                sessoesTotal: sessoesTotal,
+                valorTotal: valorTotal,
+                valorPorSessao: valorTotal / sessoesTotal
+            };
+            
+            TheraFlowData.addPackage(pkg);
+            TheraFlowUI.closeModal();
+            TheraFlowUI.toast('Pacote criado com sucesso! 📦', 'success');
+            
+            setTimeout(function() {
+                showClientDetails(clienteId);
+            }, 300);
         }
 
         function showAddClientModal() {
