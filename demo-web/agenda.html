@@ -596,10 +596,18 @@
                     '</div>' +
                     '<div class="form-group">' +
                         '<label>👤 Cliente</label>' +
-                        '<select id="sessionClient" required>' +
+                        '<select id="sessionClient" required onchange="checkClientPackages(this.value)">' +
                             '<option value="">Selecione...</option>' +
                             clientOptions +
                         '</select>' +
+                    '</div>' +
+                    '<div id="packageOption" style="display: none; background: #f0fdf4; padding: 15px; border-radius: 10px; margin-bottom: 10px;">' +
+                        '<label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">' +
+                            '<input type="checkbox" id="usePackageCheck" onchange="togglePackageValue()">' +
+                            '<span>📦 <strong>Usar sessão do pacote</strong></span>' +
+                        '</label>' +
+                        '<div id="packageInfo" style="margin-top: 10px; font-size: 0.9em; color: #059669;"></div>' +
+                        '<input type="hidden" id="selectedPackageId" value="">' +
                     '</div>' +
                     '<div class="form-group">' +
                         '<label>💆 Tipo de Sessão <a href="perfil.html" style="font-size: 0.8em; color: #667eea; float: right;">⚙️ Gerenciar</a></label>' +
@@ -608,7 +616,7 @@
                             serviceOptions +
                         '</select>' +
                     '</div>' +
-                    '<div class="form-group">' +
+                    '<div class="form-group" id="valorGroup">' +
                         '<label>💰 Valor (R$)</label>' +
                         '<input type="number" id="sessionValue" placeholder="150" min="0" step="0.01" required>' +
                     '</div>' +
@@ -628,16 +636,66 @@
             });
         }
 
+        function checkClientPackages(clienteId) {
+            var packageOption = document.getElementById('packageOption');
+            var packageInfo = document.getElementById('packageInfo');
+            var selectedPackageId = document.getElementById('selectedPackageId');
+            
+            if (!clienteId) {
+                packageOption.style.display = 'none';
+                return;
+            }
+            
+            var packages = TheraFlowData.getActivePackagesByClient(clienteId);
+            
+            if (packages.length > 0) {
+                var pkg = packages[0]; // Usa o primeiro pacote ativo
+                packageOption.style.display = 'block';
+                packageInfo.innerHTML = pkg.nome + ' - Restam <strong>' + pkg.sessoesRestantes + '</strong> sessões';
+                selectedPackageId.value = pkg.id;
+            } else {
+                packageOption.style.display = 'none';
+                selectedPackageId.value = '';
+            }
+        }
+
+        function togglePackageValue() {
+            var usePackage = document.getElementById('usePackageCheck').checked;
+            var valorGroup = document.getElementById('valorGroup');
+            var valorInput = document.getElementById('sessionValue');
+            
+            if (usePackage) {
+                valorGroup.style.opacity = '0.5';
+                valorInput.value = '0';
+                valorInput.disabled = true;
+            } else {
+                valorGroup.style.opacity = '1';
+                valorInput.value = '150';
+                valorInput.disabled = false;
+            }
+        }
+
         function saveNewSession() {
             var data = document.getElementById('sessionDate').value;
             var hora = document.getElementById('sessionTime').value;
             var clienteId = document.getElementById('sessionClient').value;
             var tipo = document.getElementById('sessionType').value;
-            var valor = parseFloat(document.getElementById('sessionValue').value);
+            var valor = parseFloat(document.getElementById('sessionValue').value) || 0;
             var notas = document.getElementById('sessionNotes').value;
             
-            if (!data || !hora || !clienteId || !tipo || !valor) {
+            // Verificar se está usando pacote
+            var usePackageCheck = document.getElementById('usePackageCheck');
+            var usePackage = usePackageCheck && usePackageCheck.checked;
+            var packageId = document.getElementById('selectedPackageId') ? document.getElementById('selectedPackageId').value : '';
+            
+            // Se usar pacote, valor pode ser 0
+            if (!data || !hora || !clienteId || !tipo) {
                 TheraFlowUI.toast('Preencha todos os campos obrigatórios', 'error');
+                return;
+            }
+            
+            if (!usePackage && (isNaN(valor) || valor <= 0)) {
+                TheraFlowUI.toast('Informe o valor da sessão', 'error');
                 return;
             }
             
@@ -648,11 +706,23 @@
                 data: data,
                 hora: hora,
                 tipo: tipo,
-                valor: valor,
+                valor: usePackage ? 0 : valor,
                 notas: notas,
                 status: 'confirmado',
-                pagamento: 'pendente'
+                pagamento: usePackage ? 'pago' : 'pendente',
+                usouPacote: usePackage,
+                pacoteId: usePackage ? parseInt(packageId) : null
             };
+            
+            // Se usou pacote, descontar sessão
+            if (usePackage && packageId) {
+                var pkg = TheraFlowData.usePackageSession(parseInt(packageId));
+                if (pkg && pkg.sessoesRestantes <= 2) {
+                    setTimeout(function() {
+                        TheraFlowUI.toast('⚠️ Atenção: Restam apenas ' + pkg.sessoesRestantes + ' sessões no pacote!', 'warning');
+                    }, 1500);
+                }
+            }
             
             TheraFlowData.addSession(session);
             allSessions = TheraFlowData.getSessions();
@@ -664,7 +734,7 @@
             TheraFlowUI.closeModal();
             renderCalendar();
             renderDaySessions();
-            TheraFlowUI.toast('Atendimento agendado com sucesso!', 'success');
+            TheraFlowUI.toast('Atendimento agendado com sucesso!' + (usePackage ? ' (Pacote)' : ''), 'success');
         }
 
         function showSessionDetail(sessionId) {
