@@ -53,6 +53,16 @@
 
         function loadClients() {
             var clients = TheraFlowData.getClients();
+            
+            // Ordenar clientes por nome em ordem alfabética
+            clients.sort(function(a, b) {
+                var nomeA = (a.nome || '').toLowerCase();
+                var nomeB = (b.nome || '').toLowerCase();
+                if (nomeA < nomeB) return -1;
+                if (nomeA > nomeB) return 1;
+                return 0;
+            });
+            
             var container = document.getElementById('clientList');
             
             console.log('Clientes carregados:', clients);
