@@ -415,14 +415,7 @@
                         <label style="font-weight: 600; display: block; margin-bottom: 8px;">📝 Anotações finais</label>
                         <textarea class="note-input" id="sessionFinishNote" placeholder="Observações sobre a sessão...">${session.notas || ''}</textarea>
                     </div>
-                </div>
-                
-                <script>
-                    document.getElementById('finishPayment')?.addEventListener('change', function() {
-                        var info = document.getElementById('packageAbateInfo');
-                        if (info) info.style.display = this.value === 'pacote' ? 'block' : 'none';
-                    });
-                </script>`;
+                </div>`;
             
             TheraFlowUI.showModal({
                 title: '⏹ Finalizar Sessão',
@@ -432,6 +425,17 @@
                     { text: '✓ Finalizar', class: 'tf-btn-primary', onclick: `confirmFinishSession(${sessionId})` }
                 ]
             });
+            
+            // Adicionar event listener após modal ser criado
+            setTimeout(function() {
+                var finishPayment = document.getElementById('finishPayment');
+                if (finishPayment) {
+                    finishPayment.addEventListener('change', function() {
+                        var info = document.getElementById('packageAbateInfo');
+                        if (info) info.style.display = this.value === 'pacote' ? 'block' : 'none';
+                    });
+                }
+            }, 100);
         }
         
         function confirmFinishSession(sessionId) {
