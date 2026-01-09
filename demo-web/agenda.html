@@ -4,60 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TheraFlow - Agenda</title>
+    <link rel="stylesheet" href="styles/common.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
-
-        body {
-            background: #f5f5f5;
-            padding-bottom: 80px;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .header h1 {
-            font-size: 1.5em;
-            margin-bottom: 15px;
-        }
-
-        .month-selector {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(255,255,255,0.2);
-            padding: 10px 15px;
-            border-radius: 10px;
-        }
-
-        .month-selector button {
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5em;
-            cursor: pointer;
-            padding: 5px 10px;
-        }
-
-        .month-selector span {
-            font-size: 1.1em;
-            font-weight: 600;
-        }
-
-        .container {
-            padding: 20px;
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
+        /* Estilos específicos da página Agenda */
         .calendar {
             background: white;
             border-radius: 15px;
@@ -133,12 +82,6 @@
             font-weight: bold;
         }
 
-        .section-title {
-            font-size: 1.2em;
-            margin-bottom: 15px;
-            color: #333;
-        }
-
         .session-list {
             background: white;
             border-radius: 15px;
@@ -184,14 +127,6 @@
             color: #666;
         }
 
-        .session-item .status-badge {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.75em;
-            margin-left: 10px;
-        }
-
         .session-item .status-badge.pending {
             background: #fef3c7;
             color: #d97706;
@@ -232,37 +167,6 @@
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
             z-index: 100;
-        }
-
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-around;
-            padding: 15px 0;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            color: #999;
-            text-decoration: none;
-            font-size: 0.75em;
-            transition: color 0.2s;
-        }
-
-        .nav-item.active {
-            color: #667eea;
-        }
-
-        .nav-item .icon {
-            font-size: 1.8em;
-            margin-bottom: 5px;
         }
 
         .form-group {
@@ -393,34 +297,16 @@
         <button class="fab-add" onclick="showNewSessionModal()">+</button>
     </div>
 
-    <nav class="bottom-nav">
-        <a href="app.html" class="nav-item">
-            <span class="icon">🏠</span>
-            <span>Início</span>
-        </a>
-        <a href="clientes.html" class="nav-item">
-            <span class="icon">👥</span>
-            <span>Clientes</span>
-        </a>
-        <a href="agenda.html" class="nav-item active">
-            <span class="icon">📅</span>
-            <span>Agenda</span>
-        </a>
-        <a href="financeiro.html" class="nav-item">
-            <span class="icon">💰</span>
-            <span>Financeiro</span>
-        </a>
-        <a href="perfil.html" class="nav-item">
-            <span class="icon">👤</span>
-            <span>Perfil</span>
-        </a>
-    </nav>
+    <!-- Navegação injetada via JavaScript -->
+    <div id="nav-container"></div>
 
     <script src="js/data.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/components.js"></script>
     <script>
-        // Verificar autenticação
+        // Verificar autenticação e injetar navegação
         TheraFlowUI.checkAuth();
+        TheraFlowComponents.injectNavigation('agenda');
 
         // Estado
         var currentDate = new Date();
@@ -442,9 +328,8 @@
             var year = currentDate.getFullYear();
             var month = currentDate.getMonth();
             
-            var monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-                              'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-            document.getElementById('currentMonth').textContent = monthNames[month] + ' ' + year;
+            // Usar meses do componente centralizado
+            document.getElementById('currentMonth').textContent = TheraFlowComponents.MONTHS[month] + ' ' + year;
             
             var firstDay = new Date(year, month, 1).getDay();
             var lastDate = new Date(year, month + 1, 0).getDate();

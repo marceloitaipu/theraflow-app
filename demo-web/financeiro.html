@@ -4,18 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TheraFlow - Financeiro</title>
+    <link rel="stylesheet" href="styles/common.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        body { background: #f5f5f5; padding-bottom: 80px; }
-        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; }
-        .header h1 { font-size: 1.5em; margin-bottom: 15px; }
-        .month-selector {
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(255,255,255,0.2); padding: 10px 15px; border-radius: 10px;
-        }
-        .month-selector button { background: none; border: none; color: white; font-size: 1.5em; cursor: pointer; }
-        .month-selector span { font-weight: 600; }
-        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
+        /* Estilos específicos da página Financeiro */
         .summary-card { background: white; border-radius: 15px; padding: 25px; margin-bottom: 20px; }
         .summary-total { text-align: center; margin-bottom: 25px; }
         .summary-total .label { font-size: 0.9em; color: #666; margin-bottom: 8px; }
@@ -40,11 +31,6 @@
         
         /* Pacotes */
         .packages-section { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; }
-        .package-card { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; }
-        .package-card .client-name { font-weight: 600; margin-bottom: 8px; }
-        .package-card .progress-bar { background: rgba(255,255,255,0.3); height: 8px; border-radius: 4px; margin: 10px 0; }
-        .package-card .progress-fill { background: white; height: 100%; border-radius: 4px; transition: width 0.3s; }
-        .package-card .package-info { display: flex; justify-content: space-between; font-size: 0.9em; opacity: 0.95; }
         .package-alert { background: #fef3c7; color: #92400e; padding: 10px 15px; border-radius: 8px; font-size: 0.9em; margin-top: 10px; }
         
         /* Botões de ação */
@@ -53,28 +39,6 @@
         .action-btn.primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
         .action-btn.secondary { background: #f0f0f0; color: #333; }
         .section { margin-bottom: 30px; }
-        .section-title { font-size: 1.2em; margin-bottom: 15px; color: #333; display: flex; justify-content: space-between; align-items: center; }
-        .section-title .count { font-size: 0.75em; color: #999; font-weight: normal; background: #f0f0f0; padding: 4px 10px; border-radius: 10px; }
-        .payment-card {
-            background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px;
-            cursor: pointer; transition: all 0.2s; border-left: 4px solid #f59e0b;
-        }
-        .payment-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        .payment-card.paid { border-left-color: #10b981; cursor: default; }
-        .payment-card .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .payment-card .client { font-weight: 600; color: #333; }
-        .payment-card .pay-value { font-size: 1.2em; font-weight: bold; color: #f59e0b; }
-        .payment-card.paid .pay-value { color: #10b981; }
-        .payment-card .details { font-size: 0.9em; color: #666; }
-        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 0.75em; font-weight: 600; background: #d1fae5; color: #065f46; margin-left: 8px; }
-        .empty-state { text-align: center; padding: 40px; color: #999; }
-        .bottom-nav {
-            position: fixed; bottom: 0; left: 0; right: 0; background: white;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; justify-content: space-around; padding: 12px 0; z-index: 100;
-        }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #999; text-decoration: none; font-size: 0.75em; }
-        .nav-item.active { color: #667eea; }
-        .nav-item .icon { font-size: 1.8em; margin-bottom: 3px; }
     </style>
 </head>
 <body>
@@ -163,27 +127,29 @@
         </div>
     </div>
 
-    <nav class="bottom-nav">
-        <a href="app.html" class="nav-item"><span class="icon">🏠</span><span>Início</span></a>
-        <a href="clientes.html" class="nav-item"><span class="icon">👥</span><span>Clientes</span></a>
-        <a href="agenda.html" class="nav-item"><span class="icon">📅</span><span>Agenda</span></a>
-        <a href="financeiro.html" class="nav-item active"><span class="icon">💰</span><span>Financeiro</span></a>
-        <a href="perfil.html" class="nav-item"><span class="icon">👤</span><span>Perfil</span></a>
-    </nav>
+    <!-- Navegação injetada via JavaScript -->
+    <div id="nav-container"></div>
 
     <script src="js/data.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/components.js"></script>
     <script>
-        if (!TheraFlowData.isLoggedIn()) { window.location.href = 'index.html'; }
+        // Verificar login e injetar navegação
+        TheraFlowUI.checkAuth();
+        TheraFlowComponents.injectNavigation('financeiro');
 
         var currentYear = new Date().getFullYear();
         var currentMonth = new Date().getMonth() + 1;
 
-        var meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        // Usar meses do componente centralizado
+        var meses = [''].concat(TheraFlowComponents.MONTHS);
 
         function changeMonth(delta) {
             currentMonth += delta;
             if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+            if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+            loadFinanceData();
+        }
             if (currentMonth < 1) { currentMonth = 12; currentYear--; }
             loadFinanceData();
         }

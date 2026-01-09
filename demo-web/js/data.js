@@ -640,7 +640,7 @@ var TheraFlowData = {
                     priority: 'medium',
                     icon: '⚠️',
                     title: 'Cliente inativo: ' + clients[j].nome,
-                    message: lastSession ? 'Última sessão: ' + this.formatDateBR(lastSession) : 'Nunca atendido',
+                    message: lastSession ? 'Última sessão: ' + TheraFlowUI.formatDateBR(lastSession) : 'Nunca atendido',
                     clientId: clientId
                 });
             } else if (lastSession < thirtyDaysAgo) {
@@ -691,12 +691,6 @@ var TheraFlowData = {
         alerts.sort(function(a, b) { return priorityOrder[a.priority] - priorityOrder[b.priority]; });
         
         return alerts;
-    },
-    
-    formatDateBR: function(dateStr) {
-        if (!dateStr) return '';
-        var parts = dateStr.split('-');
-        return parts[2] + '/' + parts[1] + '/' + parts[0];
     },
     
     // === LINHA DO TEMPO DO CLIENTE ===
