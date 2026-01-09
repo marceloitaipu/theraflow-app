@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../services/session_service.dart';
-import '../../services/client_service.dart';
-import '../../models/session.dart';
+import '../../services/app_services.dart';
 
 class AgendaScreen extends StatefulWidget {
   const AgendaScreen({super.key});

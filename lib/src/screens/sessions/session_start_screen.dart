@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../models/session.dart';
-import '../../models/client.dart';
-import '../../services/session_service.dart';
-import '../../services/client_service.dart';
-import '../../services/package_service.dart';
+import '../../services/app_services.dart';
 import '../../widgets/primary_button.dart';
 
 /// Tela de iniciar/finalizar sessão - fluxo de trabalho real

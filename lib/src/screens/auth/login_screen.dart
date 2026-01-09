@@ -37,8 +37,9 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      final errorMsg = _parseError(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Falha no login: $e')),
+        SnackBar(content: Text(errorMsg)),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -56,12 +57,33 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) context.go('/onboarding');
     } catch (e) {
       if (!mounted) return;
+      final errorMsg = _parseError(e);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Falha no cadastro: $e')),
+        SnackBar(content: Text(errorMsg)),
       );
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  String _parseError(dynamic e) {
+    final errorString = e.toString().toLowerCase();
+    if (errorString.contains('user-not-found')) {
+      return 'Usuário não encontrado.';
+    } else if (errorString.contains('wrong-password') || errorString.contains('invalid-credential')) {
+      return 'Senha incorreta.';
+    } else if (errorString.contains('email-already-in-use')) {
+      return 'E-mail já cadastrado. Tente fazer login.';
+    } else if (errorString.contains('invalid-email')) {
+      return 'E-mail inválido.';
+    } else if (errorString.contains('weak-password')) {
+      return 'Senha muito fraca. Use pelo menos 6 caracteres.';
+    } else if (errorString.contains('too-many-requests')) {
+      return 'Muitas tentativas. Aguarde um momento.';
+    } else if (errorString.contains('network')) {
+      return 'Erro de conexão. Verifique sua internet.';
+    }
+    return 'Erro ao autenticar. Tente novamente.';
   }
 
   @override

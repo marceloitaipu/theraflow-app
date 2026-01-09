@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../services/client_service.dart';
-import '../../models/client.dart';
+import '../../services/app_services.dart';
 
 class ClientsScreen extends StatefulWidget {
   const ClientsScreen({super.key});
@@ -57,6 +56,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                 );
                 if (context.mounted) {
                   Navigator.pop(context);
+                  setState(() {});
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Cliente criado!')),
                   );
@@ -105,8 +105,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
         onPressed: _showNewClientDialog,
         child: const Icon(Icons.person_add),
       ),
-      body: StreamBuilder<List<Client>>(
-        stream: ClientService.instance.getClientsStream(),
+      body: FutureBuilder<List<Client>>(
+        future: ClientService.instance.getClients(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

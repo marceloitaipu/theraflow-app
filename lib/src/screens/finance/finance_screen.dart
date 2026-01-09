@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../services/finance_service.dart';
-import '../../services/session_service.dart';
-import '../../services/client_service.dart';
-import '../../models/session.dart';
+import '../../services/app_services.dart';
 import '../../widgets/section_title.dart';
 
 class FinanceScreen extends StatefulWidget {

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../services/auth_service.dart';
-import '../../services/client_service.dart';
-import '../../models/user.dart';
+import '../../services/app_services.dart';
 import '../../widgets/section_title.dart';
 
 class ProfileScreen extends StatelessWidget {

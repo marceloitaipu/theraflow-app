@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../models/client.dart';
-import '../../services/client_service.dart';
-import '../../services/package_service.dart';
-import '../../services/auth_service.dart';
+import '../../services/app_services.dart';
 import '../../widgets/primary_button.dart';
 
 /// Tela de criação de pacote de sessões

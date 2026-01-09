@@ -1,6 +1,6 @@
 import 'package:go_router/go_router.dart';
 
-import 'screens/auth/login_screen.dart';
+import 'screens/auth/mock_login_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/shell/app_shell.dart';
 import 'screens/home/home_screen.dart';
@@ -19,7 +19,7 @@ final GoRouter appRouter = GoRouter(
   routes: [
     GoRoute(
       path: '/login',
-      builder: (_, __) => const LoginScreen(),
+      builder: (_, __) => const MockLoginScreen(),
     ),
     GoRoute(
       path: '/onboarding',

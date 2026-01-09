@@ -2,10 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../services/session_service.dart';
-import '../../services/client_service.dart';
-import '../../services/finance_service.dart';
-import '../../models/session.dart';
+import '../../services/app_services.dart';
 import '../../widgets/section_title.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -205,7 +202,7 @@ class _NextSessionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final timeFormat = DateFormat('HH:mm');
 
-    return FutureBuilder(
+    return FutureBuilder<Client?>(
       future: ClientService.instance.getClientById(session.clientId),
       builder: (context, clientSnapshot) {
         final clientName = clientSnapshot.data?.name ?? 'Cliente';
@@ -325,7 +322,7 @@ class _SessionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final timeFormat = DateFormat('HH:mm');
 
-    return FutureBuilder(
+    return FutureBuilder<Client?>(
       future: ClientService.instance.getClientById(session.clientId),
       builder: (context, clientSnapshot) {
         final clientName = clientSnapshot.data?.name ?? 'Cliente';

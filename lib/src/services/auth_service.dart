@@ -62,7 +62,18 @@ class AuthService {
 
       return credential.user!;
     } on firebase_auth.FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
+      throw Exception(_handleAuthException(e));
+    } catch (e) {
+      // Tratamento para erros no Flutter Web
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('email-already-in-use')) {
+        throw Exception('E-mail já cadastrado.');
+      } else if (errorString.contains('invalid-email')) {
+        throw Exception('E-mail inválido.');
+      } else if (errorString.contains('weak-password')) {
+        throw Exception('Senha muito fraca.');
+      }
+      throw Exception('Erro ao criar conta. Tente novamente.');
     }
   }
 
@@ -82,7 +93,20 @@ class AuthService {
       );
       return credential.user!;
     } on firebase_auth.FirebaseAuthException catch (e) {
-      throw _handleAuthException(e);
+      throw Exception(_handleAuthException(e));
+    } catch (e) {
+      // Tratamento para erros no Flutter Web
+      final errorString = e.toString().toLowerCase();
+      if (errorString.contains('user-not-found')) {
+        throw Exception('Usuário não encontrado.');
+      } else if (errorString.contains('wrong-password') || errorString.contains('invalid-credential')) {
+        throw Exception('Senha incorreta.');
+      } else if (errorString.contains('invalid-email')) {
+        throw Exception('E-mail inválido.');
+      } else if (errorString.contains('too-many-requests')) {
+        throw Exception('Muitas tentativas. Tente novamente mais tarde.');
+      }
+      throw Exception('Erro ao fazer login. Verifique suas credenciais.');
     }
   }
 

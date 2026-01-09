@@ -2,13 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../services/client_service.dart';
-import '../../services/session_service.dart';
-import '../../services/package_service.dart';
-import '../../services/auth_service.dart';
-import '../../models/client.dart';
-import '../../models/session.dart';
-import '../../models/package.dart';
+import '../../services/app_services.dart';
 import '../../widgets/section_title.dart';
 
 class ClientDetailScreen extends StatefulWidget {
