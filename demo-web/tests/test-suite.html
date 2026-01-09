@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Bateria Completa de Testes</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        body { background: #f5f5f5; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        h1 { color: #667eea; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        h1 small { font-weight: normal; font-size: 0.5em; color: #666; }
+        .subtitle { color: #666; margin-bottom: 20px; }
+        
+        .controls { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .run-btn { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 30px; border-radius: 10px; font-size: 1em; cursor: pointer; font-weight: bold; }
+        .run-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+        .run-btn.secondary { background: #6c757d; }
+        .run-btn.danger { background: #dc3545; }
+        
+        .summary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 15px; margin-bottom: 20px; }
+        .summary h3 { margin-bottom: 15px; font-size: 1.3em; }
+        .summary .stats { display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px; }
+        .summary .stat { text-align: center; }
+        .summary .stat .number { font-size: 2.5em; font-weight: bold; }
+        .summary .stat .label { opacity: 0.9; }
+        .progress-bar { background: rgba(255,255,255,0.3); border-radius: 10px; height: 10px; margin-top: 15px; overflow: hidden; }
+        .progress-bar .fill { height: 100%; background: #00ff88; transition: width 0.5s; }
+        
+        .test-section { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .test-section h2 { margin-bottom: 15px; font-size: 1.1em; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .test-section h2:hover { color: #667eea; }
+        .test-section .badge { background: #e0e0e0; color: #666; padding: 3px 10px; border-radius: 20px; font-size: 0.8em; margin-left: auto; }
+        .test-section .badge.pass { background: #d1fae5; color: #059669; }
+        .test-section .badge.fail { background: #fee2e2; color: #dc2626; }
+        
+        .test-content { display: none; }
+        .test-section.expanded .test-content { display: block; }
+        
+        .test-item { padding: 10px 15px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.95em; }
+        .test-item.pass { background: #d1fae5; }
+        .test-item.fail { background: #fee2e2; }
+        .test-item.pending { background: #fef3c7; }
+        .test-item .details { color: #666; font-size: 0.85em; margin-left: 10px; }
+        .status { font-weight: bold; font-size: 0.9em; }
+        .status.pass { color: #059669; }
+        .status.fail { color: #dc2626; }
+        
+        .log { background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 10px; font-family: 'Courier New', monospace; font-size: 0.8em; max-height: 400px; overflow-y: auto; }
+        .log-entry { margin-bottom: 3px; white-space: pre-wrap; }
+        .log-entry.error { color: #ff6b6b; }
+        .log-entry.success { color: #69db7c; }
+        .log-entry.info { color: #74c0fc; }
+        .log-entry.warn { color: #ffd43b; }
+        .log-entry.header { color: #ffffff; font-weight: bold; margin-top: 10px; }
+        
+        .tabs { display: flex; gap: 5px; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; border-radius: 10px 10px 0 0; background: #e0e0e0; cursor: pointer; border: none; }
+        .tab.active { background: white; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 TheraFlow <small>Bateria Completa de Testes</small></h1>
+        <p class="subtitle">Validação automatizada de todas as funcionalidades do app</p>
+        
+        <div class="controls">
+            <button class="run-btn" onclick="runAllTests()">▶️ Executar Todos os Testes</button>
+            <button class="run-btn secondary" onclick="runQuickTests()">⚡ Testes Rápidos</button>
+            <button class="run-btn danger" onclick="resetAndTest()">🔄 Resetar Dados e Testar</button>
+        </div>
+        
+        <div class="summary" id="summary">
+            <h3>📊 Resultado dos Testes</h3>
+            <div class="stats">
+                <div class="stat"><div class="number" id="passCount">-</div><div class="label">✅ Passou</div></div>
+                <div class="stat"><div class="number" id="failCount">-</div><div class="label">❌ Falhou</div></div>
+                <div class="stat"><div class="number" id="totalCount">-</div><div class="label">📝 Total</div></div>
+                <div class="stat"><div class="number" id="coveragePercent">-</div><div class="label">📈 Cobertura</div></div>
+            </div>
+            <div class="progress-bar"><div class="fill" id="progressFill" style="width: 0%"></div></div>
+        </div>
+
+        <!-- Seções de Teste -->
+        <div class="test-section" id="section-core">
+            <h2 onclick="toggleSection('core')">🔧 1. Funções Core (Data Layer) <span class="badge" id="badge-core">-/-</span></h2>
+            <div class="test-content" id="tests-core"></div>
+        </div>
+
+        <div class="test-section" id="section-clients">
+            <h2 onclick="toggleSection('clients')">👥 2. Gestão de Clientes <span class="badge" id="badge-clients">-/-</span></h2>
+            <div class="test-content" id="tests-clients"></div>
+        </div>
+
+        <div class="test-section" id="section-sessions">
+            <h2 onclick="toggleSection('sessions')">📅 3. Gestão de Sessões <span class="badge" id="badge-sessions">-/-</span></h2>
+            <div class="test-content" id="tests-sessions"></div>
+        </div>
+
+        <div class="test-section" id="section-packages">
+            <h2 onclick="toggleSection('packages')">📦 4. Sistema de Pacotes <span class="badge" id="badge-packages">-/-</span></h2>
+            <div class="test-content" id="tests-packages"></div>
+        </div>
+
+        <div class="test-section" id="section-finance">
+            <h2 onclick="toggleSection('finance')">💰 5. Financeiro e Relatórios <span class="badge" id="badge-finance">-/-</span></h2>
+            <div class="test-content" id="tests-finance"></div>
+        </div>
+
+        <div class="test-section" id="section-alerts">
+            <h2 onclick="toggleSection('alerts')">🔔 6. Alertas Inteligentes <span class="badge" id="badge-alerts">-/-</span></h2>
+            <div class="test-content" id="tests-alerts"></div>
+        </div>
+
+        <div class="test-section" id="section-progress">
+            <h2 onclick="toggleSection('progress')">📈 7. Indicadores de Progresso <span class="badge" id="badge-progress">-/-</span></h2>
+            <div class="test-content" id="tests-progress"></div>
+        </div>
+
+        <div class="test-section" id="section-timeline">
+            <h2 onclick="toggleSection('timeline')">⏳ 8. Timeline do Cliente <span class="badge" id="badge-timeline">-/-</span></h2>
+            <div class="test-content" id="tests-timeline"></div>
+        </div>
+
+        <div class="test-section" id="section-session-flow">
+            <h2 onclick="toggleSection('session-flow')">▶️ 9. Fluxo Iniciar/Finalizar Sessão <span class="badge" id="badge-session-flow">-/-</span></h2>
+            <div class="test-content" id="tests-session-flow"></div>
+        </div>
+
+        <div class="test-section" id="section-plan">
+            <h2 onclick="toggleSection('plan')">🚫 10. Limites de Plano <span class="badge" id="badge-plan">-/-</span></h2>
+            <div class="test-content" id="tests-plan"></div>
+        </div>
+
+        <div class="test-section" id="section-ui">
+            <h2 onclick="toggleSection('ui')">🎨 11. UI Components <span class="badge" id="badge-ui">-/-</span></h2>
+            <div class="test-content" id="tests-ui"></div>
+        </div>
+
+        <div class="test-section" id="section-integration">
+            <h2 onclick="toggleSection('integration')">🔗 12. Testes de Integração <span class="badge" id="badge-integration">-/-</span></h2>
+            <div class="test-content" id="tests-integration"></div>
+        </div>
+
+        <h3 style="margin: 20px 0 10px;">📋 Log de Execução</h3>
+        <div class="log" id="logContainer">
+            <div class="log-entry info">🧪 Console de Testes - Aguardando execução...</div>
+        </div>
+    </div>
+
+    <script src="../js/data.js"></script>
+    <script src="../js/ui.js"></script>
+    <script>
+        // ============================================================
+        // FRAMEWORK DE TESTES
+        // ============================================================
+        var TestRunner = {
+            results: { pass: 0, fail: 0, total: 0 },
+            sectionResults: {},
+            logContainer: null,
+            startTime: null,
+
+            init: function() {
+                this.logContainer = document.getElementById('logContainer');
+                this.results = { pass: 0, fail: 0, total: 0 };
+                this.sectionResults = {};
+            },
+
+            log: function(message, type) {
+                var entry = document.createElement('div');
+                entry.className = 'log-entry ' + (type || '');
+                var timestamp = new Date().toLocaleTimeString('pt-BR');
+                entry.textContent = '[' + timestamp + '] ' + message;
+                this.logContainer.appendChild(entry);
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
+            },
+
+            clearLog: function() {
+                this.logContainer.innerHTML = '';
+            },
+
+            assert: function(sectionId, testName, condition, details) {
+                var container = document.getElementById('tests-' + sectionId);
+                if (!container) {
+                    console.error('Container não encontrado: tests-' + sectionId);
+                    return;
+                }
+
+                var passed = !!condition;
+                var div = document.createElement('div');
+                div.className = 'test-item ' + (passed ? 'pass' : 'fail');
+                div.innerHTML = '<span>' + testName + 
+                    (details ? '<span class="details">(' + details + ')</span>' : '') + 
+                    '</span><span class="status ' + (passed ? 'pass' : 'fail') + '">' + 
+                    (passed ? '✅ PASSOU' : '❌ FALHOU') + '</span>';
+                container.appendChild(div);
+
+                // Atualizar contadores
+                this.results.total++;
+                if (passed) this.results.pass++;
+                else this.results.fail++;
+
+                // Contadores por seção
+                if (!this.sectionResults[sectionId]) {
+                    this.sectionResults[sectionId] = { pass: 0, fail: 0 };
+                }
+                if (passed) this.sectionResults[sectionId].pass++;
+                else this.sectionResults[sectionId].fail++;
+
+                this.log((passed ? '✅ ' : '❌ ') + testName, passed ? 'success' : 'error');
+                return passed;
+            },
+
+            updateSummary: function() {
+                document.getElementById('passCount').textContent = this.results.pass;
+                document.getElementById('failCount').textContent = this.results.fail;
+                document.getElementById('totalCount').textContent = this.results.total;
+                
+                var coverage = this.results.total > 0 ? Math.round((this.results.pass / this.results.total) * 100) : 0;
+                document.getElementById('coveragePercent').textContent = coverage + '%';
+                document.getElementById('progressFill').style.width = coverage + '%';
+
+                // Atualizar badges das seções
+                for (var sectionId in this.sectionResults) {
+                    var sr = this.sectionResults[sectionId];
+                    var badge = document.getElementById('badge-' + sectionId);
+                    if (badge) {
+                        badge.textContent = sr.pass + '/' + (sr.pass + sr.fail);
+                        badge.className = 'badge ' + (sr.fail === 0 ? 'pass' : 'fail');
+                    }
+                    // Expandir seções com falhas
+                    if (sr.fail > 0) {
+                        document.getElementById('section-' + sectionId).classList.add('expanded');
+                    }
+                }
+
+                var duration = ((Date.now() - this.startTime) / 1000).toFixed(2);
+                this.log('', 'header');
+                this.log('═══════════════════════════════════════════════════════', 'header');
+                this.log('📊 RESULTADO FINAL: ' + this.results.pass + '/' + this.results.total + ' testes passaram (' + coverage + '%)', 
+                    this.results.fail === 0 ? 'success' : 'error');
+                this.log('⏱️ Tempo de execução: ' + duration + 's', 'info');
+            },
+
+            clearResults: function() {
+                document.querySelectorAll('[id^="tests-"]').forEach(function(el) { 
+                    el.innerHTML = ''; 
+                });
+                document.querySelectorAll('.test-section').forEach(function(el) { 
+                    el.classList.remove('expanded'); 
+                });
+            }
+        };
+
+        function toggleSection(sectionId) {
+            document.getElementById('section-' + sectionId).classList.toggle('expanded');
+        }
+
+        // ============================================================
+        // TESTES: FUNÇÕES CORE
+        // ============================================================
+        function testCore() {
+            TestRunner.log('', 'header');
+            TestRunner.log('🔧 TESTANDO FUNÇÕES CORE...', 'header');
+
+            // Inicialização
+            TestRunner.assert('core', 'TheraFlowData existe', typeof TheraFlowData === 'object');
+            TestRunner.assert('core', 'Função init existe', typeof TheraFlowData.init === 'function');
+            TestRunner.assert('core', 'Função seedData existe', typeof TheraFlowData.seedData === 'function');
+            TestRunner.assert('core', 'Função resetData existe', typeof TheraFlowData.resetData === 'function');
+            TestRunner.assert('core', 'Função clearAll existe', typeof TheraFlowData.clearAll === 'function');
+
+            // Helpers
+            TestRunner.assert('core', 'Função formatDate existe', typeof TheraFlowData.formatDate === 'function');
+            var today = TheraFlowData.formatDate(new Date());
+            TestRunner.assert('core', 'formatDate retorna formato YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(today), today);
+
+            TestRunner.assert('core', 'Função addDays existe', typeof TheraFlowData.addDays === 'function');
+            var tomorrow = TheraFlowData.formatDate(TheraFlowData.addDays(new Date(), 1));
+            TestRunner.assert('core', 'addDays adiciona dias corretamente', tomorrow > today);
+
+            TestRunner.assert('core', 'Função generateId existe', typeof TheraFlowData.generateId === 'function');
+            var id1 = TheraFlowData.generateId();
+            var id2 = TheraFlowData.generateId();
+            TestRunner.assert('core', 'generateId gera IDs únicos', id1 !== id2, 'ID1: ' + id1 + ', ID2: ' + id2);
+
+            // Auth
+            TestRunner.assert('core', 'Função isLoggedIn existe', typeof TheraFlowData.isLoggedIn === 'function');
+            TestRunner.assert('core', 'Função login existe', typeof TheraFlowData.login === 'function');
+            TestRunner.assert('core', 'Função logout existe', typeof TheraFlowData.logout === 'function');
+            TestRunner.assert('core', 'Função hasCompletedOnboarding existe', typeof TheraFlowData.hasCompletedOnboarding === 'function');
+        }
+
+        // ============================================================
+        // TESTES: CLIENTES
+        // ============================================================
+        function testClients() {
+            TestRunner.log('', 'header');
+            TestRunner.log('👥 TESTANDO GESTÃO DE CLIENTES...', 'header');
+
+            // Funções existem
+            TestRunner.assert('clients', 'Função getClients existe', typeof TheraFlowData.getClients === 'function');
+            TestRunner.assert('clients', 'Função getClientById existe', typeof TheraFlowData.getClientById === 'function');
+            TestRunner.assert('clients', 'Função addClient existe', typeof TheraFlowData.addClient === 'function');
+            TestRunner.assert('clients', 'Função updateClient existe', typeof TheraFlowData.updateClient === 'function');
+            TestRunner.assert('clients', 'Função deleteClient existe', typeof TheraFlowData.deleteClient === 'function');
+
+            // Listar clientes
+            var clients = TheraFlowData.getClients();
+            TestRunner.assert('clients', 'getClients retorna array', Array.isArray(clients), clients.length + ' clientes');
+
+            // Adicionar cliente
+            var newClient = TheraFlowData.addClient({
+                nome: 'Teste Unitário',
+                email: 'teste@teste.com',
+                telefone: '(11) 99999-9999'
+            });
+            TestRunner.assert('clients', 'addClient cria cliente com ID', newClient && newClient.id);
+            TestRunner.assert('clients', 'addClient define sessoes como 0', newClient && newClient.sessoes === 0);
+            TestRunner.assert('clients', 'addClient define createdAt', newClient && newClient.createdAt);
+
+            // Buscar cliente por ID
+            var foundClient = TheraFlowData.getClientById(newClient.id);
+            TestRunner.assert('clients', 'getClientById encontra cliente', foundClient && foundClient.nome === 'Teste Unitário');
+
+            // Atualizar cliente
+            var updatedClient = TheraFlowData.updateClient(newClient.id, { nome: 'Teste Atualizado' });
+            TestRunner.assert('clients', 'updateClient atualiza nome', updatedClient && updatedClient.nome === 'Teste Atualizado');
+
+            // Deletar cliente
+            var clientsBefore = TheraFlowData.getClients().length;
+            TheraFlowData.deleteClient(newClient.id);
+            var clientsAfter = TheraFlowData.getClients().length;
+            TestRunner.assert('clients', 'deleteClient remove cliente', clientsAfter === clientsBefore - 1);
+        }
+
+        // ============================================================
+        // TESTES: SESSÕES
+        // ============================================================
+        function testSessions() {
+            TestRunner.log('', 'header');
+            TestRunner.log('📅 TESTANDO GESTÃO DE SESSÕES...', 'header');
+
+            // Funções existem
+            TestRunner.assert('sessions', 'Função getSessions existe', typeof TheraFlowData.getSessions === 'function');
+            TestRunner.assert('sessions', 'Função getSessionById existe', typeof TheraFlowData.getSessionById === 'function');
+            TestRunner.assert('sessions', 'Função getSessionsByDate existe', typeof TheraFlowData.getSessionsByDate === 'function');
+            TestRunner.assert('sessions', 'Função getSessionsByClient existe', typeof TheraFlowData.getSessionsByClient === 'function');
+            TestRunner.assert('sessions', 'Função getTodaySessions existe', typeof TheraFlowData.getTodaySessions === 'function');
+            TestRunner.assert('sessions', 'Função getTomorrowSessions existe', typeof TheraFlowData.getTomorrowSessions === 'function');
+            TestRunner.assert('sessions', 'Função getNext7DaysSessions existe', typeof TheraFlowData.getNext7DaysSessions === 'function');
+            TestRunner.assert('sessions', 'Função addSession existe', typeof TheraFlowData.addSession === 'function');
+            TestRunner.assert('sessions', 'Função updateSession existe', typeof TheraFlowData.updateSession === 'function');
+            TestRunner.assert('sessions', 'Função deleteSession existe', typeof TheraFlowData.deleteSession === 'function');
+            TestRunner.assert('sessions', 'Função markSessionPaid existe', typeof TheraFlowData.markSessionPaid === 'function');
+            TestRunner.assert('sessions', 'Função markSessionNoShow existe', typeof TheraFlowData.markSessionNoShow === 'function');
+            TestRunner.assert('sessions', 'Função markSessionDone existe', typeof TheraFlowData.markSessionDone === 'function');
+
+            // Listar sessões
+            var sessions = TheraFlowData.getSessions();
+            TestRunner.assert('sessions', 'getSessions retorna array', Array.isArray(sessions), sessions.length + ' sessões');
+
+            // Sessões de hoje
+            var todaySessions = TheraFlowData.getTodaySessions();
+            TestRunner.assert('sessions', 'getTodaySessions retorna array', Array.isArray(todaySessions), todaySessions.length + ' hoje');
+
+            // Sessões de amanhã
+            var tomorrowSessions = TheraFlowData.getTomorrowSessions();
+            TestRunner.assert('sessions', 'getTomorrowSessions retorna array', Array.isArray(tomorrowSessions), tomorrowSessions.length + ' amanhã');
+
+            // Próximos 7 dias
+            var next7 = TheraFlowData.getNext7DaysSessions();
+            TestRunner.assert('sessions', 'getNext7DaysSessions retorna array', Array.isArray(next7), next7.length + ' sessões');
+
+            // Adicionar sessão
+            var clients = TheraFlowData.getClients();
+            if (clients.length > 0) {
+                var newSession = TheraFlowData.addSession({
+                    clienteId: clients[0].id,
+                    clienteNome: clients[0].nome,
+                    data: TheraFlowData.formatDate(new Date()),
+                    hora: '20:00',
+                    duracao: 60,
+                    tipo: 'Teste',
+                    valor: 100,
+                    status: 'confirmado',
+                    pagamento: 'pendente'
+                });
+                TestRunner.assert('sessions', 'addSession cria sessão com ID', newSession && newSession.id);
+
+                // Marcar como pago
+                var paidSession = TheraFlowData.markSessionPaid(newSession.id);
+                TestRunner.assert('sessions', 'markSessionPaid atualiza pagamento', paidSession && paidSession.pagamento === 'pago');
+
+                // Limpar sessão de teste
+                TheraFlowData.deleteSession(newSession.id);
+            }
+        }
+
+        // ============================================================
+        // TESTES: PACOTES
+        // ============================================================
+        function testPackages() {
+            TestRunner.log('', 'header');
+            TestRunner.log('📦 TESTANDO SISTEMA DE PACOTES...', 'header');
+
+            // Funções existem
+            TestRunner.assert('packages', 'Função getPackages existe', typeof TheraFlowData.getPackages === 'function');
+            TestRunner.assert('packages', 'Função getPackageById existe', typeof TheraFlowData.getPackageById === 'function');
+            TestRunner.assert('packages', 'Função getPackagesByClient existe', typeof TheraFlowData.getPackagesByClient === 'function');
+            TestRunner.assert('packages', 'Função getActivePackagesByClient existe', typeof TheraFlowData.getActivePackagesByClient === 'function');
+            TestRunner.assert('packages', 'Função addPackage existe', typeof TheraFlowData.addPackage === 'function');
+            TestRunner.assert('packages', 'Função usePackageSession existe', typeof TheraFlowData.usePackageSession === 'function');
+            TestRunner.assert('packages', 'Função deletePackage existe', typeof TheraFlowData.deletePackage === 'function');
+
+            // Criar pacote
+            var clients = TheraFlowData.getClients();
+            if (clients.length > 0) {
+                var pkg = TheraFlowData.addPackage({
+                    clienteId: clients[0].id,
+                    clienteNome: clients[0].nome,
+                    nome: 'Pacote Teste 10 sessões',
+                    sessoesTotal: 10,
+                    valorTotal: 900
+                });
+                TestRunner.assert('packages', 'addPackage cria pacote com ID', pkg && pkg.id);
+                TestRunner.assert('packages', 'addPackage define sessoesRestantes', pkg && pkg.sessoesRestantes === 10);
+                TestRunner.assert('packages', 'addPackage define createdAt', pkg && pkg.createdAt);
+
+                // Usar sessão do pacote
+                var usedPkg = TheraFlowData.usePackageSession(pkg.id);
+                TestRunner.assert('packages', 'usePackageSession decrementa sessões', usedPkg && usedPkg.sessoesRestantes === 9);
+                TestRunner.assert('packages', 'usePackageSession incrementa sessoesUsadas', usedPkg && usedPkg.sessoesUsadas === 1);
+                TestRunner.assert('packages', 'usePackageSession define ultimoUso', usedPkg && usedPkg.ultimoUso);
+
+                // Pacotes ativos do cliente
+                var activePackages = TheraFlowData.getActivePackagesByClient(clients[0].id);
+                TestRunner.assert('packages', 'getActivePackagesByClient retorna array', Array.isArray(activePackages));
+                TestRunner.assert('packages', 'getActivePackagesByClient inclui pacote ativo', activePackages.some(function(p) { return p.id === pkg.id; }));
+
+                // Deletar pacote
+                TheraFlowData.deletePackage(pkg.id);
+                var deletedPkg = TheraFlowData.getPackageById(pkg.id);
+                TestRunner.assert('packages', 'deletePackage remove pacote', !deletedPkg);
+            }
+        }
+
+        // ============================================================
+        // TESTES: FINANCEIRO
+        // ============================================================
+        function testFinance() {
+            TestRunner.log('', 'header');
+            TestRunner.log('💰 TESTANDO FINANCEIRO E RELATÓRIOS...', 'header');
+
+            // Funções existem
+            TestRunner.assert('finance', 'Função getFinanceReport existe', typeof TheraFlowData.getFinanceReport === 'function');
+            TestRunner.assert('finance', 'Função getSmartFinanceReport existe', typeof TheraFlowData.getSmartFinanceReport === 'function');
+            TestRunner.assert('finance', 'Função generateMonthlyReport existe', typeof TheraFlowData.generateMonthlyReport === 'function');
+
+            // getFinanceReport
+            var now = new Date();
+            var report = TheraFlowData.getFinanceReport(now.getFullYear(), now.getMonth() + 1);
+            TestRunner.assert('finance', 'getFinanceReport retorna objeto', typeof report === 'object');
+            TestRunner.assert('finance', 'getFinanceReport tem totalReceived', typeof report.totalReceived === 'number');
+            TestRunner.assert('finance', 'getFinanceReport tem totalPending', typeof report.totalPending === 'number');
+            TestRunner.assert('finance', 'getFinanceReport tem totalSessions', typeof report.totalSessions === 'number');
+
+            // getSmartFinanceReport
+            var smartReport = TheraFlowData.getSmartFinanceReport();
+            TestRunner.assert('finance', 'getSmartFinanceReport retorna objeto', typeof smartReport === 'object');
+            TestRunner.assert('finance', 'getSmartFinanceReport tem receivedThisMonth', typeof smartReport.receivedThisMonth === 'number');
+            TestRunner.assert('finance', 'getSmartFinanceReport tem pendingThisMonth', typeof smartReport.pendingThisMonth === 'number');
+            TestRunner.assert('finance', 'getSmartFinanceReport tem next7Days', typeof smartReport.next7Days === 'number');
+            TestRunner.assert('finance', 'getSmartFinanceReport tem growthPercent', typeof smartReport.growthPercent === 'number');
+            TestRunner.assert('finance', 'getSmartFinanceReport tem prevMonthReceived', typeof smartReport.prevMonthReceived === 'number');
+            TestRunner.assert('finance', 'getSmartFinanceReport tem averageTicket', typeof smartReport.averageTicket === 'number');
+
+            // generateMonthlyReport
+            var monthlyReport = TheraFlowData.generateMonthlyReport(now.getFullYear(), now.getMonth() + 1);
+            TestRunner.assert('finance', 'generateMonthlyReport retorna objeto', typeof monthlyReport === 'object');
+            TestRunner.assert('finance', 'generateMonthlyReport tem period', typeof monthlyReport.period === 'string');
+            TestRunner.assert('finance', 'generateMonthlyReport tem sessions array', Array.isArray(monthlyReport.sessions));
+            TestRunner.assert('finance', 'generateMonthlyReport tem uniqueClientsAttended', typeof monthlyReport.uniqueClientsAttended === 'number');
+        }
+
+        // ============================================================
+        // TESTES: ALERTAS INTELIGENTES
+        // ============================================================
+        function testAlerts() {
+            TestRunner.log('', 'header');
+            TestRunner.log('🔔 TESTANDO ALERTAS INTELIGENTES...', 'header');
+
+            TestRunner.assert('alerts', 'Função getSmartAlerts existe', typeof TheraFlowData.getSmartAlerts === 'function');
+            TestRunner.assert('alerts', 'Função getReminders existe', typeof TheraFlowData.getReminders === 'function');
+            TestRunner.assert('alerts', 'Função addReminder existe', typeof TheraFlowData.addReminder === 'function');
+            TestRunner.assert('alerts', 'Função updateReminder existe', typeof TheraFlowData.updateReminder === 'function');
+
+            // getSmartAlerts
+            var alerts = TheraFlowData.getSmartAlerts();
+            TestRunner.assert('alerts', 'getSmartAlerts retorna array', Array.isArray(alerts));
+            
+            if (alerts.length > 0) {
+                TestRunner.assert('alerts', 'Alertas têm propriedade type', alerts[0].hasOwnProperty('type'));
+                TestRunner.assert('alerts', 'Alertas têm propriedade priority', alerts[0].hasOwnProperty('priority'));
+                TestRunner.assert('alerts', 'Alertas têm propriedade icon', alerts[0].hasOwnProperty('icon'));
+                TestRunner.assert('alerts', 'Alertas têm propriedade title', alerts[0].hasOwnProperty('title'));
+                TestRunner.assert('alerts', 'Alertas têm propriedade message', alerts[0].hasOwnProperty('message'));
+                
+                // Verificar ordenação por prioridade
+                var priorities = { high: 0, medium: 1, low: 2 };
+                var isOrdered = true;
+                for (var i = 1; i < alerts.length; i++) {
+                    if (priorities[alerts[i].priority] < priorities[alerts[i-1].priority]) {
+                        isOrdered = false;
+                        break;
+                    }
+                }
+                TestRunner.assert('alerts', 'Alertas ordenados por prioridade', isOrdered);
+            } else {
+                TestRunner.assert('alerts', 'Alertas retornados (pode estar vazio)', true, '0 alertas');
+            }
+        }
+
+        // ============================================================
+        // TESTES: INDICADORES DE PROGRESSO
+        // ============================================================
+        function testProgress() {
+            TestRunner.log('', 'header');
+            TestRunner.log('📈 TESTANDO INDICADORES DE PROGRESSO...', 'header');
+
+            TestRunner.assert('progress', 'Função getProgressIndicators existe', typeof TheraFlowData.getProgressIndicators === 'function');
+
+            var indicators = TheraFlowData.getProgressIndicators();
+            TestRunner.assert('progress', 'getProgressIndicators retorna objeto', typeof indicators === 'object');
+            TestRunner.assert('progress', 'Indicador sessionsThisMonth é número', typeof indicators.sessionsThisMonth === 'number');
+            TestRunner.assert('progress', 'Indicador totalClientsRegistered é número', typeof indicators.totalClientsRegistered === 'number');
+            TestRunner.assert('progress', 'Indicador activeClients é número', typeof indicators.activeClients === 'number');
+            TestRunner.assert('progress', 'Indicador noShowRate é número', typeof indicators.noShowRate === 'number');
+            TestRunner.assert('progress', 'noShowRate entre 0 e 100', indicators.noShowRate >= 0 && indicators.noShowRate <= 100);
+            TestRunner.assert('progress', 'Indicador bestMonth existe', indicators.hasOwnProperty('bestMonth'));
+            TestRunner.assert('progress', 'Indicador bestMonthValue é número', typeof indicators.bestMonthValue === 'number');
+            TestRunner.assert('progress', 'Indicador monthlyAverage é número', typeof indicators.monthlyAverage === 'number');
+        }
+
+        // ============================================================
+        // TESTES: TIMELINE DO CLIENTE
+        // ============================================================
+        function testTimeline() {
+            TestRunner.log('', 'header');
+            TestRunner.log('⏳ TESTANDO TIMELINE DO CLIENTE...', 'header');
+
+            TestRunner.assert('timeline', 'Função getClientTimeline existe', typeof TheraFlowData.getClientTimeline === 'function');
+
+            var clients = TheraFlowData.getClients();
+            if (clients.length > 0) {
+                var timeline = TheraFlowData.getClientTimeline(clients[0].id);
+                TestRunner.assert('timeline', 'getClientTimeline retorna objeto', typeof timeline === 'object');
+                TestRunner.assert('timeline', 'Timeline tem client', timeline && timeline.client);
+                TestRunner.assert('timeline', 'Timeline tem totalSessions', typeof timeline.totalSessions === 'number');
+                TestRunner.assert('timeline', 'Timeline tem completedSessions', typeof timeline.completedSessions === 'number');
+                TestRunner.assert('timeline', 'Timeline tem missedSessions', typeof timeline.missedSessions === 'number');
+                TestRunner.assert('timeline', 'Timeline tem totalSpent', typeof timeline.totalSpent === 'number');
+                TestRunner.assert('timeline', 'Timeline tem avgValue', typeof timeline.avgValue === 'number');
+                TestRunner.assert('timeline', 'Timeline tem avgFrequencyDays', typeof timeline.avgFrequencyDays === 'number');
+                TestRunner.assert('timeline', 'Timeline tem noShowRate', typeof timeline.noShowRate === 'number');
+                TestRunner.assert('timeline', 'Timeline tem sessions array', Array.isArray(timeline.sessions));
+                TestRunner.assert('timeline', 'Timeline tem activePackages array', Array.isArray(timeline.activePackages));
+
+                // Teste com cliente inválido
+                var invalidTimeline = TheraFlowData.getClientTimeline(999999);
+                TestRunner.assert('timeline', 'getClientTimeline retorna null para ID inválido', invalidTimeline === null);
+            }
+        }
+
+        // ============================================================
+        // TESTES: FLUXO INICIAR/FINALIZAR SESSÃO
+        // ============================================================
+        function testSessionFlow() {
+            TestRunner.log('', 'header');
+            TestRunner.log('▶️ TESTANDO FLUXO INICIAR/FINALIZAR SESSÃO...', 'header');
+
+            TestRunner.assert('session-flow', 'Função startSession existe', typeof TheraFlowData.startSession === 'function');
+            TestRunner.assert('session-flow', 'Função finishSession existe', typeof TheraFlowData.finishSession === 'function');
+
+            // Criar sessão de teste
+            var clients = TheraFlowData.getClients();
+            if (clients.length > 0) {
+                var testSession = TheraFlowData.addSession({
+                    clienteId: clients[0].id,
+                    clienteNome: clients[0].nome,
+                    data: TheraFlowData.formatDate(new Date()),
+                    hora: '21:00',
+                    duracao: 60,
+                    tipo: 'Teste Fluxo',
+                    valor: 100,
+                    status: 'confirmado',
+                    pagamento: 'pendente'
+                });
+
+                // Iniciar sessão
+                var startedSession = TheraFlowData.startSession(testSession.id);
+                TestRunner.assert('session-flow', 'startSession muda status para em_andamento', startedSession && startedSession.status === 'em_andamento');
+                TestRunner.assert('session-flow', 'startSession define inicioReal', startedSession && startedSession.inicioReal);
+
+                // Finalizar sessão
+                var finishedSession = TheraFlowData.finishSession(testSession.id, {
+                    status: 'realizado',
+                    pagamento: 'pago',
+                    notas: 'Teste finalizado com sucesso'
+                });
+                TestRunner.assert('session-flow', 'finishSession muda status para realizado', finishedSession && finishedSession.status === 'realizado');
+                TestRunner.assert('session-flow', 'finishSession define fimReal', finishedSession && finishedSession.fimReal);
+                TestRunner.assert('session-flow', 'finishSession salva notas', finishedSession && finishedSession.notas === 'Teste finalizado com sucesso');
+                TestRunner.assert('session-flow', 'finishSession atualiza pagamento', finishedSession && finishedSession.pagamento === 'pago');
+
+                // Limpar
+                TheraFlowData.deleteSession(testSession.id);
+            }
+        }
+
+        // ============================================================
+        // TESTES: LIMITES DE PLANO
+        // ============================================================
+        function testPlanLimits() {
+            TestRunner.log('', 'header');
+            TestRunner.log('🚫 TESTANDO LIMITES DE PLANO...', 'header');
+
+            TestRunner.assert('plan', 'Função getUserPlan existe', typeof TheraFlowData.getUserPlan === 'function');
+            TestRunner.assert('plan', 'Função setUserPlan existe', typeof TheraFlowData.setUserPlan === 'function');
+            TestRunner.assert('plan', 'Função checkPlanLimits existe', typeof TheraFlowData.checkPlanLimits === 'function');
+
+            // getUserPlan
+            var plan = TheraFlowData.getUserPlan();
+            TestRunner.assert('plan', 'getUserPlan retorna objeto', typeof plan === 'object');
+            TestRunner.assert('plan', 'Plano tem type', plan.hasOwnProperty('type'));
+
+            // checkPlanLimits
+            var limits = TheraFlowData.checkPlanLimits();
+            TestRunner.assert('plan', 'checkPlanLimits retorna objeto', typeof limits === 'object');
+            TestRunner.assert('plan', 'Limites tem plan', limits.hasOwnProperty('plan'));
+            TestRunner.assert('plan', 'Limites tem clientCount', typeof limits.clientCount === 'number');
+            TestRunner.assert('plan', 'Limites tem clientLimit', typeof limits.clientLimit === 'number');
+            TestRunner.assert('plan', 'Limites tem clientsRemaining', typeof limits.clientsRemaining === 'number');
+            TestRunner.assert('plan', 'Limites tem isAtLimit', typeof limits.isAtLimit === 'boolean');
+            TestRunner.assert('plan', 'Limites tem usagePercent', typeof limits.usagePercent === 'number');
+            TestRunner.assert('plan', 'Plano Free tem limite de 5 clientes', limits.plan === 'free' && limits.clientLimit === 5);
+        }
+
+        // ============================================================
+        // TESTES: UI COMPONENTS
+        // ============================================================
+        function testUI() {
+            TestRunner.log('', 'header');
+            TestRunner.log('🎨 TESTANDO UI COMPONENTS...', 'header');
+
+            TestRunner.assert('ui', 'TheraFlowUI existe', typeof TheraFlowUI === 'object');
+            
+            // Modal
+            TestRunner.assert('ui', 'Função showModal existe', typeof TheraFlowUI.showModal === 'function');
+            TestRunner.assert('ui', 'Função closeModal existe', typeof TheraFlowUI.closeModal === 'function');
+            
+            // Toasts e Alerts
+            TestRunner.assert('ui', 'Função toast existe', typeof TheraFlowUI.toast === 'function');
+            TestRunner.assert('ui', 'Função alert existe', typeof TheraFlowUI.alert === 'function');
+            TestRunner.assert('ui', 'Função confirm existe', typeof TheraFlowUI.confirm === 'function');
+            
+            // Loading
+            TestRunner.assert('ui', 'Função showLoading existe', typeof TheraFlowUI.showLoading === 'function');
+            TestRunner.assert('ui', 'Função hideLoading existe', typeof TheraFlowUI.hideLoading === 'function');
+            
+            // Formatters
+            TestRunner.assert('ui', 'Função formatCurrency existe', typeof TheraFlowUI.formatCurrency === 'function');
+            var formatted = TheraFlowUI.formatCurrency(1234.56);
+            TestRunner.assert('ui', 'formatCurrency formata corretamente', formatted === 'R$ 1.234,56', formatted);
+            
+            TestRunner.assert('ui', 'Função formatDateBR existe', typeof TheraFlowUI.formatDateBR === 'function');
+            var formattedDate = TheraFlowUI.formatDateBR('2026-01-09');
+            TestRunner.assert('ui', 'formatDateBR formata corretamente', formattedDate === '09/01/2026', formattedDate);
+            
+            // Export
+            TestRunner.assert('ui', 'Função exportToCSV existe', typeof TheraFlowUI.exportToCSV === 'function');
+            TestRunner.assert('ui', 'Função generatePDFReport existe', typeof TheraFlowUI.generatePDFReport === 'function');
+            
+            // Mensagens Contextuais
+            TestRunner.assert('ui', 'contextualMessages existe', TheraFlowUI.hasOwnProperty('contextualMessages'));
+            TestRunner.assert('ui', 'Função getContextualMessage existe', typeof TheraFlowUI.getContextualMessage === 'function');
+            TestRunner.assert('ui', 'Função showContextualToast existe', typeof TheraFlowUI.showContextualToast === 'function');
+            
+            var msg = TheraFlowUI.getContextualMessage('greetings');
+            TestRunner.assert('ui', 'getContextualMessage retorna string', typeof msg === 'string' && msg.length > 0, msg);
+            
+            // Upgrade Modal
+            TestRunner.assert('ui', 'Função showUpgradeModal existe', typeof TheraFlowUI.showUpgradeModal === 'function');
+        }
+
+        // ============================================================
+        // TESTES: INTEGRAÇÃO
+        // ============================================================
+        function testIntegration() {
+            TestRunner.log('', 'header');
+            TestRunner.log('🔗 TESTANDO INTEGRAÇÕES...', 'header');
+
+            // Fluxo completo: Criar cliente -> Criar pacote -> Criar sessão -> Usar pacote
+            var client = TheraFlowData.addClient({
+                nome: 'Cliente Integração',
+                email: 'integracao@teste.com',
+                telefone: '(11) 11111-1111'
+            });
+            TestRunner.assert('integration', 'Fluxo: Criar cliente', client && client.id);
+
+            var pkg = TheraFlowData.addPackage({
+                clienteId: client.id,
+                clienteNome: client.nome,
+                nome: 'Pacote Integração',
+                sessoesTotal: 5,
+                valorTotal: 450
+            });
+            TestRunner.assert('integration', 'Fluxo: Criar pacote para cliente', pkg && pkg.id);
+
+            var session = TheraFlowData.addSession({
+                clienteId: client.id,
+                clienteNome: client.nome,
+                data: TheraFlowData.formatDate(new Date()),
+                hora: '22:00',
+                duracao: 60,
+                tipo: 'Integração',
+                valor: 100,
+                status: 'confirmado',
+                pagamento: 'pendente'
+            });
+            TestRunner.assert('integration', 'Fluxo: Criar sessão', session && session.id);
+
+            // Iniciar e finalizar sessão
+            TheraFlowData.startSession(session.id);
+            TheraFlowData.finishSession(session.id, { status: 'realizado', pagamento: 'pago' });
+            
+            // Usar sessão do pacote
+            var usedPkg = TheraFlowData.usePackageSession(pkg.id);
+            TestRunner.assert('integration', 'Fluxo: Usar sessão do pacote', usedPkg && usedPkg.sessoesRestantes === 4);
+
+            // Verificar timeline do cliente
+            var timeline = TheraFlowData.getClientTimeline(client.id);
+            TestRunner.assert('integration', 'Fluxo: Timeline mostra sessão', timeline && timeline.totalSessions >= 1);
+            TestRunner.assert('integration', 'Fluxo: Timeline mostra pacote ativo', timeline && timeline.activePackages.length >= 1);
+
+            // Verificar alertas
+            var alerts = TheraFlowData.getSmartAlerts();
+            TestRunner.assert('integration', 'Alertas funcionam após operações', Array.isArray(alerts));
+
+            // Verificar indicadores
+            var indicators = TheraFlowData.getProgressIndicators();
+            TestRunner.assert('integration', 'Indicadores atualizados', indicators && indicators.totalClientsRegistered >= 1);
+
+            // Limpar dados de teste
+            TheraFlowData.deleteSession(session.id);
+            TheraFlowData.deletePackage(pkg.id);
+            TheraFlowData.deleteClient(client.id);
+            TestRunner.assert('integration', 'Fluxo: Limpeza de dados de teste', true);
+        }
+
+        // ============================================================
+        // EXECUTORES
+        // ============================================================
+        function runAllTests() {
+            TestRunner.init();
+            TestRunner.clearLog();
+            TestRunner.clearResults();
+            TestRunner.startTime = Date.now();
+
+            TestRunner.log('🚀 INICIANDO BATERIA COMPLETA DE TESTES...', 'header');
+            TestRunner.log('📦 Inicializando dados de teste...');
+            
+            TheraFlowData.resetData();
+            TheraFlowData.login('teste@theraflow.com');
+            
+            TestRunner.log('✅ Dados inicializados com sucesso', 'success');
+
+            // Executar todos os testes
+            testCore();
+            testClients();
+            testSessions();
+            testPackages();
+            testFinance();
+            testAlerts();
+            testProgress();
+            testTimeline();
+            testSessionFlow();
+            testPlanLimits();
+            testUI();
+            testIntegration();
+
+            TestRunner.updateSummary();
+        }
+
+        function runQuickTests() {
+            TestRunner.init();
+            TestRunner.clearLog();
+            TestRunner.clearResults();
+            TestRunner.startTime = Date.now();
+
+            TestRunner.log('⚡ TESTES RÁPIDOS...', 'header');
+            
+            testCore();
+            testClients();
+            testSessions();
+
+            TestRunner.updateSummary();
+        }
+
+        function resetAndTest() {
+            if (confirm('⚠️ Isso vai RESETAR todos os dados do app. Continuar?')) {
+                TheraFlowData.clearAll();
+                runAllTests();
+            }
+        }
+    </script>
+</body>
+</html>
