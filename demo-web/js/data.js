@@ -72,8 +72,14 @@ var TheraFlowData = {
         return result;
     },
 
+    _lastId: 0,
     generateId: function() {
-        return Date.now();
+        var newId = Date.now();
+        if (newId <= this._lastId) {
+            newId = this._lastId + 1;
+        }
+        this._lastId = newId;
+        return newId;
     },
 
     // === CLIENTES ===
