@@ -586,40 +586,94 @@
             
             var content = 
                 '<form id="newSessionForm">' +
+                    // Tipo: Avulso ou Pacote
                     '<div class="form-group">' +
-                        '<label>📅 Data</label>' +
-                        '<input type="date" id="sessionDate" value="' + dateStr + '" required>' +
+                        '<label>📋 Tipo de Agendamento</label>' +
+                        '<div style="display: flex; gap: 10px; margin-top: 5px;">' +
+                            '<label style="flex: 1; padding: 12px; border: 2px solid #667eea; border-radius: 10px; text-align: center; cursor: pointer; background: #667eea; color: white;" id="btnAvulso" onclick="toggleAgendamentoType(\'avulso\')">' +
+                                '<input type="radio" name="tipoAgendamento" value="avulso" checked style="display: none;"> 💆 Sessão Avulsa' +
+                            '</label>' +
+                            '<label style="flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 10px; text-align: center; cursor: pointer;" id="btnPacote" onclick="toggleAgendamentoType(\'pacote\')">' +
+                                '<input type="radio" name="tipoAgendamento" value="pacote" style="display: none;"> 📦 Novo Pacote' +
+                            '</label>' +
+                        '</div>' +
                     '</div>' +
-                    '<div class="form-group">' +
-                        '<label>🕐 Horário</label>' +
-                        '<input type="time" id="sessionTime" value="09:00" required>' +
-                    '</div>' +
+                    
                     '<div class="form-group">' +
                         '<label>👤 Cliente</label>' +
-                        '<select id="sessionClient" required onchange="checkClientPackages(this.value)">' +
+                        '<select id="sessionClient" required onchange="onClientChange(this.value)">' +
                             '<option value="">Selecione...</option>' +
                             clientOptions +
                         '</select>' +
                     '</div>' +
-                    '<div id="packageOption" style="display: none; background: #f0fdf4; padding: 15px; border-radius: 10px; margin-bottom: 10px;">' +
+                    
+                    // Opção de usar pacote existente (aparece só se cliente tem pacote)
+                    '<div id="packageExistingOption" style="display: none; background: #f0fdf4; padding: 15px; border-radius: 10px; margin-bottom: 10px;">' +
                         '<label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">' +
-                            '<input type="checkbox" id="usePackageCheck" onchange="togglePackageValue()">' +
-                            '<span>📦 <strong>Usar sessão do pacote</strong></span>' +
+                            '<input type="checkbox" id="usePackageCheck" onchange="toggleUseExistingPackage()">' +
+                            '<span>📦 <strong>Usar sessão de pacote existente</strong></span>' +
                         '</label>' +
                         '<div id="packageInfo" style="margin-top: 10px; font-size: 0.9em; color: #059669;"></div>' +
                         '<input type="hidden" id="selectedPackageId" value="">' +
                     '</div>' +
+                    
                     '<div class="form-group">' +
                         '<label>💆 Tipo de Sessão <a href="perfil.html" style="font-size: 0.8em; color: #667eea; float: right;">⚙️ Gerenciar</a></label>' +
-                        '<select id="sessionType" required>' +
+                        '<select id="sessionType" required onchange="updatePackageValues()">' +
                             '<option value="">Selecione...</option>' +
                             serviceOptions +
                         '</select>' +
                     '</div>' +
-                    '<div class="form-group" id="valorGroup">' +
-                        '<label>💰 Valor (R$)</label>' +
-                        '<input type="number" id="sessionValue" placeholder="150" min="0" step="0.01" required>' +
+                    
+                    // Seção para sessão avulsa
+                    '<div id="secaoAvulsa">' +
+                        '<div class="form-group">' +
+                            '<label>📅 Data</label>' +
+                            '<input type="date" id="sessionDate" value="' + dateStr + '" required>' +
+                        '</div>' +
+                        '<div class="form-group">' +
+                            '<label>🕐 Horário</label>' +
+                            '<input type="time" id="sessionTime" value="09:00" required>' +
+                        '</div>' +
+                        '<div class="form-group" id="valorGroup">' +
+                            '<label>💰 Valor (R$)</label>' +
+                            '<input type="number" id="sessionValue" placeholder="150" min="0" step="0.01" required>' +
+                        '</div>' +
                     '</div>' +
+                    
+                    // Seção para pacote
+                    '<div id="secaoPacote" style="display: none;">' +
+                        '<div class="form-group">' +
+                            '<label>📦 Quantidade de Sessões</label>' +
+                            '<select id="packageQty" onchange="updatePackageValues()">' +
+                                '<option value="4">4 sessões (5% desc.)</option>' +
+                                '<option value="8" selected>8 sessões (10% desc.)</option>' +
+                                '<option value="12">12 sessões (15% desc.)</option>' +
+                            '</select>' +
+                        '</div>' +
+                        '<div id="packagePricing" style="background: linear-gradient(135deg, #f0fdf4, #dcfce7); padding: 15px; border-radius: 10px; margin-bottom: 15px;">' +
+                            '<div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Valor unitário:</span><span id="pkgValorUnit">R$ 150,00</span></div>' +
+                            '<div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><span>Desconto:</span><span id="pkgDesconto" style="color: #059669;">-10%</span></div>' +
+                            '<div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 1.1em; border-top: 1px solid #86efac; padding-top: 10px; margin-top: 10px;"><span>Total do Pacote:</span><span id="pkgTotal" style="color: #059669;">R$ 1.080,00</span></div>' +
+                            '<div style="text-align: center; margin-top: 8px; font-size: 0.85em; color: #059669;">💰 Economia de <strong id="pkgEconomia">R$ 120,00</strong></div>' +
+                        '</div>' +
+                        '<div style="background: #fef3c7; padding: 12px; border-radius: 10px; margin-bottom: 15px;">' +
+                            '<strong>📅 Agendar sessões agora?</strong>' +
+                            '<p style="font-size: 0.9em; margin: 5px 0 0 0; color: #92400e;">Você pode agendar algumas ou todas as sessões do pacote agora. As restantes podem ser agendadas depois.</p>' +
+                        '</div>' +
+                        '<div class="form-group">' +
+                            '<label>Quantas sessões agendar agora?</label>' +
+                            '<select id="sessionsToSchedule" onchange="generateSessionSlots()">' +
+                                '<option value="0">Nenhuma (agendar depois)</option>' +
+                                '<option value="1">1 sessão</option>' +
+                                '<option value="2">2 sessões</option>' +
+                                '<option value="4" selected>4 sessões</option>' +
+                                '<option value="8">8 sessões</option>' +
+                            '</select>' +
+                        '</div>' +
+                        '<div id="sessionSlots"></div>' +
+                    '</div>' +
+                    
                     '<div class="form-group">' +
                         '<label>📝 Observações</label>' +
                         '<input type="text" id="sessionNotes" placeholder="Observações opcionais...">' +
@@ -634,10 +688,61 @@
                     { text: 'Agendar', primary: true, onClick: saveNewSession }
                 ]
             });
+            
+            // Gerar slots iniciais
+            setTimeout(function() {
+                updatePackageValues();
+                generateSessionSlots();
+            }, 100);
         }
-
-        function checkClientPackages(clienteId) {
-            var packageOption = document.getElementById('packageOption');
+        
+        var currentAgendamentoType = 'avulso';
+        
+        function toggleAgendamentoType(type) {
+            currentAgendamentoType = type;
+            var btnAvulso = document.getElementById('btnAvulso');
+            var btnPacote = document.getElementById('btnPacote');
+            var secaoAvulsa = document.getElementById('secaoAvulsa');
+            var secaoPacote = document.getElementById('secaoPacote');
+            var packageExisting = document.getElementById('packageExistingOption');
+            
+            if (type === 'avulso') {
+                btnAvulso.style.background = '#667eea';
+                btnAvulso.style.color = 'white';
+                btnAvulso.style.borderColor = '#667eea';
+                btnPacote.style.background = 'white';
+                btnPacote.style.color = '#333';
+                btnPacote.style.borderColor = '#ddd';
+                secaoAvulsa.style.display = 'block';
+                secaoPacote.style.display = 'none';
+                // Mostrar opção de pacote existente se cliente tem
+                var clienteId = document.getElementById('sessionClient').value;
+                if (clienteId) {
+                    checkExistingPackages(clienteId);
+                }
+            } else {
+                btnPacote.style.background = '#667eea';
+                btnPacote.style.color = 'white';
+                btnPacote.style.borderColor = '#667eea';
+                btnAvulso.style.background = 'white';
+                btnAvulso.style.color = '#333';
+                btnAvulso.style.borderColor = '#ddd';
+                secaoAvulsa.style.display = 'none';
+                secaoPacote.style.display = 'block';
+                packageExisting.style.display = 'none';
+                updatePackageValues();
+                generateSessionSlots();
+            }
+        }
+        
+        function onClientChange(clienteId) {
+            if (currentAgendamentoType === 'avulso') {
+                checkExistingPackages(clienteId);
+            }
+        }
+        
+        function checkExistingPackages(clienteId) {
+            var packageOption = document.getElementById('packageExistingOption');
             var packageInfo = document.getElementById('packageInfo');
             var selectedPackageId = document.getElementById('selectedPackageId');
             
@@ -649,7 +754,7 @@
             var packages = TheraFlowData.getActivePackagesByClient(clienteId);
             
             if (packages.length > 0) {
-                var pkg = packages[0]; // Usa o primeiro pacote ativo
+                var pkg = packages[0];
                 packageOption.style.display = 'block';
                 packageInfo.innerHTML = pkg.nome + ' - Restam <strong>' + pkg.sessoesRestantes + '</strong> sessões';
                 selectedPackageId.value = pkg.id;
@@ -658,8 +763,8 @@
                 selectedPackageId.value = '';
             }
         }
-
-        function togglePackageValue() {
+        
+        function toggleUseExistingPackage() {
             var usePackage = document.getElementById('usePackageCheck').checked;
             var valorGroup = document.getElementById('valorGroup');
             var valorInput = document.getElementById('sessionValue');
@@ -674,67 +779,196 @@
                 valorInput.disabled = false;
             }
         }
-
-        function saveNewSession() {
-            var data = document.getElementById('sessionDate').value;
-            var hora = document.getElementById('sessionTime').value;
-            var clienteId = document.getElementById('sessionClient').value;
-            var tipo = document.getElementById('sessionType').value;
-            var valor = parseFloat(document.getElementById('sessionValue').value) || 0;
-            var notas = document.getElementById('sessionNotes').value;
+        
+        function updatePackageValues() {
+            var qty = parseInt(document.getElementById('packageQty')?.value || 8);
+            var valorUnit = parseFloat(document.getElementById('sessionValue')?.value) || 150;
             
-            // Verificar se está usando pacote
-            var usePackageCheck = document.getElementById('usePackageCheck');
-            var usePackage = usePackageCheck && usePackageCheck.checked;
-            var packageId = document.getElementById('selectedPackageId') ? document.getElementById('selectedPackageId').value : '';
+            var descontos = { 4: 0.05, 8: 0.10, 12: 0.15 };
+            var desconto = descontos[qty] || 0.10;
+            var totalSemDesc = valorUnit * qty;
+            var valorDesconto = totalSemDesc * desconto;
+            var total = totalSemDesc - valorDesconto;
             
-            // Se usar pacote, valor pode ser 0
-            if (!data || !hora || !clienteId || !tipo) {
-                TheraFlowUI.toast('Preencha todos os campos obrigatórios', 'error');
+            var pkgValorUnit = document.getElementById('pkgValorUnit');
+            var pkgDesconto = document.getElementById('pkgDesconto');
+            var pkgTotal = document.getElementById('pkgTotal');
+            var pkgEconomia = document.getElementById('pkgEconomia');
+            
+            if (pkgValorUnit) pkgValorUnit.textContent = TheraFlowUI.formatCurrency(valorUnit);
+            if (pkgDesconto) pkgDesconto.textContent = '-' + (desconto * 100) + '%';
+            if (pkgTotal) pkgTotal.textContent = TheraFlowUI.formatCurrency(total);
+            if (pkgEconomia) pkgEconomia.textContent = TheraFlowUI.formatCurrency(valorDesconto);
+            
+            // Atualizar opções de sessões a agendar
+            var selectToSchedule = document.getElementById('sessionsToSchedule');
+            if (selectToSchedule) {
+                var currentVal = parseInt(selectToSchedule.value);
+                selectToSchedule.innerHTML = '<option value="0">Nenhuma (agendar depois)</option>';
+                for (var i = 1; i <= qty; i++) {
+                    var selected = i === Math.min(currentVal, qty) ? ' selected' : '';
+                    selectToSchedule.innerHTML += '<option value="' + i + '"' + selected + '>' + i + ' sess' + (i > 1 ? 'ões' : 'ão') + '</option>';
+                }
+            }
+        }
+        
+        function generateSessionSlots() {
+            var container = document.getElementById('sessionSlots');
+            var qty = parseInt(document.getElementById('sessionsToSchedule')?.value || 0);
+            
+            if (!container) return;
+            
+            if (qty === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">As sessões poderão ser agendadas posteriormente</p>';
                 return;
             }
             
-            if (!usePackage && (isNaN(valor) || valor <= 0)) {
-                TheraFlowUI.toast('Informe o valor da sessão', 'error');
+            var baseDate = selectedDate;
+            var html = '<div style="max-height: 200px; overflow-y: auto;">';
+            
+            for (var i = 0; i < qty; i++) {
+                var sessionDate = new Date(baseDate);
+                sessionDate.setDate(sessionDate.getDate() + (i * 7)); // Uma por semana
+                var dateStr = sessionDate.toISOString().split('T')[0];
+                
+                html += '<div style="display: flex; gap: 10px; margin-bottom: 10px; padding: 10px; background: #f8fafc; border-radius: 8px;">' +
+                    '<span style="min-width: 80px; font-weight: bold; color: #667eea;">Sessão ' + (i + 1) + '</span>' +
+                    '<input type="date" id="slotDate' + i + '" value="' + dateStr + '" style="flex: 1; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">' +
+                    '<input type="time" id="slotTime' + i + '" value="09:00" style="width: 100px; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">' +
+                '</div>';
+            }
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function saveNewSession() {
+            var clienteId = document.getElementById('sessionClient').value;
+            var tipo = document.getElementById('sessionType').value;
+            var notas = document.getElementById('sessionNotes').value;
+            
+            if (!clienteId || !tipo) {
+                TheraFlowUI.toast('Selecione cliente e tipo de sessão', 'error');
                 return;
             }
             
             var client = TheraFlowData.getClientById(clienteId);
-            var session = {
-                clienteId: parseInt(clienteId),
-                clienteNome: client ? client.nome : 'Cliente',
-                data: data,
-                hora: hora,
-                tipo: tipo,
-                valor: usePackage ? 0 : valor,
-                notas: notas,
-                status: 'confirmado',
-                pagamento: usePackage ? 'pago' : 'pendente',
-                usouPacote: usePackage,
-                pacoteId: usePackage ? parseInt(packageId) : null
-            };
             
-            // Se usou pacote, descontar sessão
-            if (usePackage && packageId) {
-                var pkg = TheraFlowData.usePackageSession(parseInt(packageId));
-                if (pkg && pkg.sessoesRestantes <= 2) {
-                    setTimeout(function() {
-                        TheraFlowUI.toast('⚠️ Atenção: Restam apenas ' + pkg.sessoesRestantes + ' sessões no pacote!', 'warning');
-                    }, 1500);
+            // Verificar qual tipo de agendamento
+            if (currentAgendamentoType === 'pacote') {
+                // Criar novo pacote
+                var qty = parseInt(document.getElementById('packageQty').value);
+                var valorUnit = parseFloat(document.getElementById('sessionValue')?.value) || 150;
+                var descontos = { 4: 0.05, 8: 0.10, 12: 0.15 };
+                var desconto = descontos[qty] || 0.10;
+                var valorTotal = valorUnit * qty * (1 - desconto);
+                
+                var nomePacote = 'Pacote ' + qty + ' sessões - ' + tipo;
+                
+                var newPackage = TheraFlowData.addPackage({
+                    clienteId: parseInt(clienteId),
+                    clienteNome: client.nome,
+                    nome: nomePacote,
+                    sessoesTotal: qty,
+                    valorTotal: valorTotal,
+                    tipo: tipo
+                });
+                
+                // Agendar sessões selecionadas
+                var sessionsToSchedule = parseInt(document.getElementById('sessionsToSchedule').value);
+                
+                for (var i = 0; i < sessionsToSchedule; i++) {
+                    var slotDate = document.getElementById('slotDate' + i);
+                    var slotTime = document.getElementById('slotTime' + i);
+                    
+                    if (slotDate && slotTime && slotDate.value && slotTime.value) {
+                        var session = {
+                            clienteId: parseInt(clienteId),
+                            clienteNome: client.nome,
+                            data: slotDate.value,
+                            hora: slotTime.value,
+                            tipo: tipo,
+                            valor: 0,
+                            notas: notas || 'Sessão do pacote',
+                            status: 'confirmado',
+                            pagamento: 'pago',
+                            usouPacote: true,
+                            pacoteId: newPackage.id
+                        };
+                        
+                        TheraFlowData.addSession(session);
+                        TheraFlowData.usePackageSession(newPackage.id);
+                    }
                 }
+                
+                allSessions = TheraFlowData.getSessions();
+                TheraFlowUI.closeModal();
+                renderCalendar();
+                renderDaySessions();
+                
+                var msg = '📦 Pacote criado com sucesso!';
+                if (sessionsToSchedule > 0) {
+                    msg += ' ' + sessionsToSchedule + ' sessões agendadas.';
+                }
+                TheraFlowUI.toast(msg, 'success');
+                
+            } else {
+                // Sessão avulsa
+                var data = document.getElementById('sessionDate').value;
+                var hora = document.getElementById('sessionTime').value;
+                var valor = parseFloat(document.getElementById('sessionValue').value) || 0;
+                
+                // Verificar se está usando pacote existente
+                var usePackageCheck = document.getElementById('usePackageCheck');
+                var usePackage = usePackageCheck && usePackageCheck.checked;
+                var packageId = document.getElementById('selectedPackageId') ? document.getElementById('selectedPackageId').value : '';
+                
+                if (!data || !hora) {
+                    TheraFlowUI.toast('Preencha data e horário', 'error');
+                    return;
+                }
+                
+                if (!usePackage && (isNaN(valor) || valor <= 0)) {
+                    TheraFlowUI.toast('Informe o valor da sessão', 'error');
+                    return;
+                }
+                
+                var session = {
+                    clienteId: parseInt(clienteId),
+                    clienteNome: client.nome,
+                    data: data,
+                    hora: hora,
+                    tipo: tipo,
+                    valor: usePackage ? 0 : valor,
+                    notas: notas,
+                    status: 'confirmado',
+                    pagamento: usePackage ? 'pago' : 'pendente',
+                    usouPacote: usePackage,
+                    pacoteId: usePackage ? parseInt(packageId) : null
+                };
+                
+                // Se usou pacote, descontar sessão
+                if (usePackage && packageId) {
+                    var pkg = TheraFlowData.usePackageSession(parseInt(packageId));
+                    if (pkg && pkg.sessoesRestantes <= 2) {
+                        setTimeout(function() {
+                            TheraFlowUI.toast('⚠️ Atenção: Restam apenas ' + pkg.sessoesRestantes + ' sessões no pacote!', 'warning');
+                        }, 1500);
+                    }
+                }
+                
+                TheraFlowData.addSession(session);
+                allSessions = TheraFlowData.getSessions();
+                
+                // Atualizar data selecionada para a data da sessão
+                selectedDate = new Date(data + 'T12:00:00');
+                currentDate = new Date(selectedDate);
+                
+                TheraFlowUI.closeModal();
+                renderCalendar();
+                renderDaySessions();
+                TheraFlowUI.toast('Atendimento agendado com sucesso!' + (usePackage ? ' (Pacote)' : ''), 'success');
             }
-            
-            TheraFlowData.addSession(session);
-            allSessions = TheraFlowData.getSessions();
-            
-            // Atualizar data selecionada para a data da sessão
-            selectedDate = new Date(data + 'T12:00:00');
-            currentDate = new Date(selectedDate);
-            
-            TheraFlowUI.closeModal();
-            renderCalendar();
-            renderDaySessions();
-            TheraFlowUI.toast('Atendimento agendado com sucesso!' + (usePackage ? ' (Pacote)' : ''), 'success');
         }
 
         function showSessionDetail(sessionId) {
