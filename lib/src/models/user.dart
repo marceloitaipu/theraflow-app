@@ -30,6 +30,51 @@ class User {
     }
   }
 
+  // ========== HELPERS DE PERMISSÕES ==========
+
+  /// Verifica se pode criar mais clientes
+  bool canCreateClient(int currentCount) {
+    return currentCount < clientLimit;
+  }
+
+  /// Verifica se pode usar pacotes
+  bool canUsePackages() {
+    return plan == 'professional' || plan == 'premium';
+  }
+
+  /// Verifica se pode exportar relatórios
+  bool canExportReports() {
+    return plan == 'professional' || plan == 'premium';
+  }
+
+  /// Verifica se pode usar alertas inteligentes
+  bool canUseSmartAlerts() {
+    return plan == 'professional' || plan == 'premium';
+  }
+
+  /// Verifica se é plano free
+  bool get isFree => plan == 'free';
+
+  /// Verifica se é plano pro ou superior
+  bool get isPro => plan == 'professional' || plan == 'premium';
+
+  /// Verifica se é premium
+  bool get isPremium => plan == 'premium';
+
+  /// Nome amigável do plano
+  String get planDisplayName {
+    switch (plan) {
+      case 'free':
+        return 'Gratuito';
+      case 'professional':
+        return 'Profissional';
+      case 'premium':
+        return 'Premium';
+      default:
+        return 'Gratuito';
+    }
+  }
+
   Map<String, dynamic> toMap() => {
         'name': name,
         'email': email,

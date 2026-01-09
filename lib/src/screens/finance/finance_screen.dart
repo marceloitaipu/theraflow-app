@@ -29,6 +29,19 @@ class _FinanceScreenState extends State<FinanceScreen> {
     });
   }
 
+  Color _getInsightColor(InsightType type) {
+    switch (type) {
+      case InsightType.success:
+        return Colors.green[700]!;
+      case InsightType.warning:
+        return Colors.orange[700]!;
+      case InsightType.alert:
+        return Colors.red[700]!;
+      case InsightType.info:
+        return Colors.blue[700]!;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final monthFormat = DateFormat('MMMM yyyy', 'pt_BR');
@@ -39,6 +52,68 @@ class _FinanceScreenState extends State<FinanceScreen> {
       ),
       body: Column(
         children: [
+          // Insights Card
+          FutureBuilder<FinanceInsights>(
+            future: FinanceService.instance.getFinanceInsights(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const SizedBox.shrink();
+              }
+
+              final insights = snapshot.data!;
+              if (insights.messages.isEmpty) {
+                return const SizedBox.shrink();
+              }
+
+              return Container(
+                margin: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade100),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.insights, color: Colors.blue[700], size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Insights',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue[700],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ...insights.messages.map((msg) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(msg.icon, style: const TextStyle(fontSize: 16)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              msg.message,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _getInsightColor(msg.type),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                  ],
+                ),
+              );
+            },
+          ),
           Container(
             color: Colors.blue[50],
             padding: const EdgeInsets.symmetric(vertical: 8),

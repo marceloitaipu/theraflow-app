@@ -4,8 +4,11 @@ import 'package:intl/intl.dart';
 
 import '../../services/session_service.dart';
 import '../../services/client_service.dart';
+import '../../services/package_service.dart';
+import '../../services/auth_service.dart';
 import '../../models/client.dart';
 import '../../models/session.dart';
+import '../../models/package.dart';
 import '../../widgets/primary_button.dart';
 
 class SessionEditScreen extends StatefulWidget {
@@ -27,6 +30,11 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
   List<Client> _clients = [];
   bool _loading = false;
   Session? _existingSession;
+  
+  // Pacotes
+  bool _usePackage = false;
+  Package? _activePackage;
+  bool _canUsePackages = false;
 
   @override
   void initState() {
@@ -39,6 +47,10 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
     try {
       _clients = await ClientService.instance.getClients();
       
+      // Verificar se pode usar pacotes
+      final user = await AuthService.instance.getCurrentUserData();
+      _canUsePackages = user?.canUsePackages() ?? false;
+      
       if (widget.sessionId != null) {
         _existingSession = await SessionService.instance.getSessionById(widget.sessionId!);
         if (_existingSession != null) {
@@ -49,6 +61,12 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
           _payment = _existingSession!.paymentStatus;
           _selectedDateTime = _existingSession!.dateTime;
           _selectedClientId = _existingSession!.clientId;
+          _usePackage = _existingSession!.packageId != null;
+          
+          // Carregar pacote ativo do cliente
+          if (_canUsePackages && _selectedClientId != null) {
+            _activePackage = await PackageService.instance.getActivePackage(_selectedClientId!);
+          }
         }
       }
     } catch (e) {
@@ -68,6 +86,19 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
     _value.dispose();
     _notes.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadPackageForClient(String clientId) async {
+    if (!_canUsePackages) return;
+    
+    setState(() => _activePackage = null);
+    final pkg = await PackageService.instance.getActivePackage(clientId);
+    if (mounted) {
+      setState(() {
+        _activePackage = pkg;
+        _usePackage = pkg != null;
+      });
+    }
   }
 
   Future<void> _selectDateTime() async {
@@ -116,6 +147,7 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
     setState(() => _loading = true);
     try {
       final value = double.tryParse(_value.text.replaceAll(',', '.')) ?? 0;
+      final packageId = _usePackage && _activePackage != null ? _activePackage!.id : null;
 
       if (widget.sessionId != null) {
         await SessionService.instance.updateSession(
@@ -126,6 +158,7 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
           value: value,
           notes: _notes.text.trim(),
           paymentStatus: _payment,
+          packageId: packageId,
         );
       } else {
         await SessionService.instance.createSession(
@@ -136,6 +169,7 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
           notes: _notes.text.trim(),
           status: _status,
           paymentStatus: _payment,
+          packageId: packageId,
         );
       }
 
@@ -230,7 +264,10 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
                         child: Text(c.name),
                       ))
                   .toList(),
-              onChanged: (v) => setState(() => _selectedClientId = v),
+              onChanged: (v) {
+                setState(() => _selectedClientId = v);
+                if (v != null) _loadPackageForClient(v);
+              },
             ),
             const SizedBox(height: 16),
             ListTile(
@@ -288,6 +325,33 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
               ],
               onChanged: (v) => setState(() => _payment = v ?? 'pendente'),
             ),
+            
+            // Card de Pacote Ativo
+            if (_canUsePackages && _activePackage != null) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: _usePackage ? Colors.green[50] : Colors.grey[100],
+                child: SwitchListTile(
+                  title: Row(
+                    children: [
+                      const Icon(Icons.inventory_2, size: 20),
+                      const SizedBox(width: 8),
+                      const Text('Usar pacote ativo'),
+                    ],
+                  ),
+                  subtitle: Text(
+                    '${_activePackage!.remainingSessions}/${_activePackage!.totalSessions} sessões restantes',
+                    style: TextStyle(
+                      color: _activePackage!.isLow ? Colors.orange : Colors.green,
+                    ),
+                  ),
+                  value: _usePackage,
+                  onChanged: (v) => setState(() => _usePackage = v),
+                  activeColor: Colors.green,
+                ),
+              ),
+            ],
+            
             const SizedBox(height: 16),
             TextField(
               controller: _notes,

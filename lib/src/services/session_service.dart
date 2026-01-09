@@ -102,6 +102,7 @@ class SessionService {
     String? notes,
     String status = 'confirmado',
     String paymentStatus = 'pendente',
+    String? packageId,
   }) async {
     final collection = sessionsCollection();
     if (collection == null) throw Exception('Usuário não autenticado.');
@@ -119,6 +120,7 @@ class SessionService {
       notes: notes ?? '',
       paymentStatus: paymentStatus,
       createdAt: DateTime.now(),
+      packageId: packageId,
     );
 
     final docRef = await collection.add(session.toMap());
@@ -133,6 +135,7 @@ class SessionService {
     double? value,
     String? notes,
     String? paymentStatus,
+    String? packageId,
   }) async {
     final collection = sessionsCollection();
     if (collection == null) throw Exception('Usuário não autenticado.');
@@ -144,6 +147,7 @@ class SessionService {
     if (value != null) updates['value'] = value;
     if (notes != null) updates['notes'] = notes;
     if (paymentStatus != null) updates['paymentStatus'] = paymentStatus;
+    if (packageId != null) updates['packageId'] = packageId;
 
     if (updates.isEmpty) return;
 
@@ -166,5 +170,28 @@ class SessionService {
   // Marcar sessão como falta
   Future<void> markAsNoShow(String id) async {
     await updateSession(id, status: 'faltou');
+  }
+
+  // Buscar última sessão de um cliente (para ver notas anteriores)
+  Future<Session?> getLastSessionByClient(String clientId, {String? excludeSessionId}) async {
+    final collection = sessionsCollection();
+    if (collection == null) return null;
+
+    final snapshot = await collection
+        .where('clientId', isEqualTo: clientId)
+        .orderBy('dateTime', descending: true)
+        .limit(excludeSessionId != null ? 2 : 1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+
+    // Se temos ID para excluir, pegar a segunda sessão
+    for (final doc in snapshot.docs) {
+      if (excludeSessionId == null || doc.id != excludeSessionId) {
+        return Session.fromMap(doc.id, doc.data());
+      }
+    }
+
+    return null;
   }
 }

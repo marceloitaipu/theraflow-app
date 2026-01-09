@@ -9,7 +9,10 @@ import 'screens/clients/clients_screen.dart';
 import 'screens/finance/finance_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/clients/client_detail_screen.dart';
+import 'screens/clients/package_create_screen.dart';
 import 'screens/sessions/session_edit_screen.dart';
+import 'screens/sessions/session_start_screen.dart';
+import 'screens/billing/paywall_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
@@ -37,12 +40,24 @@ final GoRouter appRouter = GoRouter(
       builder: (_, state) => ClientDetailScreen(clientId: state.pathParameters['id']!),
     ),
     GoRoute(
+      path: '/clients/:id/package/new',
+      builder: (_, state) => PackageCreateScreen(clientId: state.pathParameters['id']!),
+    ),
+    GoRoute(
       path: '/session/new',
       builder: (_, state) => const SessionEditScreen(),
     ),
     GoRoute(
       path: '/session/:id',
       builder: (_, state) => SessionEditScreen(sessionId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/session/:id/start',
+      builder: (_, state) => SessionStartScreen(sessionId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: '/paywall',
+      builder: (_, __) => const PaywallScreen(),
     ),
   ],
 );

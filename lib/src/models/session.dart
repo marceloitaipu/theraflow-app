@@ -4,11 +4,12 @@ class Session {
   final String clientId;
   final DateTime dateTime;
   final String therapyType;
-  final String status; // confirmado/faltou/remarcado
+  final String status; // confirmado/realizada/faltou/remarcado
   final double value;
   final String notes;
   final String paymentStatus; // pago/pendente
   final DateTime createdAt;
+  final String? packageId; // ID do pacote vinculado (se houver)
 
   Session({
     required this.id,
@@ -21,6 +22,7 @@ class Session {
     required this.notes,
     required this.paymentStatus,
     required this.createdAt,
+    this.packageId,
   });
 
   Map<String, dynamic> toMap() => {
@@ -33,6 +35,7 @@ class Session {
         'notes': notes,
         'paymentStatus': paymentStatus,
         'createdAt': createdAt.toIso8601String(),
+        'packageId': packageId,
       };
 
   static Session fromMap(String id, Map<String, dynamic> map) {
@@ -53,6 +56,7 @@ class Session {
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : DateTime.now(),
+      packageId: map['packageId'] as String?,
     );
   }
 
@@ -63,6 +67,7 @@ class Session {
     double? value,
     String? notes,
     String? paymentStatus,
+    String? packageId,
   }) {
     return Session(
       id: id,
@@ -75,6 +80,7 @@ class Session {
       notes: notes ?? this.notes,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       createdAt: createdAt,
+      packageId: packageId ?? this.packageId,
     );
   }
 }
