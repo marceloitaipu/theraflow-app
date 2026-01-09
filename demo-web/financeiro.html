@@ -90,7 +90,7 @@
     <div class="container">
         <!-- Resumo Financeiro Inteligente -->
         <div class="smart-summary">
-            <div class="smart-summary-title">📊 Resumo Financeiro Inteligente</div>
+            <div class="smart-summary-title">📊 Resumo Financeiro Inteligente <span id="growthBadge" style="font-size: 0.8em; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 15px; margin-left: 10px;"></span></div>
             <div class="smart-summary-grid">
                 <div class="smart-summary-item">
                     <div class="icon">💰</div>
@@ -107,6 +107,21 @@
                     <div class="value" id="smartNext7Days">R$ 0</div>
                     <div class="label">Próximos 7 dias</div>
                 </div>
+            </div>
+            
+            <!-- Comparativo com mês anterior -->
+            <div id="comparisonSection" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2);"></div>
+        </div>
+        
+        <!-- Indicadores de Performance -->
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;">
+            <div style="background: white; padding: 15px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.5em; font-weight: bold; color: #667eea;" id="avgMonthly">R$ 0</div>
+                <div style="font-size: 0.85em; color: #666;">Média Mensal</div>
+            </div>
+            <div style="background: white; padding: 15px; border-radius: 12px; text-align: center;">
+                <div style="font-size: 1.5em; font-weight: bold; color: #10b981;" id="bestMonthValue">R$ 0</div>
+                <div style="font-size: 0.85em; color: #666;" id="bestMonthLabel">Melhor Mês</div>
             </div>
         </div>
 
@@ -284,9 +299,49 @@
         // Carregar Resumo Inteligente
         function loadSmartSummary() {
             var smartReport = TheraFlowData.getSmartFinanceReport();
+            var indicators = TheraFlowData.getProgressIndicators();
+            
             document.getElementById('smartReceived').textContent = TheraFlowUI.formatCurrency(smartReport.receivedThisMonth);
             document.getElementById('smartPending').textContent = TheraFlowUI.formatCurrency(smartReport.pendingThisMonth);
             document.getElementById('smartNext7Days').textContent = TheraFlowUI.formatCurrency(smartReport.next7Days);
+            
+            // Badge de crescimento
+            var growthBadge = document.getElementById('growthBadge');
+            if (smartReport.growthPercent !== 0) {
+                var isPositive = smartReport.growthPercent > 0;
+                growthBadge.innerHTML = (isPositive ? '↑ +' : '↓ ') + smartReport.growthPercent + '%';
+                growthBadge.style.background = isPositive ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)';
+            } else {
+                growthBadge.innerHTML = '';
+            }
+            
+            // Comparativo com mês anterior
+            var compSection = document.getElementById('comparisonSection');
+            if (smartReport.prevMonthReceived > 0 || smartReport.receivedThisMonth > 0) {
+                var diff = smartReport.receivedThisMonth - smartReport.prevMonthReceived;
+                var diffColor = diff >= 0 ? '#d1fae5' : '#fee2e2';
+                var diffText = diff >= 0 ? '+' : '';
+                
+                compSection.innerHTML = 
+                    '<div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9em;">' +
+                        '<span style="opacity: 0.9;">vs. Mês Anterior:</span>' +
+                        '<span style="background: ' + diffColor + '; color: ' + (diff >= 0 ? '#059669' : '#dc2626') + '; padding: 4px 10px; border-radius: 10px; font-weight: 600;">' +
+                            diffText + TheraFlowUI.formatCurrency(diff) +
+                        '</span>' +
+                    '</div>';
+            } else {
+                compSection.innerHTML = '';
+            }
+            
+            // Média mensal e melhor mês
+            document.getElementById('avgMonthly').textContent = TheraFlowUI.formatCurrency(indicators.monthlyAverage);
+            document.getElementById('bestMonthValue').textContent = TheraFlowUI.formatCurrency(indicators.bestMonthValue);
+            
+            if (indicators.bestMonth) {
+                var parts = indicators.bestMonth.split('-');
+                var monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                document.getElementById('bestMonthLabel').textContent = 'Melhor: ' + monthNames[parseInt(parts[1]) - 1] + '/' + parts[0];
+            }
         }
 
         // Carregar Pacotes

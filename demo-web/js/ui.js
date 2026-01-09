@@ -382,6 +382,102 @@ var TheraFlowUI = {
         printWindow.document.close();
         printWindow.focus();
         setTimeout(function() { printWindow.print(); }, 500);
+    },
+    
+    // === MENSAGENS CONTEXTUAIS (VOZ DO PRODUTO) ===
+    contextualMessages: {
+        greetings: [
+            '💆 Seu atendimento em fluxo',
+            '✨ Transformando cuidado em resultados',
+            '🌟 Cada sessão conta',
+            '💪 Você está fazendo um ótimo trabalho!'
+        ],
+        sessionStart: [
+            '💡 Hoje é um bom dia para cuidar!',
+            '🌟 Mais uma oportunidade de transformar',
+            '💆 Que essa sessão traga muitos resultados'
+        ],
+        sessionComplete: [
+            '✨ Excelente trabalho!',
+            '🎉 Sessão finalizada com sucesso!',
+            '💪 Continue assim, você está arrasando!',
+            '⭐ Mais uma pessoa cuidada'
+        ],
+        paymentReceived: [
+            '💰 Ka-ching! Pagamento registrado',
+            '✅ Pagamento confirmado com sucesso',
+            '💵 Dinheiro na conta!'
+        ],
+        clientAdded: [
+            '🎉 Bem-vindo ao clube!',
+            '👥 Novo cliente adicionado',
+            '✨ Mais uma pessoa para cuidar'
+        ],
+        packageCreated: [
+            '📦 Pacote criado! Fidelização em ação',
+            '🎯 Excelente estratégia!',
+            '💰 Receita garantida!'
+        ],
+        noShowReminder: [
+            '💬 Que tal entrar em contato?',
+            '📱 Uma mensagem pode fazer a diferença',
+            '🔔 Cliente precisa de atenção'
+        ],
+        motivation: [
+            '🌟 Você está construindo algo incrível!',
+            '💆 Cuidar dos outros é seu superpoder',
+            '📈 Cada dia é uma oportunidade de crescer',
+            '✨ Seus clientes confiam em você'
+        ]
+    },
+    
+    getContextualMessage: function(category) {
+        var messages = this.contextualMessages[category] || this.contextualMessages.motivation;
+        return messages[Math.floor(Math.random() * messages.length)];
+    },
+    
+    showContextualToast: function(category, duration) {
+        var message = this.getContextualMessage(category);
+        this.toast(message, 'info', duration || 3500);
+    },
+    
+    // === HELPER PARA ALERTAS DE PLANO ===
+    showUpgradeModal: function(feature) {
+        var featureNames = {
+            'packages': 'Pacotes de Sessões',
+            'reports': 'Relatórios Avançados',
+            'alerts': 'Alertas Inteligentes',
+            'clients': 'Limite de Clientes'
+        };
+        
+        var content = 
+            '<div style="text-align: center; padding: 20px;">' +
+                '<div style="font-size: 4em; margin-bottom: 15px;">🔒</div>' +
+                '<h2 style="margin-bottom: 10px;">Recurso Premium</h2>' +
+                '<p style="color: #666; margin-bottom: 20px;">' +
+                    '<strong>' + (featureNames[feature] || 'Este recurso') + '</strong> está disponível nos planos pagos.' +
+                '</p>' +
+                '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;">' +
+                    '<h3 style="margin-bottom: 15px;">✨ TheraFlow Pro</h3>' +
+                    '<ul style="text-align: left; list-style: none; padding: 0; margin: 0;">' +
+                        '<li style="margin-bottom: 8px;">✅ Pacotes ilimitados</li>' +
+                        '<li style="margin-bottom: 8px;">✅ Até 50 clientes</li>' +
+                        '<li style="margin-bottom: 8px;">✅ Alertas inteligentes</li>' +
+                        '<li style="margin-bottom: 8px;">✅ Relatórios avançados</li>' +
+                    '</ul>' +
+                    '<div style="font-size: 1.5em; margin-top: 15px;"><strong>R$ 29,90</strong>/mês</div>' +
+                '</div>' +
+                '<p style="font-size: 0.9em; color: #666;">💡 Você está perdendo dinheiro sem organização!</p>' +
+            '</div>';
+        
+        this.showModal({
+            title: '🚀 Faça Upgrade',
+            content: content,
+            buttons: [
+                { text: 'Agora não', class: 'btn-secondary', onClick: function() { TheraFlowUI.closeModal(); } },
+                { text: 'Ver Planos', class: 'btn-primary', onClick: function() { window.location.href = 'perfil.html#planos'; } }
+            ]
+        });
     }
 };
 

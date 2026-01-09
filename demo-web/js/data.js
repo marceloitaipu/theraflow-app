@@ -456,6 +456,17 @@ var TheraFlowData = {
         var report = this.getFinanceReport(year, month);
         var next7Days = this.getNext7DaysSessions();
         
+        // Mês anterior para comparação
+        var prevMonth = month === 1 ? 12 : month - 1;
+        var prevYear = month === 1 ? year - 1 : year;
+        var prevReport = this.getFinanceReport(prevYear, prevMonth);
+        
+        // Calcular crescimento
+        var growth = 0;
+        if (prevReport.totalReceived > 0) {
+            growth = Math.round(((report.totalReceived - prevReport.totalReceived) / prevReport.totalReceived) * 100);
+        }
+        
         var next7DaysValue = 0;
         for (var i = 0; i < next7Days.length; i++) {
             if (next7Days[i].pagamento !== 'pago' && next7Days[i].status !== 'faltou') {
@@ -469,8 +480,320 @@ var TheraFlowData = {
             next7Days: next7DaysValue,
             next7DaysSessions: next7Days.length,
             totalSessions: report.totalSessions,
-            averageTicket: report.totalSessions > 0 ? (report.total / report.totalSessions) : 0
+            averageTicket: report.totalSessions > 0 ? (report.total / report.totalSessions) : 0,
+            // Comparativo
+            prevMonthReceived: prevReport.totalReceived,
+            prevMonthSessions: prevReport.totalSessions,
+            growthPercent: growth,
+            sessionsCompleted: report.sessionsCompleted,
+            sessionsMissed: report.sessionsMissed
         };
+    },
+    
+    // === INDICADORES DE PROGRESSO PROFISSIONAL ===
+    getProgressIndicators: function() {
+        var now = new Date();
+        var year = now.getFullYear();
+        var month = now.getMonth() + 1;
+        var sessions = this.getSessions();
+        var clients = this.getClients();
+        
+        var thisMonthStr = year + '-' + String(month).padStart(2, '0');
+        var thisMonthCompleted = 0;
+        var thisMonthMissed = 0;
+        var thisMonthTotal = 0;
+        var thisMonthReceived = 0;
+        
+        // Clientes ativos (com sessão nos últimos 30 dias)
+        var today = this.formatDate(new Date());
+        var thirtyDaysAgo = this.formatDate(this.addDays(new Date(), -30));
+        var activeClients = {};
+        
+        // Melhor mês histórico
+        var monthlyTotals = {};
+        
+        for (var i = 0; i < sessions.length; i++) {
+            var s = sessions[i];
+            var monthKey = s.data ? s.data.substring(0, 7) : '';
+            
+            // Este mês
+            if (monthKey === thisMonthStr) {
+                thisMonthTotal++;
+                if (s.status === 'realizado') thisMonthCompleted++;
+                if (s.status === 'faltou') thisMonthMissed++;
+                if (s.pagamento === 'pago') thisMonthReceived += (s.valor || 0);
+            }
+            
+            // Clientes ativos
+            if (s.data >= thirtyDaysAgo && s.data <= today && s.status === 'realizado') {
+                activeClients[s.clienteId] = true;
+            }
+            
+            // Totais mensais históricos
+            if (monthKey && s.pagamento === 'pago') {
+                if (!monthlyTotals[monthKey]) monthlyTotals[monthKey] = 0;
+                monthlyTotals[monthKey] += (s.valor || 0);
+            }
+        }
+        
+        // Melhor mês
+        var bestMonth = '';
+        var bestMonthValue = 0;
+        for (var m in monthlyTotals) {
+            if (monthlyTotals[m] > bestMonthValue) {
+                bestMonthValue = monthlyTotals[m];
+                bestMonth = m;
+            }
+        }
+        
+        // Taxa de faltas
+        var noShowRate = thisMonthTotal > 0 ? Math.round((thisMonthMissed / thisMonthTotal) * 100) : 0;
+        
+        // Média mensal (últimos 6 meses)
+        var monthKeys = Object.keys(monthlyTotals).sort().slice(-6);
+        var avgMonthly = 0;
+        if (monthKeys.length > 0) {
+            var sum = 0;
+            for (var j = 0; j < monthKeys.length; j++) {
+                sum += monthlyTotals[monthKeys[j]];
+            }
+            avgMonthly = Math.round(sum / monthKeys.length);
+        }
+        
+        return {
+            sessionsThisMonth: thisMonthCompleted,
+            totalClientsRegistered: clients.length,
+            activeClients: Object.keys(activeClients).length,
+            noShowRate: noShowRate,
+            bestMonth: bestMonth,
+            bestMonthValue: bestMonthValue,
+            monthlyAverage: avgMonthly,
+            receivedThisMonth: thisMonthReceived
+        };
+    },
+    
+    // === ALERTAS INTELIGENTES ===
+    getSmartAlerts: function() {
+        var alerts = [];
+        var today = this.formatDate(new Date());
+        var tomorrow = this.formatDate(this.addDays(new Date(), 1));
+        var thirtyDaysAgo = this.formatDate(this.addDays(new Date(), -30));
+        var fortyFiveDaysAgo = this.formatDate(this.addDays(new Date(), -45));
+        var sevenDaysAgo = this.formatDate(this.addDays(new Date(), -7));
+        
+        var sessions = this.getSessions();
+        var clients = this.getClients();
+        var packages = this.getPackages();
+        
+        // Mapa de última sessão por cliente
+        var lastSessionByClient = {};
+        var pendingPayments = [];
+        var unconfirmedTomorrow = [];
+        
+        for (var i = 0; i < sessions.length; i++) {
+            var s = sessions[i];
+            
+            // Última sessão realizada por cliente
+            if (s.status === 'realizado') {
+                if (!lastSessionByClient[s.clienteId] || s.data > lastSessionByClient[s.clienteId]) {
+                    lastSessionByClient[s.clienteId] = s.data;
+                }
+            }
+            
+            // Sessões amanhã não confirmadas
+            if (s.data === tomorrow && s.status === 'confirmado') {
+                unconfirmedTomorrow.push(s);
+            }
+            
+            // Pagamentos pendentes há mais de 7 dias
+            if (s.pagamento === 'pendente' && s.status === 'realizado' && s.data < sevenDaysAgo) {
+                pendingPayments.push(s);
+            }
+        }
+        
+        // Alerta: Sessões amanhã para confirmar
+        if (unconfirmedTomorrow.length > 0) {
+            alerts.push({
+                type: 'confirmation',
+                priority: 'high',
+                icon: '📅',
+                title: unconfirmedTomorrow.length + ' sessão(ões) amanhã',
+                message: 'Lembre de confirmar com os clientes',
+                sessions: unconfirmedTomorrow
+            });
+        }
+        
+        // Alerta: Clientes sem sessão há muito tempo
+        for (var j = 0; j < clients.length; j++) {
+            var clientId = clients[j].id;
+            var lastSession = lastSessionByClient[clientId];
+            
+            if (!lastSession || lastSession < fortyFiveDaysAgo) {
+                alerts.push({
+                    type: 'churn_risk',
+                    priority: 'medium',
+                    icon: '⚠️',
+                    title: 'Cliente inativo: ' + clients[j].nome,
+                    message: lastSession ? 'Última sessão: ' + this.formatDateBR(lastSession) : 'Nunca atendido',
+                    clientId: clientId
+                });
+            } else if (lastSession < thirtyDaysAgo) {
+                alerts.push({
+                    type: 'reactivation',
+                    priority: 'low',
+                    icon: '💬',
+                    title: 'Contatar: ' + clients[j].nome,
+                    message: 'Sem sessão há 30+ dias',
+                    clientId: clientId
+                });
+            }
+        }
+        
+        // Alerta: Pacotes quase acabando
+        for (var k = 0; k < packages.length; k++) {
+            var pkg = packages[k];
+            if (pkg.sessoesRestantes > 0 && pkg.sessoesRestantes <= 2) {
+                alerts.push({
+                    type: 'package_low',
+                    priority: 'medium',
+                    icon: '📦',
+                    title: 'Pacote acabando: ' + pkg.clienteNome,
+                    message: 'Restam ' + pkg.sessoesRestantes + ' sessão(ões)',
+                    packageId: pkg.id
+                });
+            }
+        }
+        
+        // Alerta: Pagamentos pendentes antigos
+        if (pendingPayments.length > 0) {
+            var totalPending = 0;
+            for (var l = 0; l < pendingPayments.length; l++) {
+                totalPending += (pendingPayments[l].valor || 0);
+            }
+            alerts.push({
+                type: 'payment_overdue',
+                priority: 'high',
+                icon: '💰',
+                title: pendingPayments.length + ' pagamento(s) pendente(s)',
+                message: 'Total: R$ ' + totalPending.toFixed(2).replace('.', ','),
+                sessions: pendingPayments
+            });
+        }
+        
+        // Ordenar por prioridade
+        var priorityOrder = { high: 0, medium: 1, low: 2 };
+        alerts.sort(function(a, b) { return priorityOrder[a.priority] - priorityOrder[b.priority]; });
+        
+        return alerts;
+    },
+    
+    formatDateBR: function(dateStr) {
+        if (!dateStr) return '';
+        var parts = dateStr.split('-');
+        return parts[2] + '/' + parts[1] + '/' + parts[0];
+    },
+    
+    // === LINHA DO TEMPO DO CLIENTE ===
+    getClientTimeline: function(clienteId) {
+        var sessions = this.getSessionsByClient(clienteId);
+        var client = this.getClientById(clienteId);
+        var packages = this.getPackagesByClient(clienteId);
+        
+        if (!client) return null;
+        
+        // Calcular estatísticas
+        var totalSessions = sessions.length;
+        var completedSessions = 0;
+        var missedSessions = 0;
+        var totalSpent = 0;
+        var lastSession = null;
+        var firstSession = null;
+        var sessionDates = [];
+        
+        for (var i = 0; i < sessions.length; i++) {
+            var s = sessions[i];
+            if (s.status === 'realizado') {
+                completedSessions++;
+                totalSpent += (s.valor || 0);
+            }
+            if (s.status === 'faltou') missedSessions++;
+            
+            sessionDates.push(new Date(s.data + 'T12:00:00'));
+        }
+        
+        if (sessions.length > 0) {
+            lastSession = sessions[0]; // Já ordenado decrescente
+            firstSession = sessions[sessions.length - 1];
+        }
+        
+        // Frequência média (dias entre sessões)
+        var avgFrequency = 0;
+        if (sessionDates.length > 1) {
+            sessionDates.sort(function(a, b) { return a - b; });
+            var totalDays = 0;
+            for (var j = 1; j < sessionDates.length; j++) {
+                totalDays += (sessionDates[j] - sessionDates[j-1]) / (1000 * 60 * 60 * 24);
+            }
+            avgFrequency = Math.round(totalDays / (sessionDates.length - 1));
+        }
+        
+        // Valor médio por sessão
+        var avgValue = completedSessions > 0 ? Math.round(totalSpent / completedSessions) : 0;
+        
+        // Última observação
+        var lastNote = '';
+        for (var k = 0; k < sessions.length; k++) {
+            if (sessions[k].notas && sessions[k].notas.trim()) {
+                lastNote = sessions[k].notas;
+                break;
+            }
+        }
+        
+        // Pacotes ativos
+        var activePackages = [];
+        for (var l = 0; l < packages.length; l++) {
+            if (packages[l].sessoesRestantes > 0) {
+                activePackages.push(packages[l]);
+            }
+        }
+        
+        return {
+            client: client,
+            totalSessions: totalSessions,
+            completedSessions: completedSessions,
+            missedSessions: missedSessions,
+            totalSpent: totalSpent,
+            avgValue: avgValue,
+            avgFrequencyDays: avgFrequency,
+            lastSession: lastSession,
+            firstSession: firstSession,
+            lastNote: lastNote || client.notas || '',
+            sessions: sessions,
+            activePackages: activePackages,
+            noShowRate: totalSessions > 0 ? Math.round((missedSessions / totalSessions) * 100) : 0
+        };
+    },
+    
+    // === INICIAR SESSÃO (em andamento) ===
+    startSession: function(sessionId) {
+        return this.updateSession(sessionId, { 
+            status: 'em_andamento',
+            inicioReal: new Date().toISOString()
+        });
+    },
+    
+    finishSession: function(sessionId, data) {
+        var updateData = {
+            status: data.status || 'realizado',
+            fimReal: new Date().toISOString(),
+            notas: data.notas || ''
+        };
+        
+        if (data.pagamento) {
+            updateData.pagamento = data.pagamento;
+        }
+        
+        return this.updateSession(sessionId, updateData);
     },
 
     // === PLANO E LIMITES ===

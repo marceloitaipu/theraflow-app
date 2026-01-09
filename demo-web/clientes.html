@@ -163,41 +163,94 @@
                 return;
             }
 
-            var sessions = TheraFlowData.getSessionsByClient(id);
-            var sessionsHtml = '';
+            // Obter timeline inteligente do cliente
+            var timeline = TheraFlowData.getClientTimeline(id);
             
-            if (sessions.length === 0) {
+            var sessionsHtml = '';
+            if (timeline.sessions.length === 0) {
                 sessionsHtml = '<p style="color: #999; text-align: center;">Nenhuma sessão registrada</p>';
             } else {
-                var displaySessions = sessions.slice(0, 5);
+                var displaySessions = timeline.sessions.slice(0, 5);
                 for (var i = 0; i < displaySessions.length; i++) {
                     var s = displaySessions[i];
                     var badgeClass = s.pagamento === 'pago' ? 'tf-badge-success' : 'tf-badge-warning';
-                    sessionsHtml += '<div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0;">' +
-                        '<span>' + TheraFlowUI.formatDateBR(s.data) + ' - ' + s.tipo + '</span>' +
-                        '<span class="status-badge ' + badgeClass + '">' + TheraFlowUI.formatCurrency(s.valor) + '</span>' +
+                    var statusIcon = s.status === 'realizado' ? '✓' : s.status === 'faltou' ? '✗' : '⏳';
+                    sessionsHtml += '<div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f0f0f0; align-items: center;">' +
+                        '<div>' +
+                            '<span style="font-weight: 500;">' + TheraFlowUI.formatDateBR(s.data) + '</span>' +
+                            '<span style="color: #999; font-size: 0.9em;"> ' + s.hora + '</span>' +
+                            '<div style="font-size: 0.85em; color: #666;">' + s.tipo + '</div>' +
+                            (s.notas ? '<div style="font-size: 0.8em; color: #888; font-style: italic;">📝 ' + s.notas.substring(0, 40) + (s.notas.length > 40 ? '...' : '') + '</div>' : '') +
+                        '</div>' +
+                        '<span class="status-badge ' + badgeClass + '">' + statusIcon + ' ' + TheraFlowUI.formatCurrency(s.valor) + '</span>' +
                     '</div>';
+                }
+                if (timeline.sessions.length > 5) {
+                    sessionsHtml += '<p style="text-align: center; color: #667eea; font-size: 0.9em; padding: 10px; cursor: pointer;" onclick="showAllClientSessions(' + id + ')">Ver todas as ' + timeline.sessions.length + ' sessões →</p>';
                 }
             }
 
             var initial = client.nome ? client.nome.charAt(0).toUpperCase() : '?';
+            
+            // Indicadores de timeline
+            var timelineIndicators = '';
+            if (timeline.completedSessions > 0) {
+                timelineIndicators = 
+                    '<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 15px;">' +
+                        '<div style="background: #f0fdf4; padding: 10px; border-radius: 10px; text-align: center;">' +
+                            '<div style="font-weight: bold; color: #059669; font-size: 1.2em;">' + timeline.completedSessions + '</div>' +
+                            '<div style="font-size: 0.75em; color: #666;">Sessões</div>' +
+                        '</div>' +
+                        '<div style="background: #eff6ff; padding: 10px; border-radius: 10px; text-align: center;">' +
+                            '<div style="font-weight: bold; color: #3b82f6; font-size: 1.2em;">' + TheraFlowUI.formatCurrency(timeline.avgValue) + '</div>' +
+                            '<div style="font-size: 0.75em; color: #666;">Média</div>' +
+                        '</div>' +
+                        '<div style="background: #fef3c7; padding: 10px; border-radius: 10px; text-align: center;">' +
+                            '<div style="font-weight: bold; color: #d97706; font-size: 1.2em;">' + (timeline.avgFrequencyDays || '-') + 'd</div>' +
+                            '<div style="font-size: 0.75em; color: #666;">Frequência</div>' +
+                        '</div>' +
+                        '<div style="background: ' + (timeline.noShowRate > 20 ? '#fee2e2' : '#f8fafc') + '; padding: 10px; border-radius: 10px; text-align: center;">' +
+                            '<div style="font-weight: bold; color: ' + (timeline.noShowRate > 20 ? '#dc2626' : '#666') + '; font-size: 1.2em;">' + timeline.noShowRate + '%</div>' +
+                            '<div style="font-size: 0.75em; color: #666;">Faltas</div>' +
+                        '</div>' +
+                    '</div>';
+            }
+            
+            // Total gasto
+            var totalSpentHtml = timeline.totalSpent > 0 ? 
+                '<div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px; border-radius: 10px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">' +
+                    '<span>💰 Total investido</span>' +
+                    '<strong style="font-size: 1.2em;">' + TheraFlowUI.formatCurrency(timeline.totalSpent) + '</strong>' +
+                '</div>' : '';
+            
+            // Última anotação destacada
+            var lastNoteHtml = timeline.lastNote ? 
+                '<div style="background: #fff3cd; padding: 15px; border-radius: 10px; margin-bottom: 15px;">' +
+                    '<strong>📝 Última anotação:</strong>' +
+                    '<p style="margin-top: 5px; font-style: italic;">"' + timeline.lastNote + '"</p>' +
+                '</div>' : '';
+            
             var content = 
                 '<div style="text-align: center; margin-bottom: 20px;">' +
                     '<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 2em; font-weight: bold; margin: 0 auto 15px;">' +
                         initial +
                     '</div>' +
                     '<h2 style="margin-bottom: 5px;">' + client.nome + '</h2>' +
-                    '<p style="color: #666;">' + (client.sessoes || 0) + ' atendimentos</p>' +
+                    '<p style="color: #666;">Cliente desde ' + TheraFlowUI.formatDateBR(client.createdAt) + '</p>' +
                 '</div>' +
+
+                timelineIndicators +
+                totalSpentHtml +
+                lastNoteHtml +
 
                 '<div style="background: #f8f9ff; padding: 15px; border-radius: 10px; margin-bottom: 20px;">' +
                     '<p style="margin-bottom: 8px;"><strong>📱</strong> ' + (client.telefone || 'Não informado') + '</p>' +
                     '<p style="margin-bottom: 8px;"><strong>📧</strong> ' + (client.email || 'Não informado') + '</p>' +
-                    (client.notas ? '<p><strong>📝</strong> ' + client.notas + '</p>' : '') +
+                    (client.notas && client.notas !== timeline.lastNote ? '<p><strong>📝</strong> ' + client.notas + '</p>' : '') +
                 '</div>' +
 
-                '<h4 style="margin-bottom: 10px;">Últimas Sessões</h4>' +
-                '<div style="max-height: 200px; overflow-y: auto;">' + sessionsHtml + '</div>' +
+                '<h4 style="margin-bottom: 10px;">📅 Histórico de Sessões</h4>' +
+                '<div style="max-height: 200px; overflow-y: auto; background: white; border-radius: 10px; padding: 10px;">' + sessionsHtml + '</div>' +
 
                 // Mostrar pacotes ativos do cliente
                 '<div id="clientPackagesSection" style="margin-top: 20px;">' + getClientPackagesHtml(id) + '</div>' +
@@ -222,6 +275,40 @@
                 '</ul>';
 
             TheraFlowUI.showModal({ title: 'Detalhes do Cliente', content: content });
+        }
+        
+        function showAllClientSessions(clienteId) {
+            var sessions = TheraFlowData.getSessionsByClient(clienteId);
+            var client = TheraFlowData.getClientById(clienteId);
+            
+            var html = '<div style="max-height: 400px; overflow-y: auto;">';
+            for (var i = 0; i < sessions.length; i++) {
+                var s = sessions[i];
+                var badgeClass = s.pagamento === 'pago' ? 'tf-badge-success' : 'tf-badge-warning';
+                var statusIcon = s.status === 'realizado' ? '✓' : s.status === 'faltou' ? '✗' : '⏳';
+                html += '<div style="padding: 15px; border-bottom: 1px solid #f0f0f0;">' +
+                    '<div style="display: flex; justify-content: space-between; align-items: center;">' +
+                        '<div>' +
+                            '<strong>' + TheraFlowUI.formatDateBR(s.data) + '</strong> às ' + s.hora +
+                            '<div style="font-size: 0.9em; color: #666;">' + s.tipo + '</div>' +
+                        '</div>' +
+                        '<span class="status-badge ' + badgeClass + '">' + statusIcon + ' ' + TheraFlowUI.formatCurrency(s.valor) + '</span>' +
+                    '</div>' +
+                    (s.notas ? '<div style="font-size: 0.85em; color: #888; margin-top: 5px; font-style: italic;">📝 ' + s.notas + '</div>' : '') +
+                '</div>';
+            }
+            html += '</div>';
+            
+            TheraFlowUI.closeModal();
+            setTimeout(function() {
+                TheraFlowUI.showModal({
+                    title: '📅 Histórico Completo - ' + client.nome,
+                    content: html,
+                    buttons: [
+                        { text: 'Voltar', onClick: function() { TheraFlowUI.closeModal(); showClientDetails(clienteId); } }
+                    ]
+                });
+            }, 300);
         }
 
         function getClientPackagesHtml(clienteId) {

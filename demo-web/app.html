@@ -85,6 +85,43 @@
         }
         .security-badge .icon { font-size: 1.3em; }
 
+        /* Comparativo de crescimento */
+        .growth-indicator {
+            display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px;
+            border-radius: 15px; font-size: 0.8em; font-weight: 600;
+        }
+        .growth-positive { background: rgba(255,255,255,0.2); color: #d1fae5; }
+        .growth-negative { background: rgba(239,68,68,0.2); color: #fecaca; }
+        
+        /* Alertas Inteligentes */
+        .alerts-section { margin-bottom: 20px; }
+        .alert-card {
+            background: white; padding: 15px; border-radius: 12px; margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px;
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .alert-card:hover { transform: translateX(3px); }
+        .alert-card .alert-icon { font-size: 1.8em; }
+        .alert-card .alert-content { flex: 1; }
+        .alert-card .alert-title { font-weight: 600; color: #333; margin-bottom: 3px; }
+        .alert-card .alert-message { font-size: 0.85em; color: #666; }
+        .alert-card.priority-high { border-left: 4px solid #ef4444; }
+        .alert-card.priority-medium { border-left: 4px solid #f59e0b; }
+        .alert-card.priority-low { border-left: 4px solid #10b981; }
+        
+        /* Indicadores de Progresso */
+        .progress-section { margin-bottom: 20px; }
+        .progress-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .progress-card {
+            background: white; padding: 15px; border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: center;
+        }
+        .progress-card .progress-value { font-size: 1.5em; font-weight: bold; color: #667eea; }
+        .progress-card .progress-label { font-size: 0.8em; color: #666; margin-top: 3px; }
+        .progress-card.highlight { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .progress-card.highlight .progress-value { color: white; }
+        .progress-card.highlight .progress-label { color: rgba(255,255,255,0.9); }
+
         .section-title {
             font-size: 1.3em;
             margin-bottom: 15px;
@@ -178,6 +215,32 @@
         .quick-action-btn:hover { background: #667eea; color: white; border-color: #667eea; }
         .quick-action-btn.success:hover { background: #10b981; border-color: #10b981; }
         .quick-action-btn.danger:hover { background: #ef4444; border-color: #ef4444; }
+        
+        /* Botão Iniciar Sessão */
+        .btn-start-session {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white; border: none; padding: 10px 20px; border-radius: 25px;
+            font-size: 0.9em; font-weight: 600; cursor: pointer; display: inline-flex;
+            align-items: center; gap: 8px; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-start-session:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+        
+        /* Modal Iniciar Sessão */
+        .session-start-modal { padding: 10px 0; }
+        .session-start-modal .client-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center;
+        }
+        .session-start-modal .client-info h2 { margin-bottom: 5px; }
+        .session-start-modal .client-info p { opacity: 0.9; }
+        .session-start-modal .last-note {
+            background: #fef3c7; padding: 15px; border-radius: 10px; margin-bottom: 15px;
+        }
+        .session-start-modal .note-input {
+            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px;
+            font-size: 1em; resize: vertical; min-height: 80px;
+        }
+        .session-start-modal .note-input:focus { border-color: #667eea; outline: none; }
     </style>
 </head>
 <body>
@@ -195,7 +258,7 @@
 
         <!-- Resumo Financeiro Inteligente -->
         <div class="finance-summary">
-            <div class="finance-summary-title">💰 Resumo Financeiro do Mês</div>
+            <div class="finance-summary-title">💰 Resumo Financeiro do Mês <span id="financeGrowth" class="growth-indicator"></span></div>
             <div class="finance-summary-grid">
                 <div class="finance-summary-item">
                     <div class="value" id="financeReceived">R$ 0</div>
@@ -208,6 +271,32 @@
                 <div class="finance-summary-item">
                     <div class="value" id="financeNext7">R$ 0</div>
                     <div class="label">Próx. 7 dias</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Alertas Inteligentes -->
+        <div id="alertsSection" class="alerts-section"></div>
+        
+        <!-- Indicadores de Progresso -->
+        <div class="progress-section">
+            <h3 style="margin-bottom: 12px; font-size: 1em; color: #333;">📊 Seu Progresso</h3>
+            <div class="progress-grid">
+                <div class="progress-card highlight">
+                    <div class="progress-value" id="progressSessions">0</div>
+                    <div class="progress-label">Sessões este mês</div>
+                </div>
+                <div class="progress-card">
+                    <div class="progress-value" id="progressClients">0</div>
+                    <div class="progress-label">Clientes ativos</div>
+                </div>
+                <div class="progress-card">
+                    <div class="progress-value" id="progressNoShow">0%</div>
+                    <div class="progress-label">Taxa de faltas</div>
+                </div>
+                <div class="progress-card">
+                    <div class="progress-value" id="progressBestMonth">-</div>
+                    <div class="progress-label">Melhor mês</div>
                 </div>
             </div>
         </div>
@@ -322,9 +411,10 @@
 
         function renderSessionCard(session, isNext) {
             const paymentClass = session.pagamento === 'pago' ? 'status-pago' : 'status-pendente';
+            const isInProgress = session.status === 'em_andamento';
             return `
                 <div class="session-card ${isNext ? 'next' : ''}" onclick="showSessionDetails(${session.id})">
-                    <div class="time">${session.hora} - ${addMinutes(session.hora, session.duracao)}</div>
+                    <div class="time">${session.hora} - ${addMinutes(session.hora, session.duracao)} ${isInProgress ? '<span style="color: #10b981; font-weight: normal; font-size: 0.8em;">● Em andamento</span>' : ''}</div>
                     <div class="client">${session.clienteNome}</div>
                     <div class="details">
                         <span>${session.tipo} • ${TheraFlowUI.formatCurrency(session.valor)}</span>
@@ -332,10 +422,11 @@
                     </div>
                     <div class="quick-actions" onclick="event.stopPropagation()">
                         ${session.status === 'confirmado' ? `
-                            <button class="quick-action-btn success" onclick="markDone(${session.id})">✓ Realizado</button>
-                            <button class="quick-action-btn danger" onclick="markNoShow(${session.id})">✗ Faltou</button>
-                        ` : `<span class="status-badge status-${session.status}">${session.status}</span>`}
-                        ${session.pagamento === 'pendente' ? `
+                            <button class="btn-start-session" onclick="startSessionFlow(${session.id})">▶ Iniciar Sessão</button>
+                        ` : session.status === 'em_andamento' ? `
+                            <button class="btn-start-session" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);" onclick="finishSessionFlow(${session.id})">⏹ Finalizar Sessão</button>
+                        ` : `<span class="status-badge status-${session.status}">${session.status === 'realizado' ? '✓ Realizado' : session.status === 'faltou' ? '✗ Faltou' : session.status}</span>`}
+                        ${session.pagamento === 'pendente' && session.status !== 'confirmado' && session.status !== 'em_andamento' ? `
                             <button class="quick-action-btn" onclick="markPaid(${session.id})">💰 Marcar Pago</button>
                         ` : ''}
                     </div>
@@ -385,23 +476,198 @@
                     </div>
                 </div>
                 <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;">
-                    <span class="status-badge status-${session.status}">${session.status}</span>
+                    <span class="status-badge status-${session.status}">${session.status === 'em_andamento' ? 'Em andamento' : session.status}</span>
                     <span class="status-badge ${session.pagamento === 'pago' ? 'status-pago' : 'status-pendente'}">${session.pagamento}</span>
                 </div>
                 ${session.notas ? `<div style="background: #fff3cd; padding: 15px; border-radius: 10px;"><strong>📝 Anotações:</strong><p>${session.notas}</p></div>` : ''}
                 <ul class="tf-action-list" style="margin-top: 20px;">
                     ${session.status === 'confirmado' ? `
-                        <li class="tf-action-item" onclick="markDone(${id}); TheraFlowUI.closeModal();"><span class="icon">✅</span><div class="text"><strong>Marcar como Realizado</strong><span>Confirmar que o atendimento aconteceu</span></div></li>
+                        <li class="tf-action-item" onclick="TheraFlowUI.closeModal(); startSessionFlow(${id});"><span class="icon">▶️</span><div class="text"><strong>Iniciar Sessão</strong><span>Começar o atendimento agora</span></div></li>
                         <li class="tf-action-item" onclick="markNoShow(${id}); TheraFlowUI.closeModal();"><span class="icon">❌</span><div class="text"><strong>Registrar Falta</strong><span>Cliente não compareceu</span></div></li>
+                    ` : session.status === 'em_andamento' ? `
+                        <li class="tf-action-item" onclick="TheraFlowUI.closeModal(); finishSessionFlow(${id});"><span class="icon">⏹️</span><div class="text"><strong>Finalizar Sessão</strong><span>Encerrar o atendimento</span></div></li>
                     ` : ''}
-                    ${session.pagamento === 'pendente' ? `
+                    ${session.pagamento === 'pendente' && session.status !== 'confirmado' ? `
                         <li class="tf-action-item" onclick="markPaid(${id}); TheraFlowUI.closeModal();"><span class="icon">💰</span><div class="text"><strong>Marcar como Pago</strong><span>Registrar recebimento</span></div></li>
                     ` : ''}
-                    <li class="tf-action-item" onclick="window.location.href='cliente-detalhe.html?id=${session.clienteId}'"><span class="icon">👤</span><div class="text"><strong>Ver Cliente</strong><span>Abrir perfil completo</span></div></li>
+                    <li class="tf-action-item" onclick="window.location.href='clientes.html?id=${session.clienteId}'"><span class="icon">👤</span><div class="text"><strong>Ver Cliente</strong><span>Abrir perfil completo</span></div></li>
                     <li class="tf-action-item" onclick="confirmDeleteSession(${id})" style="color: #ef4444;"><span class="icon">🗑️</span><div class="text"><strong>Excluir Sessão</strong><span>Remover este agendamento</span></div></li>
                 </ul>`;
 
             TheraFlowUI.showModal({ title: 'Detalhes do Atendimento', content: content, size: 'medium' });
+        }
+        
+        // === FLUXO INICIAR SESSÃO ===
+        function startSessionFlow(sessionId) {
+            const session = TheraFlowData.getSessionById(sessionId);
+            if (!session) return;
+            
+            // Buscar dados do cliente e timeline
+            const timeline = TheraFlowData.getClientTimeline(session.clienteId);
+            const lastNote = timeline ? timeline.lastNote : '';
+            
+            const content = `
+                <div class="session-start-modal">
+                    <div class="client-info">
+                        <h2>${session.clienteNome}</h2>
+                        <p>${session.tipo} • ${session.duracao} min</p>
+                    </div>
+                    
+                    ${timeline ? `
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; text-align: center;">
+                            <div style="background: #f0fdf4; padding: 10px; border-radius: 10px;">
+                                <div style="font-weight: bold; color: #059669;">${timeline.completedSessions}</div>
+                                <div style="font-size: 0.8em; color: #666;">Sessões</div>
+                            </div>
+                            <div style="background: #eff6ff; padding: 10px; border-radius: 10px;">
+                                <div style="font-weight: bold; color: #3b82f6;">${TheraFlowUI.formatCurrency(timeline.avgValue)}</div>
+                                <div style="font-size: 0.8em; color: #666;">Média</div>
+                            </div>
+                            <div style="background: #fef3c7; padding: 10px; border-radius: 10px;">
+                                <div style="font-weight: bold; color: #d97706;">${timeline.avgFrequencyDays || '-'}</div>
+                                <div style="font-size: 0.8em; color: #666;">Dias freq.</div>
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    ${lastNote ? `
+                        <div class="last-note">
+                            <strong>📝 Última anotação:</strong>
+                            <p style="margin-top: 5px;">${lastNote}</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 8px;">✏️ Anotação rápida (opcional)</label>
+                        <textarea class="note-input" id="sessionStartNote" placeholder="Observações sobre esta sessão..."></textarea>
+                    </div>
+                    
+                    <p style="text-align: center; color: #666; font-size: 0.9em;">💡 Hoje é um bom dia para cuidar!</p>
+                </div>`;
+            
+            TheraFlowUI.showModal({
+                title: '▶️ Iniciar Sessão',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', class: 'tf-btn-secondary', onclick: 'TheraFlowUI.closeModal()' },
+                    { text: '▶ Iniciar Agora', class: 'tf-btn-primary', onclick: `confirmStartSession(${sessionId})` }
+                ]
+            });
+        }
+        
+        function confirmStartSession(sessionId) {
+            const note = document.getElementById('sessionStartNote')?.value || '';
+            
+            // Atualizar sessão com status em_andamento
+            TheraFlowData.updateSession(sessionId, {
+                status: 'em_andamento',
+                inicioReal: new Date().toISOString(),
+                notas: note
+            });
+            
+            TheraFlowUI.closeModal();
+            TheraFlowUI.toast('Sessão iniciada! Seu atendimento em fluxo ✨', 'success');
+            loadSessions();
+            loadStats();
+        }
+        
+        function finishSessionFlow(sessionId) {
+            const session = TheraFlowData.getSessionById(sessionId);
+            if (!session) return;
+            
+            // Verificar se tem pacote para abater
+            const packages = TheraFlowData.getActivePackagesByClient(session.clienteId);
+            const hasPackage = packages.length > 0;
+            
+            const content = `
+                <div class="session-start-modal">
+                    <div class="client-info" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <h2>${session.clienteNome}</h2>
+                        <p>Finalizando ${session.tipo}</p>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 8px;">📊 Como foi a sessão?</label>
+                        <select id="finishStatus" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                            <option value="realizado">✅ Realizada com sucesso</option>
+                            <option value="faltou">❌ Cliente faltou</option>
+                        </select>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 8px;">💰 Pagamento</label>
+                        <select id="finishPayment" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                            <option value="pago">✓ Pago</option>
+                            <option value="pendente">⏳ Pendente</option>
+                            ${hasPackage ? '<option value="pacote">📦 Abater do pacote</option>' : ''}
+                        </select>
+                    </div>
+                    
+                    ${hasPackage ? `
+                        <div id="packageAbateInfo" style="display: none; background: #f0fdf4; padding: 12px; border-radius: 10px; margin-bottom: 15px;">
+                            <strong>📦 ${packages[0].nome}</strong>
+                            <p style="font-size: 0.9em; color: #059669;">Restam ${packages[0].sessoesRestantes} sessões</p>
+                            <input type="hidden" id="packageToAbate" value="${packages[0].id}">
+                        </div>
+                    ` : ''}
+                    
+                    <div style="margin-bottom: 15px;">
+                        <label style="font-weight: 600; display: block; margin-bottom: 8px;">📝 Anotações finais</label>
+                        <textarea class="note-input" id="sessionFinishNote" placeholder="Observações sobre a sessão...">${session.notas || ''}</textarea>
+                    </div>
+                </div>
+                
+                <script>
+                    document.getElementById('finishPayment')?.addEventListener('change', function() {
+                        var info = document.getElementById('packageAbateInfo');
+                        if (info) info.style.display = this.value === 'pacote' ? 'block' : 'none';
+                    });
+                </script>`;
+            
+            TheraFlowUI.showModal({
+                title: '⏹ Finalizar Sessão',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', class: 'tf-btn-secondary', onclick: 'TheraFlowUI.closeModal()' },
+                    { text: '✓ Finalizar', class: 'tf-btn-primary', onclick: `confirmFinishSession(${sessionId})` }
+                ]
+            });
+        }
+        
+        function confirmFinishSession(sessionId) {
+            const status = document.getElementById('finishStatus').value;
+            const payment = document.getElementById('finishPayment').value;
+            const note = document.getElementById('sessionFinishNote')?.value || '';
+            
+            let finalPayment = payment;
+            
+            // Se escolheu pacote, abater sessão
+            if (payment === 'pacote') {
+                const packageId = document.getElementById('packageToAbate')?.value;
+                if (packageId) {
+                    const pkg = TheraFlowData.usePackageSession(parseInt(packageId));
+                    if (pkg && pkg.sessoesRestantes <= 2) {
+                        setTimeout(function() {
+                            TheraFlowUI.toast('⚠️ Atenção: Restam apenas ' + pkg.sessoesRestantes + ' sessões no pacote!', 'warning');
+                        }, 1500);
+                    }
+                }
+                finalPayment = 'pago';
+            }
+            
+            // Atualizar sessão
+            TheraFlowData.updateSession(sessionId, {
+                status: status,
+                pagamento: finalPayment,
+                fimReal: new Date().toISOString(),
+                notas: note
+            });
+            
+            TheraFlowUI.closeModal();
+            TheraFlowUI.toast('Sessão finalizada! ' + (status === 'realizado' ? '✨ Excelente trabalho!' : ''), 'success');
+            loadSessions();
+            loadStats();
+            loadFinanceSummary();
         }
 
         function confirmDeleteSession(id) {
@@ -553,6 +819,8 @@
         loadSessions();
         loadFinanceSummary();
         loadReminders();
+        loadAlerts();
+        loadProgressIndicators();
 
         // Carregar Resumo Financeiro Inteligente
         function loadFinanceSummary() {
@@ -560,6 +828,96 @@
             document.getElementById('financeReceived').textContent = TheraFlowUI.formatCurrency(smartReport.receivedThisMonth);
             document.getElementById('financePending').textContent = TheraFlowUI.formatCurrency(smartReport.pendingThisMonth);
             document.getElementById('financeNext7').textContent = TheraFlowUI.formatCurrency(smartReport.next7Days);
+            
+            // Indicador de crescimento
+            var growthEl = document.getElementById('financeGrowth');
+            if (smartReport.growthPercent !== 0) {
+                var isPositive = smartReport.growthPercent > 0;
+                growthEl.className = 'growth-indicator ' + (isPositive ? 'growth-positive' : 'growth-negative');
+                growthEl.textContent = (isPositive ? '↑ +' : '↓ ') + smartReport.growthPercent + '% vs mês ant.';
+            } else {
+                growthEl.textContent = '';
+            }
+        }
+        
+        // Carregar Alertas Inteligentes
+        function loadAlerts() {
+            var alerts = TheraFlowData.getSmartAlerts();
+            var alertsSection = document.getElementById('alertsSection');
+            
+            if (alerts.length === 0) {
+                alertsSection.innerHTML = '';
+                return;
+            }
+            
+            // Limitar a 3 alertas na home
+            var displayAlerts = alerts.slice(0, 3);
+            
+            var html = '<h3 style="margin-bottom: 12px; font-size: 1em; color: #333;">🔔 Alertas</h3>';
+            displayAlerts.forEach(function(alert) {
+                html += '<div class="alert-card priority-' + alert.priority + '" onclick="handleAlertClick(\'' + alert.type + '\', ' + (alert.clientId || alert.packageId || 'null') + ')">' +
+                    '<span class="alert-icon">' + alert.icon + '</span>' +
+                    '<div class="alert-content">' +
+                        '<div class="alert-title">' + alert.title + '</div>' +
+                        '<div class="alert-message">' + alert.message + '</div>' +
+                    '</div>' +
+                    '<span style="color: #ccc;">›</span>' +
+                '</div>';
+            });
+            
+            if (alerts.length > 3) {
+                html += '<p style="text-align: center; color: #667eea; font-size: 0.9em; cursor: pointer;" onclick="showAllAlerts()">Ver todos os ' + alerts.length + ' alertas</p>';
+            }
+            
+            alertsSection.innerHTML = html;
+        }
+        
+        function handleAlertClick(type, id) {
+            if (type === 'churn_risk' || type === 'reactivation') {
+                window.location.href = 'clientes.html?highlight=' + id;
+            } else if (type === 'package_low') {
+                window.location.href = 'clientes.html';
+            } else if (type === 'payment_overdue') {
+                window.location.href = 'financeiro.html';
+            } else if (type === 'confirmation') {
+                window.location.href = 'agenda.html';
+            }
+        }
+        
+        function showAllAlerts() {
+            var alerts = TheraFlowData.getSmartAlerts();
+            var html = '<div style="max-height: 400px; overflow-y: auto;">';
+            alerts.forEach(function(alert) {
+                html += '<div style="padding: 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 12px;">' +
+                    '<span style="font-size: 1.5em;">' + alert.icon + '</span>' +
+                    '<div>' +
+                        '<div style="font-weight: 600;">' + alert.title + '</div>' +
+                        '<div style="font-size: 0.85em; color: #666;">' + alert.message + '</div>' +
+                    '</div>' +
+                '</div>';
+            });
+            html += '</div>';
+            
+            TheraFlowUI.showModal({
+                title: '🔔 Todos os Alertas',
+                content: html,
+                buttons: [{ text: 'Fechar', onclick: 'TheraFlowUI.closeModal()' }]
+            });
+        }
+        
+        // Carregar Indicadores de Progresso
+        function loadProgressIndicators() {
+            var indicators = TheraFlowData.getProgressIndicators();
+            
+            document.getElementById('progressSessions').textContent = indicators.sessionsThisMonth;
+            document.getElementById('progressClients').textContent = indicators.activeClients;
+            document.getElementById('progressNoShow').textContent = indicators.noShowRate + '%';
+            
+            if (indicators.bestMonth) {
+                var parts = indicators.bestMonth.split('-');
+                var monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                document.getElementById('progressBestMonth').textContent = monthNames[parseInt(parts[1]) - 1] + '/' + parts[0].slice(2);
+            }
         }
 
         // Carregar Lembretes (sessões de amanhã)
