@@ -138,6 +138,11 @@
         TheraFlowUI.checkAuth();
         TheraFlowComponents.injectNavigation('financeiro');
 
+        // Garantir que existam dados de demonstração
+        if (TheraFlowData.getClients().length === 0) {
+            TheraFlowData.resetData();
+        }
+
         var currentYear = new Date().getFullYear();
         var currentMonth = new Date().getMonth() + 1;
 
@@ -147,9 +152,6 @@
         function changeMonth(delta) {
             currentMonth += delta;
             if (currentMonth > 12) { currentMonth = 1; currentYear++; }
-            if (currentMonth < 1) { currentMonth = 12; currentYear--; }
-            loadFinanceData();
-        }
             if (currentMonth < 1) { currentMonth = 12; currentYear--; }
             loadFinanceData();
         }

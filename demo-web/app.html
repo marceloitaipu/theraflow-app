@@ -141,6 +141,11 @@
         // Verificar autenticação
         TheraFlowUI.checkAuth();
 
+        // Garantir que existam dados de demonstração
+        if (TheraFlowData.getClients().length === 0) {
+            TheraFlowData.resetData();
+        }
+
         // Injetar navegação
         TheraFlowComponents.injectNavigation('home');
 

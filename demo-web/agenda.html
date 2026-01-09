@@ -308,6 +308,11 @@
         TheraFlowUI.checkAuth();
         TheraFlowComponents.injectNavigation('agenda');
 
+        // Garantir que existam dados de demonstração
+        if (TheraFlowData.getClients().length === 0) {
+            TheraFlowData.resetData();
+        }
+
         // Estado
         var currentDate = new Date();
         var selectedDate = new Date();
