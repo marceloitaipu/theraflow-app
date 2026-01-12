@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Logo Preview</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+        }
+        .logo-section {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+        .logo-section h2 {
+            color: #667eea;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        .logo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 30px;
+            align-items: center;
+            justify-items: center;
+        }
+        .logo-item {
+            text-align: center;
+        }
+        .logo-item img {
+            max-width: 100%;
+            height: auto;
+        }
+        .logo-item p {
+            margin-top: 10px;
+            font-size: 0.85em;
+            color: #888;
+        }
+        .dark-bg {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            padding: 40px;
+            border-radius: 15px;
+            margin-top: 20px;
+        }
+        .size-120 { width: 120px; height: 120px; }
+        .size-80 { width: 80px; height: 80px; }
+        .size-48 { width: 48px; height: 48px; }
+        .size-32 { width: 32px; height: 32px; }
+        .horizontal { width: 280px; }
+        
+        .color-palette {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .color-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 8px;
+            color: white;
+            font-size: 0.75em;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 600;
+            margin: 5px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .downloads {
+            text-align: center;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 TheraFlow Brand Assets</h1>
+        <p class="subtitle">Logo e identidade visual do aplicativo</p>
+        
+        <!-- Logo Principal -->
+        <div class="logo-section">
+            <h2>📍 Logo Principal (Ícone)</h2>
+            <div class="logo-grid">
+                <div class="logo-item">
+                    <img src="assets/logo.svg" class="size-120" alt="Logo 120px">
+                    <p>120 × 120</p>
+                </div>
+                <div class="logo-item">
+                    <img src="assets/logo.svg" class="size-80" alt="Logo 80px">
+                    <p>80 × 80</p>
+                </div>
+                <div class="logo-item">
+                    <img src="assets/logo.svg" class="size-48" alt="Logo 48px">
+                    <p>48 × 48</p>
+                </div>
+                <div class="logo-item">
+                    <img src="assets/logo.svg" class="size-32" alt="Logo 32px">
+                    <p>32 × 32</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Logo Horizontal -->
+        <div class="logo-section">
+            <h2>📐 Logo Horizontal (com nome)</h2>
+            <div class="logo-grid">
+                <div class="logo-item">
+                    <img src="assets/logo-horizontal.svg" class="horizontal" alt="Logo Horizontal">
+                    <p>Para headers e navegação</p>
+                </div>
+            </div>
+            
+            <div class="dark-bg">
+                <div class="logo-grid">
+                    <div class="logo-item">
+                        <img src="assets/logo.svg" class="size-80" alt="Logo em fundo escuro">
+                        <p style="color: #aaa;">Fundo escuro</p>
+                    </div>
+                    <div class="logo-item">
+                        <img src="assets/app-icon-512.svg" class="size-120" alt="App Icon">
+                        <p style="color: #aaa;">App Icon (512px)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Paleta de Cores -->
+        <div class="logo-section">
+            <h2>🎨 Paleta de Cores</h2>
+            <div class="color-palette">
+                <div class="color-swatch" style="background: #667eea;">#667eea<br>Primary</div>
+                <div class="color-swatch" style="background: #764ba2;">#764ba2<br>Secondary</div>
+                <div class="color-swatch" style="background: linear-gradient(135deg, #667eea, #764ba2);">Gradient<br>Principal</div>
+                <div class="color-swatch" style="background: #10b981;">#10b981<br>Success</div>
+                <div class="color-swatch" style="background: #f59e0b;">#f59e0b<br>Warning</div>
+                <div class="color-swatch" style="background: #ef4444;">#ef4444<br>Error</div>
+            </div>
+        </div>
+        
+        <!-- Downloads -->
+        <div class="logo-section">
+            <h2>⬇️ Download</h2>
+            <div class="downloads">
+                <a href="assets/logo.svg" download class="download-btn">Logo SVG</a>
+                <a href="assets/logo-horizontal.svg" download class="download-btn">Logo Horizontal</a>
+                <a href="assets/app-icon-512.svg" download class="download-btn">App Icon 512px</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
