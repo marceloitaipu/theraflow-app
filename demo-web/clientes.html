@@ -295,6 +295,40 @@
             var client = TheraFlowData.getClientById(clienteId);
             if (!client) return;
             
+            // Verificar se plano permite pacotes (Ajuste 2 - Paywall)
+            var limits = TheraFlowData.checkPlanLimits();
+            if (!limits.hasPackages) {
+                setTimeout(function() {
+                    var content = 
+                        '<div style="text-align: center; padding: 20px;">' +
+                            '<div style="font-size: 4em; margin-bottom: 15px;">📦</div>' +
+                            '<h3 style="margin-bottom: 15px; color: #667eea;">Pacotes de Sessões</h3>' +
+                            '<p style="color: #666; margin-bottom: 20px;">Crie pacotes para seus clientes e fidelize-os com descontos especiais!</p>' +
+                            '<div style="background: #fef3c7; padding: 15px; border-radius: 10px; margin-bottom: 20px;">' +
+                                '<p style="color: #92400e; font-weight: 600;">🔒 Recurso disponível a partir do plano Pro</p>' +
+                            '</div>' +
+                            '<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px;">' +
+                                '<div style="font-size: 0.9em; opacity: 0.9;">Plano Pro</div>' +
+                                '<div style="font-size: 1.8em; font-weight: bold;">R$ 29/mês</div>' +
+                                '<div style="font-size: 0.85em; margin-top: 5px;">✓ 50 clientes  ✓ Pacotes  ✓ Alertas inteligentes</div>' +
+                            '</div>' +
+                        '</div>';
+                    
+                    TheraFlowUI.showModal({
+                        title: '⬆️ Upgrade Necessário',
+                        content: content,
+                        buttons: [
+                            { text: 'Depois', onClick: function() { TheraFlowUI.closeModal(); showClientDetails(clienteId); } },
+                            { text: 'Ver Planos', primary: true, onClick: function() {
+                                TheraFlowUI.closeModal();
+                                window.location.href = 'perfil.html';
+                            }}
+                        ]
+                    });
+                }, 300);
+                return;
+            }
+            
             setTimeout(function() {
                 var content = 
                     '<div style="text-align: center; margin-bottom: 20px;">' +
@@ -472,7 +506,13 @@
             });
 
             TheraFlowUI.closeModal();
-            TheraFlowUI.toast('Cliente adicionado com sucesso!', 'success');
+            // Ajuste 4: Microcopy humanizado
+            var clients = TheraFlowData.getClients();
+            var msg = '🎉 ' + nome + ' adicionado(a) com sucesso!';
+            if (clients.length === 1) {
+                msg += ' Seu primeiro cliente!';
+            }
+            TheraFlowUI.toast(msg, 'success');
             loadClients();
         }
 

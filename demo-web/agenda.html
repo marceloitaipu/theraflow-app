@@ -935,7 +935,14 @@
             renderDaySessions();
             
             if (status === 'realizado') {
-                TheraFlowUI.toast('Atendimento marcado como realizado!', 'success');
+                // Ajuste 4: Microcopy humanizado
+                var todaySessions = TheraFlowData.getTodaySessions();
+                var completedToday = todaySessions.filter(function(s) { return s.status === 'realizado'; }).length;
+                var msg = '✅ Sessão finalizada com sucesso!';
+                if (completedToday >= 3) {
+                    msg += ' Seu atendimento está em fluxo hoje 🔥';
+                }
+                TheraFlowUI.toast(msg, 'success');
             } else {
                 TheraFlowUI.toast('Falta registrada', 'info');
             }
@@ -947,7 +954,8 @@
             
             TheraFlowUI.closeModal();
             renderDaySessions();
-            TheraFlowUI.toast('Pagamento confirmado!', 'success');
+            // Ajuste 4: Microcopy humanizado
+            TheraFlowUI.toast('💰 Pagamento confirmado! Ótimo trabalho!', 'success');
         }
 
         function rescheduleSession(sessionId) {

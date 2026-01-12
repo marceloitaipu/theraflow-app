@@ -55,6 +55,10 @@
         <!-- Resumo Financeiro Inteligente -->
         <div class="smart-summary">
             <div class="smart-summary-title">📊 Resumo Financeiro Inteligente <span id="growthBadge" style="font-size: 0.8em; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 15px; margin-left: 10px;"></span></div>
+            
+            <!-- Destaque de Pendentes e Crescimento -->
+            <div id="smartHighlights" style="display: flex; gap: 10px; margin-bottom: 15px;"></div>
+            
             <div class="smart-summary-grid">
                 <div class="smart-summary-item">
                     <div class="icon">💰</div>
@@ -259,7 +263,8 @@
         function markAsPaid(sessionId) {
             TheraFlowData.markSessionPaid(sessionId);
             TheraFlowUI.closeModal();
-            TheraFlowUI.toast('Pagamento registrado com sucesso!', 'success');
+            // Ajuste 4: Microcopy humanizado
+            TheraFlowUI.toast('💰 Pagamento confirmado! Seu fluxo de caixa está em dia.', 'success');
             loadFinanceData();
             loadSmartSummary();
         }
@@ -282,6 +287,27 @@
             } else {
                 growthBadge.innerHTML = '';
             }
+            
+            // Destaques de Pendentes e Crescimento (Ajuste 1)
+            var highlightsHtml = '';
+            if (smartReport.pendingThisMonth > 0) {
+                highlightsHtml += '<div style="flex: 1; background: rgba(245,158,11,0.2); padding: 12px; border-radius: 10px; text-align: center;">' +
+                    '<div style="font-size: 0.85em; opacity: 0.9;">💡 Você tem</div>' +
+                    '<div style="font-size: 1.1em; font-weight: bold;">' + TheraFlowUI.formatCurrency(smartReport.pendingThisMonth) + '</div>' +
+                    '<div style="font-size: 0.8em; opacity: 0.9;">pendentes este mês</div>' +
+                '</div>';
+            }
+            if (smartReport.growthPercent !== 0) {
+                var growthColor = smartReport.growthPercent > 0 ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)';
+                var growthText = smartReport.growthPercent > 0 ? 'Você faturou +' + smartReport.growthPercent + '%' : 'Faturamento -' + Math.abs(smartReport.growthPercent) + '%';
+                var growthSubtext = smartReport.growthPercent > 0 ? 'em relação ao mês passado 🎉' : 'em relação ao mês passado';
+                highlightsHtml += '<div style="flex: 1; background: ' + growthColor + '; padding: 12px; border-radius: 10px; text-align: center;">' +
+                    '<div style="font-size: 0.85em; opacity: 0.9;">📈</div>' +
+                    '<div style="font-size: 1em; font-weight: bold;">' + growthText + '</div>' +
+                    '<div style="font-size: 0.8em; opacity: 0.9;">' + growthSubtext + '</div>' +
+                '</div>';
+            }
+            document.getElementById('smartHighlights').innerHTML = highlightsHtml;
             
             // Comparativo com mês anterior
             var compSection = document.getElementById('comparisonSection');
@@ -326,31 +352,80 @@
             }
             
             var html = '';
+            var packagesEndingSoon = [];
             for (var i = 0; i < activePackages.length; i++) {
                 var pkg = activePackages[i];
                 var progress = ((pkg.sessoesTotal - pkg.sessoesRestantes) / pkg.sessoesTotal) * 100;
                 var alertHtml = '';
+                var badgeStyle = '';
+                var cardStyle = '';
                 
+                // Ajuste 3: Badge vermelha quando remaining <= 2
                 if (pkg.sessoesRestantes <= 2) {
-                    alertHtml = '<div class="package-alert">⚠️ Atenção: Restam apenas ' + pkg.sessoesRestantes + ' sessões!</div>';
+                    alertHtml = '<div style="background: #fee2e2; color: #dc2626; padding: 10px 15px; border-radius: 8px; font-size: 0.9em; margin-top: 10px; font-weight: 600;">🔴 Atenção: Restam apenas ' + pkg.sessoesRestantes + ' sessões!</div>';
+                    badgeStyle = 'background: #dc2626; color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.75em; font-weight: bold;';
+                    cardStyle = 'border: 2px solid #dc2626;';
+                    packagesEndingSoon.push(pkg);
                 }
                 
-                html += '<div class="package-card">' +
-                    '<div class="client-name">👤 ' + pkg.clienteNome + '</div>' +
+                html += '<div class="package-card" style="' + cardStyle + '">' +
+                    '<div class="client-name" style="display: flex; justify-content: space-between; align-items: center;">👤 ' + pkg.clienteNome + 
+                        (pkg.sessoesRestantes <= 2 ? '<span style="' + badgeStyle + '">ACABANDO</span>' : '') +
+                    '</div>' +
                     '<div><strong>' + pkg.nome + '</strong></div>' +
-                    '<div class="progress-bar"><div class="progress-fill" style="width: ' + progress + '%"></div></div>' +
+                    '<div class="progress-bar"><div class="progress-fill" style="width: ' + progress + '%; background: ' + (pkg.sessoesRestantes <= 2 ? '#dc2626' : '#667eea') + ';"></div></div>' +
                     '<div class="package-info">' +
                         '<span>' + (pkg.sessoesTotal - pkg.sessoesRestantes) + ' de ' + pkg.sessoesTotal + ' usadas</span>' +
-                        '<span>Restam: ' + pkg.sessoesRestantes + '</span>' +
+                        '<span style="' + (pkg.sessoesRestantes <= 2 ? 'color: #dc2626; font-weight: bold;' : '') + '">Restam: ' + pkg.sessoesRestantes + '</span>' +
                     '</div>' +
                     alertHtml +
                 '</div>';
+            }
+            
+            // Ajuste 3: Snackbar para pacotes acabando
+            if (packagesEndingSoon.length > 0) {
+                setTimeout(function() {
+                    var nomes = packagesEndingSoon.map(function(p) { return p.clienteNome; }).join(', ');
+                    TheraFlowUI.toast('📦 Pacote de ' + nomes + ' está acabando! Hora de renovar.', 'warning', 5000);
+                }, 1000);
             }
             packagesList.innerHTML = html;
         }
 
         // Modal de Exportação
         function showExportModal() {
+            // Verificar se plano permite exportação (Ajuste 2 - Paywall)
+            var limits = TheraFlowData.checkPlanLimits();
+            if (!limits.hasReports) {
+                var upgradeContent = 
+                    '<div style="text-align: center; padding: 20px;">' +
+                        '<div style="font-size: 4em; margin-bottom: 15px;">📊</div>' +
+                        '<h3 style="margin-bottom: 15px; color: #667eea;">Relatórios Profissionais</h3>' +
+                        '<p style="color: #666; margin-bottom: 20px;">Exporte seus relatórios em PDF e CSV para controle financeiro completo!</p>' +
+                        '<div style="background: #fef3c7; padding: 15px; border-radius: 10px; margin-bottom: 20px;">' +
+                            '<p style="color: #92400e; font-weight: 600;">🔒 Recurso disponível no plano Premium</p>' +
+                        '</div>' +
+                        '<div style="background: linear-gradient(135deg, #333 0%, #1a1a2e 100%); color: white; padding: 20px; border-radius: 12px;">' +
+                            '<div style="font-size: 0.9em; opacity: 0.9;">Plano Premium</div>' +
+                            '<div style="font-size: 1.8em; font-weight: bold;">R$ 49/mês</div>' +
+                            '<div style="font-size: 0.85em; margin-top: 5px;">✓ Ilimitado  ✓ Relatórios  ✓ Suporte prioritário</div>' +
+                        '</div>' +
+                    '</div>';
+                
+                TheraFlowUI.showModal({
+                    title: '⬆️ Upgrade Necessário',
+                    content: upgradeContent,
+                    buttons: [
+                        { text: 'Depois', onClick: function() { TheraFlowUI.closeModal(); } },
+                        { text: 'Ver Planos', primary: true, onClick: function() {
+                            TheraFlowUI.closeModal();
+                            window.location.href = 'perfil.html';
+                        }}
+                    ]
+                });
+                return;
+            }
+            
             var content = 
                 '<div style="text-align: center; padding: 20px;">' +
                     '<div style="font-size: 4em; margin-bottom: 20px;">📊</div>' +
