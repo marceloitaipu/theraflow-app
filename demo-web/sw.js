@@ -1,5 +1,7 @@
 // TheraFlow Service Worker
-const CACHE_NAME = 'theraflow-v1';
+// IMPORTANTE: Altere CACHE_VERSION a cada atualização para forçar refresh
+const CACHE_VERSION = '2026-01-13-v2';
+const CACHE_NAME = 'theraflow-' + CACHE_VERSION;
 const urlsToCache = [
   './',
   './index.html',
@@ -20,32 +22,39 @@ const urlsToCache = [
 
 // Instalação do Service Worker
 self.addEventListener('install', event => {
+  // Força o novo SW a assumir imediatamente
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('TheraFlow: Cache aberto');
+        console.log('TheraFlow: Cache atualizado para ' + CACHE_VERSION);
         return cache.addAll(urlsToCache);
       })
   );
 });
 
-// Fetch - Servir do cache ou rede
+// Fetch - Network first, fallback to cache
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
+    fetch(event.request)
       .then(response => {
-        // Retorna do cache se disponível
-        if (response) {
-          return response;
+        // Se conseguiu da rede, atualiza o cache
+        if (response.ok) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(event.request, responseClone);
+          });
         }
-        // Caso contrário, busca da rede
-        return fetch(event.request);
-      }
-    )
+        return response;
+      })
+      .catch(() => {
+        // Se falhou (offline), tenta do cache
+        return caches.match(event.request);
+      })
   );
 });
 
-// Ativação - Limpar caches antigos
+// Ativação - Limpar caches antigos e assumir controle
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
@@ -57,6 +66,9 @@ self.addEventListener('activate', event => {
           }
         })
       );
+    }).then(() => {
+      // Força o SW a controlar todas as páginas imediatamente
+      return self.clients.claim();
     })
   );
 });
