@@ -918,6 +918,8 @@
             if (confirm('Isso vai apagar clientes, sessões e dados financeiros. Seu login será mantido. Continuar?')) {
                 TheraFlowUI.closeModal();
                 
+                console.log('Antes da limpeza:', localStorage.getItem('theraflow_clients'));
+                
                 // Limpar dados de negócio, manter login
                 localStorage.removeItem('theraflow_clients');
                 localStorage.removeItem('theraflow_sessions');
@@ -929,17 +931,29 @@
                 localStorage.setItem('theraflow_sessions', '[]');
                 localStorage.setItem('theraflow_packages', '[]');
                 
+                console.log('Depois da limpeza:', localStorage.getItem('theraflow_clients'));
+                
                 alert('✅ Dados limpos! Você pode começar do zero.');
-                window.location.href = 'app.html';
+                window.location.href = 'app.html?cleared=' + Date.now();
             }
         }
 
         function confirmResetAll() {
             if (confirm('Esta ação irá apagar TODOS os dados incluindo seu login. Você voltará à tela inicial. Esta ação NÃO pode ser desfeita! Continuar?')) {
                 TheraFlowUI.closeModal();
-                TheraFlowData.clearAll();
+                
+                // Limpar TUDO manualmente
+                localStorage.removeItem('theraflow_clients');
+                localStorage.removeItem('theraflow_sessions');
+                localStorage.removeItem('theraflow_packages');
+                localStorage.removeItem('theraflow_profile');
+                localStorage.removeItem('theraflow_logged');
+                localStorage.removeItem('theraflow_email');
+                localStorage.removeItem('theraflow_onboarding');
+                localStorage.removeItem('theraflow_initialized');
+                
                 alert('Dados apagados!');
-                window.location.href = 'index.html';
+                window.location.href = 'index.html?cleared=' + Date.now();
             }
         }
 
