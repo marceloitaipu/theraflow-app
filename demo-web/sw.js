@@ -1,6 +1,6 @@
 // TheraFlow Service Worker
 // IMPORTANTE: Altere CACHE_VERSION a cada atualização para forçar refresh
-const CACHE_VERSION = '2026-01-13-v4';
+const CACHE_VERSION = '2026-01-13-v5';
 const CACHE_NAME = 'theraflow-' + CACHE_VERSION;
 const urlsToCache = [
   './',

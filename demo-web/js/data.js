@@ -1,14 +1,35 @@
 /**
  * TheraFlow Demo - Gerenciador de Dados (LocalStorage)
  * Simula o comportamento do Firebase para testes
- * VERSÃO: 2026-01-13-v4
+ * VERSÃO: 2026-01-13-v5-DEBUG
  */
 
 var TheraFlowData = {
-    version: '2026-01-13-v4',
+    version: '2026-01-13-v5-DEBUG',
+    
+    // Debug visual na tela
+    showDebug: function(msg, isError) {
+        console.log('[TheraFlow] ' + msg);
+        // Criar badge de versão se não existir
+        if (!document.getElementById('tf-debug-badge')) {
+            var badge = document.createElement('div');
+            badge.id = 'tf-debug-badge';
+            badge.style.cssText = 'position:fixed;top:5px;right:5px;background:' + (isError ? '#ef4444' : '#10b981') + ';color:white;padding:5px 10px;border-radius:15px;font-size:10px;z-index:99999;font-family:monospace;max-width:200px;word-break:break-all;';
+            badge.textContent = 'v5-DEBUG';
+            document.body.appendChild(badge);
+        }
+    },
     
     // === INICIALIZAÇÃO ===
     init: function() {
+        var self = this;
+        // Esperar DOM carregar para mostrar debug
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { self.showDebug('v5 carregado!'); });
+        } else {
+            this.showDebug('v5 carregado!');
+        }
+        
         console.log('[TheraFlow v' + this.version + '] Inicializando...');
         console.log('[TheraFlow] theraflow_initialized = ' + localStorage.getItem('theraflow_initialized'));
         
@@ -27,24 +48,23 @@ var TheraFlowData = {
 
     // Força limpeza de dados de negócio (chamado pelo perfil.html)
     clearBusinessData: function() {
-        console.log('[TheraFlow] === LIMPANDO DADOS DE NEGÓCIO ===');
-        console.log('[TheraFlow] Clientes ANTES: ' + this.getClients().length);
+        var antes = this.getClients().length;
+        alert('🧹 LIMPANDO DADOS\n\nClientes ANTES: ' + antes);
         
         localStorage.setItem('theraflow_clients', '[]');
         localStorage.setItem('theraflow_sessions', '[]');
         localStorage.setItem('theraflow_packages', '[]');
-        // Importante: manter initialized para não recriar
         localStorage.setItem('theraflow_initialized', 'true');
         
-        console.log('[TheraFlow] Clientes DEPOIS: ' + this.getClients().length);
-        console.log('[TheraFlow] === LIMPEZA CONCLUÍDA ===');
+        var depois = this.getClients().length;
+        alert('✅ LIMPEZA CONCLUÍDA\n\nClientes DEPOIS: ' + depois + '\n\nDados no localStorage:\n' + localStorage.getItem('theraflow_clients'));
         return true;
     },
 
     // Força reset total (chamado pelo perfil.html)
     clearAllData: function() {
-        console.log('[TheraFlow] === LIMPANDO TODOS OS DADOS ===');
-        console.log('[TheraFlow] Clientes ANTES: ' + this.getClients().length);
+        var antes = this.getClients().length;
+        alert('🗑️ APAGANDO TUDO\n\nClientes ANTES: ' + antes);
         
         localStorage.setItem('theraflow_clients', '[]');
         localStorage.setItem('theraflow_sessions', '[]');
@@ -53,11 +73,10 @@ var TheraFlowData = {
         localStorage.removeItem('theraflow_logged');
         localStorage.removeItem('theraflow_email');
         localStorage.removeItem('theraflow_onboarding');
-        // Importante: manter initialized para não recriar
         localStorage.setItem('theraflow_initialized', 'true');
         
-        console.log('[TheraFlow] Clientes DEPOIS: ' + this.getClients().length);
-        console.log('[TheraFlow] === RESET TOTAL CONCLUÍDO ===');
+        var depois = this.getClients().length;
+        alert('✅ TUDO APAGADO\n\nClientes DEPOIS: ' + depois);
         return true;
     },
 
