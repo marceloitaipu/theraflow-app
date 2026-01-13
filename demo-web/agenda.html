@@ -459,9 +459,13 @@
                     statusBadge = '<span class="status-badge pending">Pendente</span>';
                 }
                 
-                html += '<div class="session-item" onclick="showSessionDetail(' + session.id + ')">' +
+                // Verificar se cliente está inativo
+                var isClientInactive = TheraFlowData.isClientInactive(session.clienteId);
+                var clienteBadge = isClientInactive ? ' <span style="background:#9ca3af;color:white;font-size:10px;padding:2px 6px;border-radius:4px;">INATIVO</span>' : '';
+                
+                html += '<div class="session-item" onclick="showSessionDetail(' + session.id + ')"' + (isClientInactive ? ' style="opacity: 0.7; border-left: 3px solid #9ca3af;"' : '') + '>' +
                     '<div class="time">🕐 ' + session.hora + statusBadge + '</div>' +
-                    '<div class="client">👤 ' + session.clienteNome + '</div>' +
+                    '<div class="client">👤 ' + session.clienteNome + clienteBadge + '</div>' +
                     '<div class="type">💆 ' + session.tipo + ' • ' + TheraFlowUI.formatCurrency(session.valor) + '</div>' +
                 '</div>';
             });
@@ -884,10 +888,14 @@
                 statusText = '❌ Faltou';
             }
             
+            // Verificar se cliente está inativo
+            var isClientInactive = TheraFlowData.isClientInactive(session.clienteId);
+            var clienteBadge = isClientInactive ? ' <span style="background:#9ca3af;color:white;font-size:10px;padding:2px 6px;border-radius:4px;">INATIVO</span>' : '';
+            
             var content = 
                 '<div class="detail-row">' +
                     '<span class="detail-label">👤 Cliente</span>' +
-                    '<span class="detail-value">' + session.clienteNome + '</span>' +
+                    '<span class="detail-value">' + session.clienteNome + clienteBadge + '</span>' +
                 '</div>' +
                 '<div class="detail-row">' +
                     '<span class="detail-label">📅 Data</span>' +

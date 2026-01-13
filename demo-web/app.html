@@ -233,10 +233,13 @@
         function renderSessionCard(session, isNext) {
             const paymentClass = session.pagamento === 'pago' ? 'status-pago' : 'status-pendente';
             const isInProgress = session.status === 'em_andamento';
+            const isClientInactive = TheraFlowData.isClientInactive(session.clienteId);
+            const clienteBadge = isClientInactive ? ' <span style="background:#9ca3af;color:white;font-size:10px;padding:2px 6px;border-radius:4px;">INATIVO</span>' : '';
+            const cardStyle = isClientInactive ? 'opacity: 0.7; border-left: 3px solid #9ca3af;' : '';
             return `
-                <div class="session-card ${isNext ? 'next' : ''}" onclick="showSessionDetails(${session.id})">
+                <div class="session-card ${isNext ? 'next' : ''}" onclick="showSessionDetails(${session.id})" style="${cardStyle}">
                     <div class="time">${session.hora} - ${TheraFlowComponents.addMinutes(session.hora, session.duracao)} ${isInProgress ? '<span style="color: #10b981; font-weight: normal; font-size: 0.8em;">● Em andamento</span>' : ''}</div>
-                    <div class="client">${session.clienteNome}</div>
+                    <div class="client">${session.clienteNome}${clienteBadge}</div>
                     <div class="details">
                         <span>${session.tipo} • ${TheraFlowUI.formatCurrency(session.valor)}</span>
                         <span class="status-badge ${paymentClass}">${session.pagamento === 'pago' ? '✓ Pago' : '⏳ Pendente'}</span>
