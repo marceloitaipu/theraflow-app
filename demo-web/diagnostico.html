@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Diagnóstico</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #fff; 
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { 
+            text-align: center;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+        .card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.9em;
+        }
+        .data-row:last-child { border-bottom: none; }
+        .key { opacity: 0.7; }
+        .value { 
+            font-weight: 600;
+            max-width: 60%;
+            text-align: right;
+            word-break: break-all;
+        }
+        .value.true { color: #10b981; }
+        .value.false { color: #ef4444; }
+        .value.number { color: #3b82f6; }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px 25px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 25px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.02); }
+        .btn-green { background: #10b981; color: white; }
+        .btn-orange { background: #f59e0b; color: white; }
+        .btn-red { background: #ef4444; color: white; }
+        .btn-blue { background: #3b82f6; color: white; }
+        .btn-gray { background: rgba(255,255,255,0.2); color: white; }
+        .log {
+            background: #000;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: monospace;
+            font-size: 0.8em;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .log-entry { margin-bottom: 5px; }
+        .log-entry.info { color: #3b82f6; }
+        .log-entry.success { color: #10b981; }
+        .log-entry.error { color: #ef4444; }
+        .log-entry.warn { color: #f59e0b; }
+        .refresh-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Diagnóstico TheraFlow</h1>
+        
+        <div class="card">
+            <h3>📊 Estado do LocalStorage</h3>
+            <div id="storageInfo"></div>
+        </div>
+
+        <div class="card">
+            <h3>🔧 Ações de Diagnóstico</h3>
+            <button class="btn btn-blue" onclick="testClearAndCheck()">
+                🧪 Testar Limpar e Verificar
+            </button>
+            <button class="btn btn-orange" onclick="clearBusinessOnly()">
+                🧹 Limpar Dados de Negócio
+            </button>
+            <button class="btn btn-red" onclick="clearEverything()">
+                🗑️ Limpar TUDO (Incluindo Initialized)
+            </button>
+            <button class="btn btn-gray" onclick="refreshInfo()">
+                🔄 Atualizar Informações
+            </button>
+        </div>
+
+        <div class="card">
+            <h3>📝 Log de Operações</h3>
+            <div class="log" id="logContainer">
+                Aguardando ações...
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🔗 Navegação</h3>
+            <button class="btn btn-gray" onclick="location.href='app.html'">▶️ Ir para App</button>
+            <button class="btn btn-gray" onclick="location.href='perfil.html'">👤 Ir para Perfil</button>
+            <button class="btn btn-gray" onclick="location.href='atualizar.html'">⚙️ Ir para Atualizar</button>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="refreshInfo()">↻</button>
+
+    <script>
+        // Logger
+        var logContainer;
+        function log(msg, type) {
+            if (!logContainer) logContainer = document.getElementById('logContainer');
+            var entry = document.createElement('div');
+            entry.className = 'log-entry ' + (type || 'info');
+            entry.textContent = new Date().toLocaleTimeString() + ' - ' + msg;
+            logContainer.insertBefore(entry, logContainer.firstChild);
+        }
+
+        // Função para obter todos os dados do localStorage relacionados ao TheraFlow
+        function getAllTheraFlowData() {
+            var data = {};
+            var keys = [
+                'theraflow_initialized',
+                'theraflow_logged',
+                'theraflow_email',
+                'theraflow_onboarding',
+                'theraflow_clients',
+                'theraflow_sessions',
+                'theraflow_packages',
+                'theraflow_profile'
+            ];
+            
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                var value = localStorage.getItem(key);
+                data[key] = value;
+            }
+            return data;
+        }
+
+        function refreshInfo() {
+            var container = document.getElementById('storageInfo');
+            var data = getAllTheraFlowData();
+            var html = '';
+
+            // initialized
+            var initialized = data['theraflow_initialized'];
+            html += '<div class="data-row"><span class="key">theraflow_initialized</span><span class="value ' + (initialized === 'true' ? 'true' : 'false') + '">' + (initialized || 'null') + '</span></div>';
+
+            // logged
+            var logged = data['theraflow_logged'];
+            html += '<div class="data-row"><span class="key">theraflow_logged</span><span class="value ' + (logged === 'true' ? 'true' : 'false') + '">' + (logged || 'null') + '</span></div>';
+
+            // email
+            html += '<div class="data-row"><span class="key">theraflow_email</span><span class="value">' + (data['theraflow_email'] || 'null') + '</span></div>';
+
+            // onboarding
+            html += '<div class="data-row"><span class="key">theraflow_onboarding</span><span class="value">' + (data['theraflow_onboarding'] || 'null') + '</span></div>';
+
+            // clients count
+            var clients = [];
+            try { clients = JSON.parse(data['theraflow_clients']) || []; } catch(e) {}
+            html += '<div class="data-row"><span class="key">theraflow_clients</span><span class="value number">' + clients.length + ' cliente(s)</span></div>';
+
+            // sessions count
+            var sessions = [];
+            try { sessions = JSON.parse(data['theraflow_sessions']) || []; } catch(e) {}
+            html += '<div class="data-row"><span class="key">theraflow_sessions</span><span class="value number">' + sessions.length + ' sessão(ões)</span></div>';
+
+            // packages count
+            var packages = [];
+            try { packages = JSON.parse(data['theraflow_packages']) || []; } catch(e) {}
+            html += '<div class="data-row"><span class="key">theraflow_packages</span><span class="value number">' + packages.length + ' pacote(s)</span></div>';
+
+            // profile
+            var profile = null;
+            try { profile = JSON.parse(data['theraflow_profile']); } catch(e) {}
+            html += '<div class="data-row"><span class="key">theraflow_profile</span><span class="value">' + (profile ? profile.displayName || profile.nome || 'definido' : 'null') + '</span></div>';
+
+            container.innerHTML = html;
+            log('Informações atualizadas', 'info');
+        }
+
+        function testClearAndCheck() {
+            log('=== INICIANDO TESTE DE LIMPEZA ===', 'warn');
+            
+            // 1. Mostrar estado atual
+            var clientsBefore = [];
+            try { clientsBefore = JSON.parse(localStorage.getItem('theraflow_clients')) || []; } catch(e) {}
+            log('ANTES: ' + clientsBefore.length + ' clientes', 'info');
+            
+            // 2. Executar limpeza
+            log('Executando: localStorage.setItem("theraflow_clients", "[]")', 'info');
+            localStorage.setItem('theraflow_clients', '[]');
+            localStorage.setItem('theraflow_sessions', '[]');
+            localStorage.setItem('theraflow_packages', '[]');
+            
+            // 3. Verificar imediatamente após
+            var clientsAfter = [];
+            try { clientsAfter = JSON.parse(localStorage.getItem('theraflow_clients')) || []; } catch(e) {}
+            log('DEPOIS (imediato): ' + clientsAfter.length + ' clientes', clientsAfter.length === 0 ? 'success' : 'error');
+            
+            // 4. Verificar após 100ms
+            setTimeout(function() {
+                var clientsDelay = [];
+                try { clientsDelay = JSON.parse(localStorage.getItem('theraflow_clients')) || []; } catch(e) {}
+                log('DEPOIS (100ms): ' + clientsDelay.length + ' clientes', clientsDelay.length === 0 ? 'success' : 'error');
+                
+                if (clientsDelay.length > 0) {
+                    log('⚠️ PROBLEMA: Dados foram recriados!', 'error');
+                    log('Possível causa: Service Worker ou outro script', 'error');
+                } else {
+                    log('✅ Dados permanecem limpos após 100ms', 'success');
+                }
+                
+                refreshInfo();
+            }, 100);
+            
+            // 5. Verificar após 500ms
+            setTimeout(function() {
+                var clientsDelay2 = [];
+                try { clientsDelay2 = JSON.parse(localStorage.getItem('theraflow_clients')) || []; } catch(e) {}
+                log('DEPOIS (500ms): ' + clientsDelay2.length + ' clientes', clientsDelay2.length === 0 ? 'success' : 'error');
+                refreshInfo();
+            }, 500);
+        }
+
+        function clearBusinessOnly() {
+            log('Limpando dados de negócio...', 'warn');
+            
+            localStorage.setItem('theraflow_clients', '[]');
+            localStorage.setItem('theraflow_sessions', '[]');
+            localStorage.setItem('theraflow_packages', '[]');
+            localStorage.setItem('theraflow_initialized', 'true');
+            
+            log('✅ Dados de negócio limpos', 'success');
+            log('theraflow_initialized mantido como "true"', 'info');
+            refreshInfo();
+        }
+
+        function clearEverything() {
+            if (!confirm('Isso vai remover TUDO incluindo theraflow_initialized. Continue?')) return;
+            
+            log('Limpando TUDO...', 'warn');
+            
+            var keys = [
+                'theraflow_initialized',
+                'theraflow_logged',
+                'theraflow_email',
+                'theraflow_onboarding',
+                'theraflow_clients',
+                'theraflow_sessions',
+                'theraflow_packages',
+                'theraflow_profile'
+            ];
+            
+            for (var i = 0; i < keys.length; i++) {
+                localStorage.removeItem(keys[i]);
+                log('Removido: ' + keys[i], 'info');
+            }
+            
+            log('✅ Tudo removido!', 'success');
+            log('⚠️ Próxima visita a qualquer página irá recriar dados demo', 'warn');
+            refreshInfo();
+        }
+
+        // Inicializar - SEM carregar data.js para não interferir
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Página de diagnóstico carregada', 'success');
+            log('NOTA: data.js NÃO foi carregado propositalmente', 'warn');
+            refreshInfo();
+        });
+    </script>
+</body>
+</html>

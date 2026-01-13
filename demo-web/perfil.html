@@ -918,11 +918,8 @@
             if (confirm('Isso vai apagar clientes, sessões e dados financeiros. Seu login será mantido. Continuar?')) {
                 TheraFlowUI.closeModal();
                 
-                // Limpar dados de negócio, manter login
-                // IMPORTANTE: NÃO remover theraflow_initialized senão recria dados de exemplo
-                localStorage.setItem('theraflow_clients', '[]');
-                localStorage.setItem('theraflow_sessions', '[]');
-                localStorage.setItem('theraflow_packages', '[]');
+                // Usar função centralizada do data.js
+                TheraFlowData.clearBusinessData();
                 
                 alert('✅ Dados limpos! Você pode começar do zero.');
                 window.location.href = 'app.html?cleared=' + Date.now();
@@ -933,15 +930,8 @@
             if (confirm('Esta ação irá apagar TODOS os dados incluindo seu login. Você voltará à tela inicial. Esta ação NÃO pode ser desfeita! Continuar?')) {
                 TheraFlowUI.closeModal();
                 
-                // Limpar TUDO manualmente
-                localStorage.setItem('theraflow_clients', '[]');
-                localStorage.setItem('theraflow_sessions', '[]');
-                localStorage.setItem('theraflow_packages', '[]');
-                localStorage.removeItem('theraflow_profile');
-                localStorage.removeItem('theraflow_logged');
-                localStorage.removeItem('theraflow_email');
-                localStorage.removeItem('theraflow_onboarding');
-                // NÃO remover initialized para não recriar dados de exemplo
+                // Usar função centralizada do data.js
+                TheraFlowData.clearAllData();
                 
                 alert('Dados apagados!');
                 window.location.href = 'index.html?cleared=' + Date.now();

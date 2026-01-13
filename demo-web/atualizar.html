@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TheraFlow - Atualizar App</title>
+    <title>TheraFlow - Gerenciar Dados</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { 
@@ -21,147 +21,178 @@
         .container {
             background: rgba(255,255,255,0.15);
             border-radius: 20px;
-            padding: 40px 30px;
+            padding: 30px 25px;
             max-width: 400px;
+            width: 100%;
             backdrop-filter: blur(10px);
         }
-        h1 { font-size: 1.8em; margin-bottom: 15px; }
-        p { opacity: 0.9; margin-bottom: 25px; line-height: 1.6; }
+        h1 { font-size: 1.6em; margin-bottom: 15px; }
+        p { opacity: 0.9; margin-bottom: 20px; line-height: 1.5; font-size: 0.95em; }
         .btn {
             display: block;
             width: 100%;
-            padding: 15px 30px;
-            margin: 10px 0;
+            padding: 14px 25px;
+            margin: 8px 0;
             border: none;
             border-radius: 25px;
-            font-size: 1em;
+            font-size: 0.95em;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s, opacity 0.2s;
         }
         .btn:hover { transform: scale(1.02); }
-        .btn-primary {
-            background: white;
-            color: #667eea;
-        }
-        .btn-secondary {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
+        .btn:active { opacity: 0.8; }
+        .btn-green { background: #10b981; color: white; }
+        .btn-orange { background: #f59e0b; color: white; }
+        .btn-red { background: #ef4444; color: white; }
+        .btn-blue { background: #3b82f6; color: white; }
+        .btn-gray { background: rgba(255,255,255,0.3); color: white; }
         .status {
-            margin-top: 20px;
-            padding: 15px;
+            margin-top: 15px;
+            padding: 12px;
             border-radius: 10px;
             background: rgba(255,255,255,0.2);
             font-size: 0.9em;
         }
-        .success { background: rgba(16, 185, 129, 0.3); }
-        .error { background: rgba(239, 68, 68, 0.3); }
-        .loading { 
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 1s linear infinite;
+        .success { background: rgba(16, 185, 129, 0.4); }
+        .error { background: rgba(239, 68, 68, 0.4); }
+        .data-info {
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 0.85em;
+            text-align: left;
         }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .divider {
+            border-top: 1px solid rgba(255,255,255,0.3);
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🔄 Atualizar TheraFlow</h1>
-        <p>Clique no botão abaixo para forçar a atualização do app e limpar o cache antigo.</p>
+        <h1>⚙️ Gerenciar TheraFlow</h1>
         
-        <button class="btn btn-primary" onclick="forceUpdate()">
-            🚀 Atualizar Agora
+        <div class="data-info" id="dataInfo">Carregando...</div>
+
+        <button class="btn btn-green" onclick="limparDadosNegocio()">
+            🧹 Começar do Zero (Manter Login)
         </button>
         
-        <button class="btn btn-secondary" onclick="clearAllCaches()">
-            🗑️ Limpar Todo o Cache
+        <button class="btn btn-red" onclick="apagarTudo()">
+            🗑️ Apagar TUDO (Voltar ao Início)
         </button>
         
+        <div class="divider"></div>
+        
+        <button class="btn btn-orange" onclick="atualizarApp()">
+            🔄 Atualizar App (Limpar Cache)
+        </button>
+        
+        <button class="btn btn-gray" onclick="irParaApp()">
+            ▶️ Ir para o App
+        </button>
+
         <div class="status" id="status" style="display: none;"></div>
     </div>
 
     <script>
-        function showStatus(message, type) {
-            var status = document.getElementById('status');
-            status.style.display = 'block';
-            status.className = 'status ' + (type || '');
-            status.innerHTML = message;
-        }
-
-        async function forceUpdate() {
-            showStatus('<span class="loading"></span> Atualizando...', '');
+        function atualizarInfo() {
+            var clients = [];
+            var sessions = [];
+            var logged = false;
             
             try {
-                // 1. Desregistrar Service Workers antigos
-                if ('serviceWorker' in navigator) {
-                    const registrations = await navigator.serviceWorker.getRegistrations();
-                    for (let registration of registrations) {
-                        await registration.unregister();
-                        console.log('SW desregistrado:', registration);
-                    }
-                }
+                clients = JSON.parse(localStorage.getItem('theraflow_clients')) || [];
+                sessions = JSON.parse(localStorage.getItem('theraflow_sessions')) || [];
+                logged = localStorage.getItem('theraflow_logged') === 'true';
+            } catch(e) {}
+            
+            document.getElementById('dataInfo').innerHTML = 
+                '📊 <strong>Dados Atuais:</strong><br>' +
+                '• Logado: ' + (logged ? '✅ Sim' : '❌ Não') + '<br>' +
+                '• Clientes: ' + clients.length + '<br>' +
+                '• Sessões: ' + sessions.length;
+        }
+
+        function showStatus(msg, type) {
+            var el = document.getElementById('status');
+            el.style.display = 'block';
+            el.className = 'status ' + (type || '');
+            el.innerHTML = msg;
+        }
+
+        function limparDadosNegocio() {
+            if (confirm('Isso vai apagar clientes, sessões e financeiro. Seu login será mantido. Continuar?')) {
+                // Limpar dados - apenas sobrescrever com arrays vazios
+                localStorage.setItem('theraflow_clients', '[]');
+                localStorage.setItem('theraflow_sessions', '[]');
+                localStorage.setItem('theraflow_packages', '[]');
+                // Manter theraflow_initialized para não recriar dados
+                localStorage.setItem('theraflow_initialized', 'true');
                 
-                // 2. Limpar todos os caches
-                if ('caches' in window) {
-                    const cacheNames = await caches.keys();
-                    for (let cacheName of cacheNames) {
-                        await caches.delete(cacheName);
-                        console.log('Cache deletado:', cacheName);
-                    }
-                }
-                
-                // 3. Registrar novo Service Worker
-                if ('serviceWorker' in navigator) {
-                    await navigator.serviceWorker.register('./sw.js');
-                }
-                
-                showStatus('✅ App atualizado com sucesso! Redirecionando...', 'success');
-                
-                // 4. Recarregar a página principal
-                setTimeout(function() {
-                    window.location.href = './app.html?updated=' + Date.now();
-                }, 2000);
-                
-            } catch (error) {
-                showStatus('❌ Erro ao atualizar: ' + error.message, 'error');
-                console.error(error);
+                showStatus('✅ Dados limpos! Clientes e sessões zerados.', 'success');
+                atualizarInfo();
             }
         }
 
-        async function clearAllCaches() {
-            showStatus('<span class="loading"></span> Limpando cache...', '');
+        function apagarTudo() {
+            if (confirm('Isso vai apagar TUDO incluindo login. Você voltará à tela inicial. Continuar?')) {
+                // Limpar absolutamente tudo
+                localStorage.setItem('theraflow_clients', '[]');
+                localStorage.setItem('theraflow_sessions', '[]');
+                localStorage.setItem('theraflow_packages', '[]');
+                localStorage.removeItem('theraflow_profile');
+                localStorage.removeItem('theraflow_logged');
+                localStorage.removeItem('theraflow_email');
+                localStorage.removeItem('theraflow_onboarding');
+                // Manter initialized para não recriar dados
+                localStorage.setItem('theraflow_initialized', 'true');
+                
+                showStatus('✅ Tudo apagado! Redirecionando...', 'success');
+                setTimeout(function() {
+                    window.location.href = 'index.html';
+                }, 1500);
+            }
+        }
+
+        async function atualizarApp() {
+            showStatus('🔄 Atualizando...', '');
             
             try {
-                // Limpar Service Workers
+                // Desregistrar Service Workers
                 if ('serviceWorker' in navigator) {
-                    const registrations = await navigator.serviceWorker.getRegistrations();
-                    for (let registration of registrations) {
-                        await registration.unregister();
+                    var registrations = await navigator.serviceWorker.getRegistrations();
+                    for (var reg of registrations) {
+                        await reg.unregister();
                     }
                 }
                 
                 // Limpar caches
                 if ('caches' in window) {
-                    const cacheNames = await caches.keys();
-                    for (let cacheName of cacheNames) {
-                        await caches.delete(cacheName);
+                    var names = await caches.keys();
+                    for (var name of names) {
+                        await caches.delete(name);
                     }
                 }
                 
-                // Limpar localStorage (opcional - apenas dados de cache, não dados do usuário)
-                // localStorage.clear();
+                showStatus('✅ Cache limpo! Recarregando...', 'success');
+                setTimeout(function() {
+                    window.location.reload(true);
+                }, 1500);
                 
-                showStatus('✅ Cache limpo! Recarregue a página ou reinstale o app.', 'success');
-                
-            } catch (error) {
-                showStatus('❌ Erro: ' + error.message, 'error');
+            } catch(e) {
+                showStatus('❌ Erro: ' + e.message, 'error');
             }
         }
+
+        function irParaApp() {
+            window.location.href = 'app.html';
+        }
+
+        // Inicializar
+        atualizarInfo();
     </script>
 </body>
 </html>

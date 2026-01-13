@@ -1,6 +1,6 @@
 // TheraFlow Service Worker
 // IMPORTANTE: Altere CACHE_VERSION a cada atualização para forçar refresh
-const CACHE_VERSION = '2026-01-13-v2';
+const CACHE_VERSION = '2026-01-13-v4';
 const CACHE_NAME = 'theraflow-' + CACHE_VERSION;
 const urlsToCache = [
   './',
@@ -11,6 +11,7 @@ const urlsToCache = [
   './financeiro.html',
   './perfil.html',
   './onboarding.html',
+  './atualizar.html',
   './styles/common.css',
   './js/data.js',
   './js/ui.js',

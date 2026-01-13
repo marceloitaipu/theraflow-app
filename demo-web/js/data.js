@@ -1,15 +1,64 @@
 /**
  * TheraFlow Demo - Gerenciador de Dados (LocalStorage)
  * Simula o comportamento do Firebase para testes
+ * VERSÃO: 2026-01-13-v4
  */
 
 var TheraFlowData = {
+    version: '2026-01-13-v4',
+    
     // === INICIALIZAÇÃO ===
     init: function() {
+        console.log('[TheraFlow v' + this.version + '] Inicializando...');
+        console.log('[TheraFlow] theraflow_initialized = ' + localStorage.getItem('theraflow_initialized'));
+        
+        // Só popula dados de demo se NUNCA foi inicializado
+        // Uma vez que theraflow_initialized existe, NUNCA recria dados
         if (!localStorage.getItem('theraflow_initialized')) {
+            console.log('[TheraFlow] Primeira inicialização - criando dados de demo');
             this.seedData();
             localStorage.setItem('theraflow_initialized', 'true');
+        } else {
+            console.log('[TheraFlow] Já inicializado - mantendo dados existentes');
+            var clients = this.getClients();
+            console.log('[TheraFlow] Clientes atuais: ' + clients.length);
         }
+    },
+
+    // Força limpeza de dados de negócio (chamado pelo perfil.html)
+    clearBusinessData: function() {
+        console.log('[TheraFlow] === LIMPANDO DADOS DE NEGÓCIO ===');
+        console.log('[TheraFlow] Clientes ANTES: ' + this.getClients().length);
+        
+        localStorage.setItem('theraflow_clients', '[]');
+        localStorage.setItem('theraflow_sessions', '[]');
+        localStorage.setItem('theraflow_packages', '[]');
+        // Importante: manter initialized para não recriar
+        localStorage.setItem('theraflow_initialized', 'true');
+        
+        console.log('[TheraFlow] Clientes DEPOIS: ' + this.getClients().length);
+        console.log('[TheraFlow] === LIMPEZA CONCLUÍDA ===');
+        return true;
+    },
+
+    // Força reset total (chamado pelo perfil.html)
+    clearAllData: function() {
+        console.log('[TheraFlow] === LIMPANDO TODOS OS DADOS ===');
+        console.log('[TheraFlow] Clientes ANTES: ' + this.getClients().length);
+        
+        localStorage.setItem('theraflow_clients', '[]');
+        localStorage.setItem('theraflow_sessions', '[]');
+        localStorage.setItem('theraflow_packages', '[]');
+        localStorage.removeItem('theraflow_profile');
+        localStorage.removeItem('theraflow_logged');
+        localStorage.removeItem('theraflow_email');
+        localStorage.removeItem('theraflow_onboarding');
+        // Importante: manter initialized para não recriar
+        localStorage.setItem('theraflow_initialized', 'true');
+        
+        console.log('[TheraFlow] Clientes DEPOIS: ' + this.getClients().length);
+        console.log('[TheraFlow] === RESET TOTAL CONCLUÍDO ===');
+        return true;
     },
 
     seedData: function() {
