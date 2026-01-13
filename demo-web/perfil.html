@@ -887,17 +887,75 @@
         }
 
         function resetData() {
-            TheraFlowUI.confirm(
-                '⚠️ Limpar Todos os Dados',
-                'Esta ação irá apagar TODOS os seus dados: clientes, sessões, configurações. Esta ação NÃO pode ser desfeita!',
-                function() {
-                    TheraFlowData.clearAll();
-                    TheraFlowUI.toast('Dados limpos! Redirecionando...', 'info');
-                    setTimeout(function() {
-                        window.location.href = 'index.html';
-                    }, 1500);
-                }
-            );
+            var content = 
+                '<div style="text-align: center; padding: 10px;">' +
+                    '<div style="font-size: 3em; margin-bottom: 15px;">⚠️</div>' +
+                    '<p style="margin-bottom: 20px; color: #666;">Escolha como deseja limpar os dados:</p>' +
+                    
+                    '<div style="background: #fef3c7; border: 1px solid #f59e0b; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: left;">' +
+                        '<strong style="color: #d97706;">🧹 Começar do Zero</strong>' +
+                        '<p style="color: #92400e; font-size: 0.9em; margin-top: 5px;">Remove clientes, sessões e financeiro. Mantém seu login.</p>' +
+                        '<button onclick="confirmResetBusiness()" style="background: #f59e0b; color: white; border: none; padding: 10px 20px; border-radius: 20px; margin-top: 10px; cursor: pointer; font-weight: 600;">Limpar Dados de Negócio</button>' +
+                    '</div>' +
+                    
+                    '<div style="background: #fee2e2; border: 1px solid #ef4444; border-radius: 10px; padding: 15px; text-align: left;">' +
+                        '<strong style="color: #dc2626;">🗑️ Apagar Tudo</strong>' +
+                        '<p style="color: #991b1b; font-size: 0.9em; margin-top: 5px;">Remove TODOS os dados incluindo login. Volta ao estado inicial.</p>' +
+                        '<button onclick="confirmResetAll()" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 20px; margin-top: 10px; cursor: pointer; font-weight: 600;">Apagar Tudo</button>' +
+                    '</div>' +
+                '</div>';
+
+            TheraFlowUI.showModal({
+                title: '⚠️ Limpar Dados',
+                content: content,
+                buttons: [
+                    { text: 'Cancelar', class: 'tf-btn-secondary', onClick: function() { TheraFlowUI.closeModal(); } }
+                ]
+            });
+        }
+
+        function confirmResetBusiness() {
+            TheraFlowUI.closeModal();
+            setTimeout(function() {
+                TheraFlowUI.confirm(
+                    '🧹 Confirmar Limpeza',
+                    'Isso vai apagar clientes, sessões e dados financeiros. Seu login será mantido. Continuar?',
+                    function() {
+                        // Limpar dados de negócio, manter login
+                        localStorage.removeItem('theraflow_clients');
+                        localStorage.removeItem('theraflow_sessions');
+                        localStorage.removeItem('theraflow_packages');
+                        localStorage.removeItem('theraflow_initialized');
+                        
+                        // Criar arrays vazios
+                        localStorage.setItem('theraflow_clients', '[]');
+                        localStorage.setItem('theraflow_sessions', '[]');
+                        localStorage.setItem('theraflow_packages', '[]');
+                        
+                        TheraFlowUI.toast('✅ Dados limpos! Você pode começar do zero.', 'success');
+                        setTimeout(function() {
+                            window.location.href = 'app.html';
+                        }, 1500);
+                    }
+                );
+            }, 300);
+        }
+
+        function confirmResetAll() {
+            TheraFlowUI.closeModal();
+            setTimeout(function() {
+                TheraFlowUI.confirm(
+                    '🗑️ Apagar TUDO',
+                    'Esta ação irá apagar TODOS os dados incluindo seu login. Você voltará à tela inicial. Esta ação NÃO pode ser desfeita!',
+                    function() {
+                        TheraFlowData.clearAll();
+                        TheraFlowUI.toast('Dados apagados! Redirecionando...', 'info');
+                        setTimeout(function() {
+                            window.location.href = 'index.html';
+                        }, 1500);
+                    }
+                );
+            }, 300);
         }
 
         function logout() {
