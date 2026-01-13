@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Bateria de Testes</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e; 
+            color: #fff; 
+            padding: 20px;
+            min-height: 100vh;
+        }
+        h1 { 
+            text-align: center; 
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2em;
+        }
+        .test-section {
+            background: #16213e;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .test-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+        }
+        .test-item.pass { border-left: 4px solid #10b981; }
+        .test-item.fail { border-left: 4px solid #ef4444; }
+        .test-item.pending { border-left: 4px solid #f59e0b; }
+        .test-icon { font-size: 1.2em; margin-right: 10px; width: 25px; }
+        .test-name { flex: 1; }
+        .test-status { font-size: 0.85em; color: #999; }
+        .summary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .summary-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 15px;
+        }
+        .stat { text-align: center; }
+        .stat-value { font-size: 2.5em; font-weight: bold; }
+        .stat-label { font-size: 0.9em; opacity: 0.9; }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1em;
+            cursor: pointer;
+            display: block;
+            margin: 20px auto;
+            font-weight: 600;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+        .log {
+            background: #0f0f1a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+        .log-entry { padding: 3px 0; border-bottom: 1px solid #222; }
+        .log-entry.info { color: #60a5fa; }
+        .log-entry.success { color: #34d399; }
+        .log-entry.error { color: #f87171; }
+        .log-entry.warn { color: #fbbf24; }
+    </style>
+</head>
+<body>
+    <h1>🧪 TheraFlow - Bateria de Testes</h1>
+    
+    <div class="summary" id="summary">
+        <h2>Aguardando execução dos testes...</h2>
+        <p style="margin-top: 10px; opacity: 0.9;">Clique no botão abaixo para iniciar</p>
+    </div>
+
+    <button class="btn" onclick="runAllTests()">▶️ Executar Todos os Testes</button>
+    <button class="btn btn-danger" onclick="resetAndRunTests()">🔄 Resetar Dados e Testar</button>
+
+    <div class="test-section">
+        <div class="section-title">🔐 Autenticação</div>
+        <div id="auth-tests"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="section-title">👥 Clientes</div>
+        <div id="client-tests"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="section-title">📁 Soft Delete (Arquivamento)</div>
+        <div id="softdelete-tests"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="section-title">📅 Sessões/Agenda</div>
+        <div id="session-tests"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="section-title">💰 Financeiro</div>
+        <div id="finance-tests"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="section-title">🔧 Funções do Sistema</div>
+        <div id="system-tests"></div>
+    </div>
+
+    <div class="test-section">
+        <div class="section-title">📋 Log de Execução</div>
+        <div class="log" id="log"></div>
+    </div>
+
+    <script src="../js/data.js"></script>
+    <script>
+        var testResults = { passed: 0, failed: 0, total: 0 };
+        var logContainer;
+
+        function log(message, type) {
+            type = type || 'info';
+            var entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            entry.textContent = '[' + new Date().toLocaleTimeString() + '] ' + message;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function assert(category, testName, condition, details) {
+            testResults.total++;
+            var container = document.getElementById(category + '-tests');
+            var item = document.createElement('div');
+            item.className = 'test-item ' + (condition ? 'pass' : 'fail');
+            
+            if (condition) {
+                testResults.passed++;
+                item.innerHTML = '<span class="test-icon">✅</span><span class="test-name">' + testName + '</span><span class="test-status">PASSOU</span>';
+                log('✅ ' + testName, 'success');
+            } else {
+                testResults.failed++;
+                item.innerHTML = '<span class="test-icon">❌</span><span class="test-name">' + testName + (details ? ' - ' + details : '') + '</span><span class="test-status">FALHOU</span>';
+                log('❌ ' + testName + (details ? ': ' + details : ''), 'error');
+            }
+            container.appendChild(item);
+            return condition;
+        }
+
+        function clearResults() {
+            testResults = { passed: 0, failed: 0, total: 0 };
+            document.querySelectorAll('[id$="-tests"]').forEach(function(el) {
+                el.innerHTML = '';
+            });
+            logContainer = document.getElementById('log');
+            logContainer.innerHTML = '';
+        }
+
+        function updateSummary() {
+            var percentage = testResults.total > 0 ? Math.round((testResults.passed / testResults.total) * 100) : 0;
+            var status = testResults.failed === 0 ? '🎉 Todos os testes passaram!' : '⚠️ ' + testResults.failed + ' teste(s) falharam';
+            
+            document.getElementById('summary').innerHTML = 
+                '<h2>' + status + '</h2>' +
+                '<div class="summary-stats">' +
+                    '<div class="stat"><div class="stat-value" style="color: #34d399;">' + testResults.passed + '</div><div class="stat-label">Passou</div></div>' +
+                    '<div class="stat"><div class="stat-value" style="color: #f87171;">' + testResults.failed + '</div><div class="stat-label">Falhou</div></div>' +
+                    '<div class="stat"><div class="stat-value">' + percentage + '%</div><div class="stat-label">Taxa de Sucesso</div></div>' +
+                '</div>';
+        }
+
+        function runAllTests() {
+            clearResults();
+            log('🚀 Iniciando bateria de testes...', 'info');
+
+            // ===== TESTES DE AUTENTICAÇÃO =====
+            log('--- Testando Autenticação ---', 'info');
+            
+            assert('auth', 'Função isLoggedIn existe', typeof TheraFlowData.isLoggedIn === 'function');
+            assert('auth', 'Função login existe', typeof TheraFlowData.login === 'function');
+            assert('auth', 'Função logout existe', typeof TheraFlowData.logout === 'function');
+            
+            // Testar login
+            var wasLogged = TheraFlowData.isLoggedIn();
+            TheraFlowData.login('teste@teste.com');
+            assert('auth', 'Login funciona corretamente', TheraFlowData.isLoggedIn() === true);
+            assert('auth', 'theraflow_logged está true', localStorage.getItem('theraflow_logged') === 'true');
+            
+            // ===== TESTES DE CLIENTES =====
+            log('--- Testando Clientes ---', 'info');
+            
+            assert('client', 'Função getClients existe', typeof TheraFlowData.getClients === 'function');
+            assert('client', 'Função getActiveClients existe', typeof TheraFlowData.getActiveClients === 'function');
+            assert('client', 'Função addClient existe', typeof TheraFlowData.addClient === 'function');
+            assert('client', 'Função updateClient existe', typeof TheraFlowData.updateClient === 'function');
+            assert('client', 'Função deleteClient existe', typeof TheraFlowData.deleteClient === 'function');
+            assert('client', 'Função reactivateClient existe', typeof TheraFlowData.reactivateClient === 'function');
+            
+            var allClients = TheraFlowData.getClients();
+            assert('client', 'getClients retorna array', Array.isArray(allClients));
+            
+            var activeClients = TheraFlowData.getActiveClients();
+            assert('client', 'getActiveClients retorna array', Array.isArray(activeClients));
+            
+            // Adicionar cliente de teste
+            var testClient = TheraFlowData.addClient({
+                nome: 'Cliente Teste Automatizado',
+                email: 'teste.auto@email.com',
+                telefone: '(11) 99999-0000'
+            });
+            assert('client', 'addClient retorna objeto com ID', testClient && testClient.id);
+            
+            var found = TheraFlowData.getClientById(testClient.id);
+            assert('client', 'getClientById encontra cliente criado', found && found.nome === 'Cliente Teste Automatizado');
+            
+            // ===== TESTES DE SOFT DELETE =====
+            log('--- Testando Soft Delete ---', 'info');
+            
+            var clientesAntes = TheraFlowData.getClients().length;
+            var ativosAntes = TheraFlowData.getActiveClients().length;
+            
+            // Arquivar o cliente de teste
+            TheraFlowData.deleteClient(testClient.id);
+            
+            var clientesDepois = TheraFlowData.getClients().length;
+            var ativosDepois = TheraFlowData.getActiveClients().length;
+            
+            assert('softdelete', 'Soft delete NÃO remove cliente do array total', clientesDepois === clientesAntes, 
+                'Antes: ' + clientesAntes + ', Depois: ' + clientesDepois);
+            assert('softdelete', 'Soft delete REMOVE cliente dos ativos', ativosDepois === ativosAntes - 1,
+                'Antes: ' + ativosAntes + ', Depois: ' + ativosDepois);
+            
+            var archivedClient = TheraFlowData.getClientById(testClient.id);
+            assert('softdelete', 'Cliente arquivado tem status inativo', archivedClient && archivedClient.status === 'inativo');
+            
+            assert('softdelete', 'Função isClientInactive existe', typeof TheraFlowData.isClientInactive === 'function');
+            assert('softdelete', 'isClientInactive retorna true para cliente arquivado', TheraFlowData.isClientInactive(testClient.id) === true);
+            
+            // Testar reativação
+            TheraFlowData.reactivateClient(testClient.id);
+            var reactivatedClient = TheraFlowData.getClientById(testClient.id);
+            assert('softdelete', 'Reativação muda status para ativo', reactivatedClient && reactivatedClient.status === 'ativo');
+            assert('softdelete', 'Cliente reativado aparece em getActiveClients', TheraFlowData.isClientInactive(testClient.id) === false);
+            
+            // Verificar que login não foi afetado
+            assert('softdelete', 'Login permanece ativo após soft delete', TheraFlowData.isLoggedIn() === true);
+            assert('softdelete', 'theraflow_logged ainda é true', localStorage.getItem('theraflow_logged') === 'true');
+            
+            // ===== TESTES DE SESSÕES =====
+            log('--- Testando Sessões ---', 'info');
+            
+            assert('session', 'Função getSessions existe', typeof TheraFlowData.getSessions === 'function');
+            assert('session', 'Função addSession existe', typeof TheraFlowData.addSession === 'function');
+            
+            var sessions = TheraFlowData.getSessions();
+            assert('session', 'getSessions retorna array', Array.isArray(sessions));
+            
+            // Criar sessão de teste
+            var testSession = TheraFlowData.addSession({
+                clienteId: testClient.id,
+                clienteNome: 'Cliente Teste Automatizado',
+                data: TheraFlowData.formatDate(new Date()),
+                hora: '10:00',
+                duracao: 60,
+                tipo: 'Teste',
+                valor: 100,
+                status: 'confirmado',
+                pagamento: 'pendente'
+            });
+            assert('session', 'addSession retorna objeto com ID', testSession && testSession.id);
+            
+            // Arquivar cliente e verificar que sessão ainda existe
+            TheraFlowData.deleteClient(testClient.id);
+            var sessionAfterArchive = TheraFlowData.getSessionById(testSession.id);
+            assert('session', 'Sessão permanece após arquivar cliente', sessionAfterArchive !== null);
+            assert('session', 'isClientInactive detecta cliente da sessão como inativo', TheraFlowData.isClientInactive(testSession.clienteId) === true);
+            
+            // ===== TESTES FINANCEIROS =====
+            log('--- Testando Financeiro ---', 'info');
+            
+            assert('finance', 'Função getSessions retorna sessões com valores', sessions.length === 0 || sessions[0].valor !== undefined);
+            
+            var pendingSessions = sessions.filter(function(s) { return s.pagamento === 'pendente'; });
+            var paidSessions = sessions.filter(function(s) { return s.pagamento === 'pago'; });
+            assert('finance', 'Sessões têm campo pagamento', sessions.length === 0 || (pendingSessions.length + paidSessions.length) > 0);
+            
+            // ===== TESTES DO SISTEMA =====
+            log('--- Testando Sistema ---', 'info');
+            
+            assert('system', 'Função init existe', typeof TheraFlowData.init === 'function');
+            assert('system', 'Função ensureInitialized existe', typeof TheraFlowData.ensureInitialized === 'function');
+            assert('system', 'Função resetData existe', typeof TheraFlowData.resetData === 'function');
+            assert('system', 'Função clearBusinessData existe', typeof TheraFlowData.clearBusinessData === 'function');
+            assert('system', 'Função clearAll existe', typeof TheraFlowData.clearAll === 'function');
+            assert('system', 'Função getProfile existe', typeof TheraFlowData.getProfile === 'function');
+            assert('system', 'Função formatDate existe', typeof TheraFlowData.formatDate === 'function');
+            
+            // Testar formatDate
+            var today = new Date();
+            var formatted = TheraFlowData.formatDate(today);
+            assert('system', 'formatDate retorna formato YYYY-MM-DD', /^\d{4}-\d{2}-\d{2}$/.test(formatted));
+            
+            // Teste crítico: clearBusinessData NÃO afeta login
+            var loggedBefore = localStorage.getItem('theraflow_logged');
+            TheraFlowData.clearBusinessData();
+            var loggedAfter = localStorage.getItem('theraflow_logged');
+            assert('system', 'clearBusinessData NÃO afeta theraflow_logged', loggedBefore === loggedAfter);
+            
+            // Restaurar estado (re-inicializar para próximos testes)
+            TheraFlowData.init();
+            
+            // Limpar cliente de teste
+            TheraFlowData.hardDeleteClient(testClient.id);
+            
+            // Restaurar estado de login original
+            if (!wasLogged) {
+                TheraFlowData.logout();
+            }
+            
+            log('🏁 Testes concluídos!', 'info');
+            updateSummary();
+        }
+
+        function resetAndRunTests() {
+            if (confirm('Isso vai limpar TODOS os dados e recriar dados de exemplo. Continuar?')) {
+                log('🔄 Resetando dados...', 'warn');
+                
+                // Limpar tudo
+                localStorage.clear();
+                
+                // Recriar dados de exemplo
+                TheraFlowData.init();
+                TheraFlowData.login('teste@theraflow.com');
+                TheraFlowData.completeOnboarding();
+                
+                log('✅ Dados resetados com sucesso', 'success');
+                
+                // Executar testes
+                setTimeout(runAllTests, 500);
+            }
+        }
+
+        // Inicializar log container
+        logContainer = document.getElementById('log');
+        log('Pronto para executar testes. Clique em "Executar Todos os Testes".', 'info');
+    </script>
+</body>
+</html>

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Limpar Dados</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #fff; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+        }
+        h1 { 
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        p { 
+            color: #ccc; 
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px 30px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.02); }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+        .status.success { background: rgba(16, 185, 129, 0.2); display: block; }
+        .status.error { background: rgba(239, 68, 68, 0.2); display: block; }
+        .data-preview {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Gerenciar Dados</h1>
+        <p>Use esta página para limpar ou gerenciar os dados do TheraFlow.</p>
+        
+        <div class="data-preview" id="dataPreview">
+            Carregando dados...
+        </div>
+
+        <button class="btn btn-danger" onclick="clearAllBusinessData()">
+            🗑️ Limpar Clientes, Sessões e Financeiro
+        </button>
+        
+        <button class="btn btn-primary" onclick="keepLoginOnly()">
+            🔐 Manter Apenas Login (Começar do Zero)
+        </button>
+        
+        <button class="btn btn-success" onclick="goToApp()">
+            ▶️ Ir para o App
+        </button>
+
+        <div class="status" id="status"></div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script>
+        function updatePreview() {
+            var clients = TheraFlowData.getClients();
+            var sessions = TheraFlowData.getSessions();
+            var activeClients = TheraFlowData.getActiveClients();
+            var logged = TheraFlowData.isLoggedIn();
+            
+            document.getElementById('dataPreview').innerHTML = 
+                '📊 <strong>Estado Atual:</strong><br><br>' +
+                '🔐 Logado: ' + (logged ? '✅ Sim' : '❌ Não') + '<br>' +
+                '👥 Clientes Total: ' + clients.length + '<br>' +
+                '👤 Clientes Ativos: ' + activeClients.length + '<br>' +
+                '📅 Sessões: ' + sessions.length + '<br>';
+        }
+
+        function showStatus(message, type) {
+            var status = document.getElementById('status');
+            status.className = 'status ' + type;
+            status.textContent = message;
+        }
+
+        function clearAllBusinessData() {
+            if (confirm('Isso vai apagar TODOS os clientes, sessões e dados financeiros. O login será mantido. Continuar?')) {
+                // Limpar dados de negócio
+                localStorage.removeItem('theraflow_clients');
+                localStorage.removeItem('theraflow_sessions');
+                localStorage.removeItem('theraflow_packages');
+                
+                showStatus('✅ Dados limpos com sucesso! Clientes, sessões e financeiro zerados.', 'success');
+                updatePreview();
+            }
+        }
+
+        function keepLoginOnly() {
+            if (confirm('Isso vai limpar TUDO exceto o login. Você começará do zero. Continuar?')) {
+                // Preservar login
+                var logged = localStorage.getItem('theraflow_logged');
+                var email = localStorage.getItem('theraflow_email');
+                var onboarding = localStorage.getItem('theraflow_onboarding');
+                
+                // Limpar dados de negócio
+                localStorage.removeItem('theraflow_clients');
+                localStorage.removeItem('theraflow_sessions');
+                localStorage.removeItem('theraflow_packages');
+                localStorage.removeItem('theraflow_initialized');
+                
+                // Garantir perfil básico
+                var profile = {
+                    displayName: 'Terapeuta',
+                    email: email || '',
+                    telefone: '',
+                    especialidade: '',
+                    duracaoPadrao: 60,
+                    servicos: ['Massagem Relaxante', 'Massagem Desportiva', 'Drenagem Linfática'],
+                    createdAt: new Date().toISOString().split('T')[0]
+                };
+                localStorage.setItem('theraflow_profile', JSON.stringify(profile));
+                
+                // Garantir arrays vazios
+                localStorage.setItem('theraflow_clients', '[]');
+                localStorage.setItem('theraflow_sessions', '[]');
+                localStorage.setItem('theraflow_packages', '[]');
+                
+                showStatus('✅ Pronto! Você pode começar do zero. Login mantido.', 'success');
+                updatePreview();
+            }
+        }
+
+        function goToApp() {
+            window.location.href = 'app.html';
+        }
+
+        // Inicializar
+        updatePreview();
+    </script>
+</body>
+</html>
