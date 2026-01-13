@@ -503,12 +503,12 @@
         }
 
         function showNewSessionModal() {
-            const clients = TheraFlowData.getClients();
+            const clients = TheraFlowData.getActiveClients();
             
             if (clients.length === 0) {
                 TheraFlowUI.showModal({
-                    title: 'Nenhum Cliente',
-                    content: `<div style="text-align: center; padding: 20px;"><div style="font-size: 4em; margin-bottom: 15px;">👥</div><p>Você precisa cadastrar um cliente primeiro!</p></div>`,
+                    title: 'Nenhum Cliente Ativo',
+                    content: `<div style="text-align: center; padding: 20px;"><div style="font-size: 4em; margin-bottom: 15px;">👥</div><p>Você precisa cadastrar um cliente ativo primeiro!</p></div>`,
                     buttons: [{ text: 'Cadastrar Cliente', class: 'tf-btn-primary', onclick: "window.location.href='clientes.html'" }]
                 });
                 return;
