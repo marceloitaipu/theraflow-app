@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TheraFlow - Atualizar App</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            background: rgba(255,255,255,0.15);
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+        }
+        h1 { font-size: 1.8em; margin-bottom: 15px; }
+        p { opacity: 0.9; margin-bottom: 25px; line-height: 1.6; }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px 30px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 25px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: scale(1.02); }
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.2);
+            font-size: 0.9em;
+        }
+        .success { background: rgba(16, 185, 129, 0.3); }
+        .error { background: rgba(239, 68, 68, 0.3); }
+        .loading { 
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Atualizar TheraFlow</h1>
+        <p>Clique no botão abaixo para forçar a atualização do app e limpar o cache antigo.</p>
+        
+        <button class="btn btn-primary" onclick="forceUpdate()">
+            🚀 Atualizar Agora
+        </button>
+        
+        <button class="btn btn-secondary" onclick="clearAllCaches()">
+            🗑️ Limpar Todo o Cache
+        </button>
+        
+        <div class="status" id="status" style="display: none;"></div>
+    </div>
+
+    <script>
+        function showStatus(message, type) {
+            var status = document.getElementById('status');
+            status.style.display = 'block';
+            status.className = 'status ' + (type || '');
+            status.innerHTML = message;
+        }
+
+        async function forceUpdate() {
+            showStatus('<span class="loading"></span> Atualizando...', '');
+            
+            try {
+                // 1. Desregistrar Service Workers antigos
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        console.log('SW desregistrado:', registration);
+                    }
+                }
+                
+                // 2. Limpar todos os caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (let cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        console.log('Cache deletado:', cacheName);
+                    }
+                }
+                
+                // 3. Registrar novo Service Worker
+                if ('serviceWorker' in navigator) {
+                    await navigator.serviceWorker.register('./sw.js');
+                }
+                
+                showStatus('✅ App atualizado com sucesso! Redirecionando...', 'success');
+                
+                // 4. Recarregar a página principal
+                setTimeout(function() {
+                    window.location.href = './app.html?updated=' + Date.now();
+                }, 2000);
+                
+            } catch (error) {
+                showStatus('❌ Erro ao atualizar: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+
+        async function clearAllCaches() {
+            showStatus('<span class="loading"></span> Limpando cache...', '');
+            
+            try {
+                // Limpar Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                    }
+                }
+                
+                // Limpar caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    for (let cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                    }
+                }
+                
+                // Limpar localStorage (opcional - apenas dados de cache, não dados do usuário)
+                // localStorage.clear();
+                
+                showStatus('✅ Cache limpo! Recarregue a página ou reinstale o app.', 'success');
+                
+            } catch (error) {
+                showStatus('❌ Erro: ' + error.message, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
