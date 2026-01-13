@@ -915,47 +915,32 @@
         }
 
         function confirmResetBusiness() {
-            TheraFlowUI.closeModal();
-            setTimeout(function() {
-                TheraFlowUI.confirm(
-                    '🧹 Confirmar Limpeza',
-                    'Isso vai apagar clientes, sessões e dados financeiros. Seu login será mantido. Continuar?',
-                    function() {
-                        // Limpar dados de negócio, manter login
-                        localStorage.removeItem('theraflow_clients');
-                        localStorage.removeItem('theraflow_sessions');
-                        localStorage.removeItem('theraflow_packages');
-                        localStorage.removeItem('theraflow_initialized');
-                        
-                        // Criar arrays vazios
-                        localStorage.setItem('theraflow_clients', '[]');
-                        localStorage.setItem('theraflow_sessions', '[]');
-                        localStorage.setItem('theraflow_packages', '[]');
-                        
-                        TheraFlowUI.toast('✅ Dados limpos! Você pode começar do zero.', 'success');
-                        setTimeout(function() {
-                            window.location.href = 'app.html';
-                        }, 1500);
-                    }
-                );
-            }, 300);
+            if (confirm('Isso vai apagar clientes, sessões e dados financeiros. Seu login será mantido. Continuar?')) {
+                TheraFlowUI.closeModal();
+                
+                // Limpar dados de negócio, manter login
+                localStorage.removeItem('theraflow_clients');
+                localStorage.removeItem('theraflow_sessions');
+                localStorage.removeItem('theraflow_packages');
+                localStorage.removeItem('theraflow_initialized');
+                
+                // Criar arrays vazios
+                localStorage.setItem('theraflow_clients', '[]');
+                localStorage.setItem('theraflow_sessions', '[]');
+                localStorage.setItem('theraflow_packages', '[]');
+                
+                alert('✅ Dados limpos! Você pode começar do zero.');
+                window.location.href = 'app.html';
+            }
         }
 
         function confirmResetAll() {
-            TheraFlowUI.closeModal();
-            setTimeout(function() {
-                TheraFlowUI.confirm(
-                    '🗑️ Apagar TUDO',
-                    'Esta ação irá apagar TODOS os dados incluindo seu login. Você voltará à tela inicial. Esta ação NÃO pode ser desfeita!',
-                    function() {
-                        TheraFlowData.clearAll();
-                        TheraFlowUI.toast('Dados apagados! Redirecionando...', 'info');
-                        setTimeout(function() {
-                            window.location.href = 'index.html';
-                        }, 1500);
-                    }
-                );
-            }, 300);
+            if (confirm('Esta ação irá apagar TODOS os dados incluindo seu login. Você voltará à tela inicial. Esta ação NÃO pode ser desfeita! Continuar?')) {
+                TheraFlowUI.closeModal();
+                TheraFlowData.clearAll();
+                alert('Dados apagados!');
+                window.location.href = 'index.html';
+            }
         }
 
         function logout() {
