@@ -121,13 +121,35 @@ var TheraFlowUI = {
         }
     },
 
-    confirm: function(message, onConfirm, onCancel) {
+    confirm: function(titleOrMessage, messageOrConfirm, onConfirmOrCancel, onCancel) {
+        // Suporta duas assinaturas:
+        // confirm(message, onConfirm, onCancel)
+        // confirm(title, message, onConfirm, onCancel)
+        var title, message, onConfirm;
+        
+        if (typeof messageOrConfirm === 'function') {
+            // Formato antigo: confirm(message, onConfirm, onCancel)
+            title = 'Confirmação';
+            message = titleOrMessage;
+            onConfirm = messageOrConfirm;
+            onCancel = onConfirmOrCancel;
+        } else {
+            // Formato novo: confirm(title, message, onConfirm, onCancel)
+            title = titleOrMessage;
+            message = messageOrConfirm;
+            onConfirm = onConfirmOrCancel;
+            // onCancel já está correto
+        }
+        
         this.showModal({
-            title: 'Confirmação',
+            title: title,
             content: '<p style="margin: 0;">' + message + '</p>',
             buttons: [
-                { text: 'Cancelar', onClick: onCancel || function() {} },
-                { text: 'Confirmar', primary: true, onClick: onConfirm || function() {} }
+                { text: 'Cancelar', onClick: onCancel || function() { TheraFlowUI.closeModal(); } },
+                { text: 'Confirmar', primary: true, onClick: function() { 
+                    TheraFlowUI.closeModal();
+                    if (onConfirm) onConfirm();
+                }}
             ]
         });
     },
