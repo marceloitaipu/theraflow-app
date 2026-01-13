@@ -82,6 +82,7 @@ class ClientService {
     String? name,
     String? phone,
     String? notes,
+    String? status,
   }) async {
     final collection = _clientsCollection();
     if (collection == null) throw Exception('Usuário não autenticado.');
@@ -90,14 +91,26 @@ class ClientService {
     if (name != null) updates['name'] = name;
     if (phone != null) updates['phone'] = phone;
     if (notes != null) updates['notes'] = notes;
+    if (status != null) updates['status'] = status;
 
     if (updates.isEmpty) return;
 
     await collection.doc(id).update(updates);
   }
 
-  // Deletar cliente
+  // Arquivar cliente (soft delete - mantém histórico financeiro)
+  Future<void> archiveClient(String id) async {
+    await updateClient(id, status: 'inactive');
+  }
+
+  // Reativar cliente arquivado
+  Future<void> reactivateClient(String id) async {
+    await updateClient(id, status: 'active');
+  }
+
+  // Deletar cliente permanentemente (não recomendado - usar archiveClient)
   Future<void> deleteClient(String id) async {
+    // ATENÇÃO: Preferível usar archiveClient() para manter histórico financeiro
     final collection = _clientsCollection();
     if (collection == null) throw Exception('Usuário não autenticado.');
 

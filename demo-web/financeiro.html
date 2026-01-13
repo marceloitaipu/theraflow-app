@@ -154,10 +154,8 @@
         TheraFlowUI.checkAuth();
         TheraFlowComponents.injectNavigation('financeiro');
 
-        // Garantir que existam dados de demonstração
-        if (TheraFlowData.getClients().length === 0) {
-            TheraFlowData.resetData();
-        }
+        // Garantir inicialização (apenas estrutura)
+        TheraFlowData.ensureInitialized();
 
         var currentYear = new Date().getFullYear();
         var currentMonth = new Date().getMonth() + 1;
@@ -214,9 +212,11 @@
                 var pendingHtml = '';
                 for (var j = 0; j < pendingSessions.length; j++) {
                     var ps = pendingSessions[j];
+                    var isInactive = TheraFlowData.isClientInactive(ps.clienteId);
+                    var clientDisplay = ps.clienteNome + (isInactive ? ' <span style="background:#9ca3af;color:white;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:4px;">INATIVO</span>' : '');
                     pendingHtml += '<div class="payment-card" onclick="confirmPayment(' + ps.id + ')">' +
                         '<div class="header-row">' +
-                            '<span class="client">' + ps.clienteNome + '</span>' +
+                            '<span class="client">' + clientDisplay + '</span>' +
                             '<span class="pay-value">' + TheraFlowUI.formatCurrency(ps.valor) + '</span>' +
                         '</div>' +
                         '<div class="details">' + TheraFlowUI.formatDateBR(ps.data) + ' • ' + ps.tipo + '</div>' +
@@ -233,9 +233,11 @@
                 var paidHtml = '';
                 for (var k = 0; k < paidSessions.length; k++) {
                     var pds = paidSessions[k];
+                    var isInactivePaid = TheraFlowData.isClientInactive(pds.clienteId);
+                    var paidClientDisplay = pds.clienteNome + (isInactivePaid ? ' <span style="background:#9ca3af;color:white;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:4px;">INATIVO</span>' : '');
                     paidHtml += '<div class="payment-card paid">' +
                         '<div class="header-row">' +
-                            '<span class="client">' + pds.clienteNome + ' <span class="status-badge">✓ Pago</span></span>' +
+                            '<span class="client">' + paidClientDisplay + ' <span class="status-badge">✓ Pago</span></span>' +
                             '<span class="pay-value">' + TheraFlowUI.formatCurrency(pds.valor) + '</span>' +
                         '</div>' +
                         '<div class="details">' + TheraFlowUI.formatDateBR(pds.data) + ' • ' + pds.tipo + '</div>' +

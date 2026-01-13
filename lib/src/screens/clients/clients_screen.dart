@@ -124,8 +124,64 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   c.phone.contains(_searchQuery)).toList();
 
           if (filteredClients.isEmpty) {
-            return const Center(
-              child: Text('Nenhum cliente encontrado'),
+            // Empty state profissional
+            if (_searchQuery.isNotEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.search_off, size: 64, color: Colors.grey),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Nenhum cliente encontrado',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Tente buscar por outro termo',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            
+            // Estado vazio - usuário sem clientes (não é erro!)
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.people_outline, size: 80, color: Colors.grey),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Nenhum cliente cadastrado ainda',
+                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Adicione seu primeiro cliente para começar a usar o TheraFlow',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Colors.grey,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 32),
+                    ElevatedButton.icon(
+                      onPressed: _showNewClientDialog,
+                      icon: const Icon(Icons.person_add),
+                      label: const Text('Adicionar Cliente'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             );
           }
 

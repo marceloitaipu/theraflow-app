@@ -320,10 +320,8 @@
         TheraFlowUI.checkAuth();
         TheraFlowComponents.injectNavigation('agenda');
 
-        // Garantir que existam dados de demonstração
-        if (TheraFlowData.getClients().length === 0) {
-            TheraFlowData.resetData();
-        }
+        // Garantir inicialização (apenas estrutura)
+        TheraFlowData.ensureInitialized();
 
         // Estado
         var currentDate = new Date();

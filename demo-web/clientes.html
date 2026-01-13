@@ -58,13 +58,20 @@
         TheraFlowUI.checkAuth();
         TheraFlowComponents.injectNavigation('clientes');
 
-        // Garantir que os dados de exemplo existam
-        if (TheraFlowData.getClients().length === 0) {
-            TheraFlowData.resetData();
+        // Garantir inicialização (apenas estrutura)
+        TheraFlowData.ensureInitialized();
+
+        var showInactiveClients = false;
+
+        function toggleInactiveClients() {
+            showInactiveClients = !showInactiveClients;
+            loadClients();
         }
 
         function loadClients() {
-            var clients = TheraFlowData.getClients();
+            var allClients = TheraFlowData.getClients();
+            var clients = showInactiveClients ? allClients : TheraFlowData.getActiveClients();
+            var inactiveCount = allClients.length - TheraFlowData.getActiveClients().length;
             
             // Ordenar clientes por nome em ordem alfabética
             clients.sort(function(a, b) {
@@ -90,26 +97,60 @@
             document.getElementById('totalSessions').textContent = totalSessions;
             document.getElementById('activeClients').textContent = activeCount;
 
-            if (clients.length === 0) {
+            if (clients.length === 0 && inactiveCount === 0) {
+                // Empty state profissional - usuário ainda não tem clientes
                 container.innerHTML = 
-                    '<div class="empty-state">' +
-                        '<div class="icon">👥</div>' +
-                        '<p>Nenhum cliente cadastrado</p>' +
-                        '<button onclick="showAddClientModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 30px; border-radius: 25px; font-size: 1em; cursor: pointer; margin-top: 15px;">+ Adicionar Cliente</button>' +
+                    '<div class="empty-state" style="text-align: center; padding: 40px 20px;">' +
+                        '<div style="font-size: 4em; margin-bottom: 15px;">👥</div>' +
+                        '<h3 style="margin-bottom: 10px; color: #333;">Nenhum cliente cadastrado ainda</h3>' +
+                        '<p style="color: #666; margin-bottom: 20px; max-width: 300px; margin-left: auto; margin-right: auto;">Adicione seu primeiro cliente para começar a usar o TheraFlow</p>' +
+                        '<button onclick="showAddClientModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 14px 35px; border-radius: 25px; font-size: 1em; cursor: pointer; font-weight: 500; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">' +
+                            '+ Adicionar Cliente' +
+                        '</button>' +
+                    '</div>';
+                return;
+            }
+
+            if (clients.length === 0 && inactiveCount > 0) {
+                // Tem clientes inativos mas nenhum ativo
+                container.innerHTML = 
+                    '<div class="empty-state" style="text-align: center; padding: 40px 20px;">' +
+                        '<div style="font-size: 4em; margin-bottom: 15px;">📁</div>' +
+                        '<h3 style="margin-bottom: 10px; color: #333;">Nenhum cliente ativo</h3>' +
+                        '<p style="color: #666; margin-bottom: 20px;">Você tem ' + inactiveCount + ' cliente(s) arquivado(s)</p>' +
+                        '<button onclick="toggleInactiveClients()" style="background: #9ca3af; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-size: 1em; cursor: pointer; margin-right: 10px;">' +
+                            'Ver Arquivados' +
+                        '</button>' +
+                        '<button onclick="showAddClientModal()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 25px; border-radius: 25px; font-size: 1em; cursor: pointer;">' +
+                            '+ Novo Cliente' +
+                        '</button>' +
                     '</div>';
                 return;
             }
 
             var html = '';
+            
+            // Botão para mostrar/ocultar inativos
+            if (inactiveCount > 0) {
+                html += '<div style="text-align: center; margin-bottom: 15px;">' +
+                    '<button onclick="toggleInactiveClients()" style="background: ' + (showInactiveClients ? '#9ca3af' : '#e5e7eb') + '; color: ' + (showInactiveClients ? 'white' : '#6b7280') + '; border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.9em; cursor: pointer;">' +
+                        (showInactiveClients ? '✓ Mostrando ' + inactiveCount + ' inativo(s)' : '📁 Mostrar ' + inactiveCount + ' inativo(s)') +
+                    '</button>' +
+                '</div>';
+            }
+
             for (var i = 0; i < clients.length; i++) {
                 var client = clients[i];
                 var initial = client.nome ? client.nome.charAt(0).toUpperCase() : '?';
                 var createdDate = client.createdAt ? TheraFlowUI.formatDateBR(client.createdAt.split('T')[0]) : 'N/A';
+                var isInactive = client.status === 'inativo';
+                var cardStyle = isInactive ? 'opacity: 0.7; border-left: 3px solid #9ca3af;' : '';
+                var statusBadge = isInactive ? '<span style="background:#9ca3af;color:white;font-size:10px;padding:2px 6px;border-radius:4px;margin-left:8px;">INATIVO</span>' : '';
                 
-                html += '<div class="client-card" onclick="showClientDetails(' + client.id + ')">' +
+                html += '<div class="client-card" onclick="showClientDetails(' + client.id + ')" style="' + cardStyle + '">' +
                     '<div class="name">' +
-                        '<div class="avatar">' + initial + '</div>' +
-                        (client.nome || 'Sem nome') +
+                        '<div class="avatar" style="' + (isInactive ? 'background: #9ca3af;' : '') + '">' + initial + '</div>' +
+                        (client.nome || 'Sem nome') + statusBadge +
                     '</div>' +
                     '<div class="info">📱 ' + (client.telefone || 'Não informado') + '</div>' +
                     '<div class="info">📧 ' + (client.email || 'Não informado') + '</div>' +
@@ -128,6 +169,8 @@
                 TheraFlowUI.toast('Cliente não encontrado', 'error');
                 return;
             }
+
+            var isClientInactive = client.status === 'inativo';
 
             // Obter timeline inteligente do cliente
             var timeline = TheraFlowData.getClientTimeline(id);
@@ -198,10 +241,10 @@
             
             var content = 
                 '<div style="text-align: center; margin-bottom: 20px;">' +
-                    '<div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 2em; font-weight: bold; margin: 0 auto 15px;">' +
+                    '<div style="width: 80px; height: 80px; border-radius: 50%; background: ' + (isClientInactive ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)') + '; display: flex; align-items: center; justify-content: center; color: white; font-size: 2em; font-weight: bold; margin: 0 auto 15px;">' +
                         initial +
                     '</div>' +
-                    '<h2 style="margin-bottom: 5px;">' + client.nome + '</h2>' +
+                    '<h2 style="margin-bottom: 5px;">' + client.nome + (isClientInactive ? ' <span style="background:#9ca3af;color:white;font-size:12px;padding:3px 8px;border-radius:4px;margin-left:8px;">INATIVO</span>' : '') + '</h2>' +
                     '<p style="color: #666;">Cliente desde ' + TheraFlowUI.formatDateBR(client.createdAt) + '</p>' +
                 '</div>' +
 
@@ -222,22 +265,30 @@
                 '<div id="clientPackagesSection" style="margin-top: 20px;">' + getClientPackagesHtml(id) + '</div>' +
 
                 '<ul style="margin-top: 20px; list-style: none; padding: 0;">' +
-                    '<li onclick="scheduleForClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f8f9fa; border-radius: 10px; cursor: pointer;">' +
-                        '<span style="font-size: 1.5em;">📅</span>' +
-                        '<div><strong style="display: block;">Agendar Atendimento</strong><span style="font-size: 0.85em; color: #666;">Criar nova sessão</span></div>' +
-                    '</li>' +
+                    (isClientInactive ? 
+                        '<li onclick="reactivateClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f0fdf4; border-radius: 10px; cursor: pointer; color: #059669;">' +
+                            '<span style="font-size: 1.5em;">✅</span>' +
+                            '<div><strong style="display: block;">Reativar Cliente</strong><span style="font-size: 0.85em; color: #666;">Trazer de volta à lista ativa</span></div>' +
+                        '</li>' : 
+                        '<li onclick="scheduleForClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f8f9fa; border-radius: 10px; cursor: pointer;">' +
+                            '<span style="font-size: 1.5em;">📅</span>' +
+                            '<div><strong style="display: block;">Agendar Atendimento</strong><span style="font-size: 0.85em; color: #666;">Criar nova sessão</span></div>' +
+                        '</li>'
+                    ) +
+                    (!isClientInactive ? 
                     '<li onclick="showAddPackageModal(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f0fdf4; border-radius: 10px; cursor: pointer; color: #059669;">' +
                         '<span style="font-size: 1.5em;">📦</span>' +
                         '<div><strong style="display: block;">Criar Pacote de Sessões</strong><span style="font-size: 0.85em; color: #666;">Pacote 5, 10 sessões...</span></div>' +
-                    '</li>' +
+                    '</li>' : '') +
                     '<li onclick="editClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #f8f9fa; border-radius: 10px; cursor: pointer;">' +
                         '<span style="font-size: 1.5em;">✏️</span>' +
                         '<div><strong style="display: block;">Editar Cliente</strong><span style="font-size: 0.85em; color: #666;">Alterar informações</span></div>' +
                     '</li>' +
-                    '<li onclick="confirmDeleteClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #fff5f5; border-radius: 10px; cursor: pointer; color: #ef4444;">' +
-                        '<span style="font-size: 1.5em;">🗑️</span>' +
-                        '<div><strong style="display: block;">Excluir Cliente</strong><span style="font-size: 0.85em; color: #666;">Remover cadastro</span></div>' +
-                    '</li>' +
+                    (!isClientInactive ?
+                    '<li onclick="confirmDeleteClient(' + id + ')" style="display: flex; align-items: center; gap: 15px; padding: 15px; margin-bottom: 8px; background: #fef3c7; border-radius: 10px; cursor: pointer; color: #d97706;">' +
+                        '<span style="font-size: 1.5em;">📁</span>' +
+                        '<div><strong style="display: block;">Arquivar Cliente</strong><span style="font-size: 0.85em; color: #666;">Manter histórico financeiro</span></div>' +
+                    '</li>' : '') +
                 '</ul>';
 
             TheraFlowUI.showModal({ title: 'Detalhes do Cliente', content: content });
@@ -568,13 +619,39 @@
             loadClients();
         }
 
+        function reactivateClient(id) {
+            TheraFlowUI.closeModal();
+            TheraFlowData.reactivateClient(id);
+            TheraFlowUI.toast('✅ Cliente reativado com sucesso!', 'success');
+            loadClients();
+        }
+
         function confirmDeleteClient(id) {
             TheraFlowUI.closeModal();
             setTimeout(function() {
-                TheraFlowUI.confirm('Deseja realmente excluir este cliente?', function() {
-                    TheraFlowData.deleteClient(id);
-                    TheraFlowUI.toast('Cliente excluído', 'success');
-                    loadClients();
+                var content = 
+                    '<div style="text-align: center; padding: 20px;">' +
+                        '<div style="font-size: 3em; margin-bottom: 15px;">📁</div>' +
+                        '<h3 style="margin-bottom: 10px;">Arquivar Cliente</h3>' +
+                        '<p style="color: #666; margin-bottom: 15px;">O cliente será marcado como <strong>inativo</strong>.</p>' +
+                        '<div style="background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 12px; margin-bottom: 15px;">' +
+                            '<p style="color: #166534; margin: 0; font-size: 0.9em;">✓ O histórico financeiro será mantido</p>' +
+                        '</div>' +
+                        '<p style="color: #9ca3af; font-size: 0.85em;">Você poderá reativar o cliente posteriormente.</p>' +
+                    '</div>';
+
+                TheraFlowUI.showModal({
+                    title: 'Arquivar Cliente',
+                    content: content,
+                    buttons: [
+                        { text: 'Cancelar', class: 'tf-btn-secondary', onClick: function() { TheraFlowUI.closeModal(); } },
+                        { text: 'Arquivar', class: 'tf-btn-warning', onClick: function() {
+                            TheraFlowData.deleteClient(id);
+                            TheraFlowUI.closeModal();
+                            TheraFlowUI.toast('Cliente arquivado. O histórico financeiro foi mantido.', 'success');
+                            loadClients();
+                        }}
+                    ]
                 });
             }, 250);
         }

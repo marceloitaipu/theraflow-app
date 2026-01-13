@@ -83,20 +83,43 @@ class AppClientService {
     String? name,
     String? phone,
     String? notes,
+    String? status,
   }) async {
     final updates = <String, dynamic>{};
     if (name != null) updates['name'] = name;
     if (phone != null) updates['phone'] = phone;
     if (notes != null) updates['notes'] = notes;
+    if (status != null) updates['status'] = status;
     _mock.updateClient(id, updates);
   }
 
+  /// Arquiva cliente (soft delete) - mantém histórico financeiro
+  Future<void> archiveClient(String id) async {
+    _mock.archiveClient(id);
+  }
+
+  /// Reativa cliente arquivado
+  Future<void> reactivateClient(String id) async {
+    _mock.reactivateClient(id);
+  }
+
+  /// Deleta cliente permanentemente (não recomendado)
   Future<void> deleteClient(String id) async {
     _mock.deleteClient(id);
   }
 
+  /// Retorna apenas clientes ativos
+  Future<List<Client>> getActiveClients() async {
+    return _mock.getActiveClients().map((m) => Client.fromMap(m['id'], m)).toList();
+  }
+
   Future<int> getClientCount() async {
     return _mock.getClients().length;
+  }
+
+  /// Conta apenas clientes ativos
+  Future<int> getActiveClientCount() async {
+    return _mock.getActiveClients().length;
   }
 }
 

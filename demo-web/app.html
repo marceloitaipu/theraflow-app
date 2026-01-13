@@ -155,10 +155,8 @@
         // Verificar autenticação
         TheraFlowUI.checkAuth();
 
-        // Garantir que existam dados de demonstração
-        if (TheraFlowData.getClients().length === 0) {
-            TheraFlowData.resetData();
-        }
+        // Garantir inicialização (apenas estrutura, não força dados de demo)
+        TheraFlowData.ensureInitialized();
 
         // Injetar navegação
         TheraFlowComponents.injectNavigation('home');

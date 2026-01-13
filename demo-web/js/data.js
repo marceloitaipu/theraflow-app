@@ -82,6 +82,25 @@ var TheraFlowData = {
         return newId;
     },
 
+    // Garante que as estruturas de dados existam (sem forçar dados demo)
+    // IMPORTANTE: Não depende de clientes para manter sessão
+    ensureInitialized: function() {
+        // Apenas garante que as estruturas existam, não força dados
+        // O usuário pode ter zero clientes e isso é normal
+        if (!localStorage.getItem('theraflow_profile')) {
+            var profile = {
+                displayName: 'Terapeuta',
+                email: '',
+                telefone: '',
+                especialidade: '',
+                duracaoPadrao: 60,
+                servicos: ['Massagem Relaxante', 'Massagem Desportiva', 'Drenagem Linfática'],
+                createdAt: this.formatDate(new Date())
+            };
+            localStorage.setItem('theraflow_profile', JSON.stringify(profile));
+        }
+    },
+
     // === CLIENTES ===
     getClients: function() {
         try {
@@ -124,12 +143,42 @@ var TheraFlowData = {
     },
 
     deleteClient: function(id) {
+        // SOFT DELETE: Marca como inativo em vez de remover
+        // Isso mantém o histórico financeiro intacto
+        this.updateClient(id, { status: 'inativo' });
+    },
+
+    // Deleta permanentemente (não recomendado)
+    hardDeleteClient: function(id) {
         var clients = this.getClients();
         var filtered = [];
         for (var i = 0; i < clients.length; i++) {
             if (clients[i].id != id) filtered.push(clients[i]);
         }
         localStorage.setItem('theraflow_clients', JSON.stringify(filtered));
+    },
+
+    // Reativar cliente arquivado
+    reactivateClient: function(id) {
+        this.updateClient(id, { status: 'ativo' });
+    },
+
+    // Retorna apenas clientes ativos
+    getActiveClients: function() {
+        var clients = this.getClients();
+        var result = [];
+        for (var i = 0; i < clients.length; i++) {
+            if (!clients[i].status || clients[i].status === 'ativo') {
+                result.push(clients[i]);
+            }
+        }
+        return result;
+    },
+
+    // Verifica se cliente está inativo
+    isClientInactive: function(clientId) {
+        var client = this.getClientById(clientId);
+        return client && client.status === 'inativo';
     },
 
     // === SESSÕES ===
@@ -316,6 +365,14 @@ var TheraFlowData = {
         localStorage.removeItem('theraflow_logged');
     },
 
+    // Limpa apenas dados de negócio (mantém autenticação)
+    clearBusinessData: function() {
+        localStorage.removeItem('theraflow_clients');
+        localStorage.removeItem('theraflow_sessions');
+        localStorage.removeItem('theraflow_packages');
+    },
+
+    // Limpa TUDO incluindo autenticação (apenas para logout completo)
     clearAll: function() {
         localStorage.removeItem('theraflow_clients');
         localStorage.removeItem('theraflow_sessions');
@@ -324,11 +381,25 @@ var TheraFlowData = {
         localStorage.removeItem('theraflow_email');
         localStorage.removeItem('theraflow_onboarding');
         localStorage.removeItem('theraflow_initialized');
+        localStorage.removeItem('theraflow_packages');
     },
 
+    // Reseta apenas dados de negócio, MANTÉM login do usuário
     resetData: function() {
-        this.clearAll();
+        // Preservar autenticação
+        var logged = localStorage.getItem('theraflow_logged');
+        var email = localStorage.getItem('theraflow_email');
+        var onboarding = localStorage.getItem('theraflow_onboarding');
+        var profile = localStorage.getItem('theraflow_profile');
+        
+        this.clearBusinessData();
         this.init();
+        
+        // Restaurar autenticação
+        if (logged) localStorage.setItem('theraflow_logged', logged);
+        if (email) localStorage.setItem('theraflow_email', email);
+        if (onboarding) localStorage.setItem('theraflow_onboarding', onboarding);
+        if (profile) localStorage.setItem('theraflow_profile', profile);
     },
 
     // === PACOTES DE SESSÕES ===

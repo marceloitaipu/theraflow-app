@@ -320,14 +320,37 @@ class _PendingSessionTile extends StatelessWidget {
     return FutureBuilder(
       future: ClientService.instance.getClientById(session.clientId),
       builder: (context, clientSnapshot) {
-        final clientName = clientSnapshot.data?.name ?? 'Cliente';
+        final client = clientSnapshot.data;
+        final clientName = client?.displayName ?? 'Cliente removido';
+        final isInactive = client?.isInactive ?? false;
 
         return ListTile(
-          leading: const CircleAvatar(
-            backgroundColor: Colors.orange,
+          leading: CircleAvatar(
+            backgroundColor: isInactive ? Colors.grey : Colors.orange,
             child: Icon(Icons.pending, color: Colors.white, size: 20),
           ),
-          title: Text(clientName),
+          title: Row(
+            children: [
+              Expanded(child: Text(clientName)),
+              if (isInactive)
+                Container(
+                  margin: const EdgeInsets.only(left: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    'INATIVO',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+            ],
+          ),
           subtitle: Text(
             '${dateFormat.format(session.dateTime)} • ${session.therapyType}',
           ),

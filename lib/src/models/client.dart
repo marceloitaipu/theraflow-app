@@ -5,6 +5,7 @@ class Client {
   final String phone;
   final String notes;
   final DateTime createdAt;
+  final String status; // active, inactive
 
   Client({
     required this.id,
@@ -13,7 +14,14 @@ class Client {
     required this.phone,
     required this.notes,
     required this.createdAt,
+    this.status = 'active',
   });
+
+  /// Verifica se o cliente está ativo
+  bool get isActive => status == 'active';
+
+  /// Verifica se o cliente está inativo/arquivado
+  bool get isInactive => status == 'inactive';
 
   Map<String, dynamic> toMap() => {
         'userId': userId,
@@ -21,6 +29,7 @@ class Client {
         'phone': phone,
         'notes': notes,
         'createdAt': createdAt.toIso8601String(),
+        'status': status,
       };
 
   static Client fromMap(String id, Map<String, dynamic> map) => Client(
@@ -32,12 +41,14 @@ class Client {
         createdAt: map['createdAt'] != null
             ? DateTime.parse(map['createdAt'] as String)
             : DateTime.now(),
+        status: (map['status'] ?? 'active') as String,
       );
 
   Client copyWith({
     String? name,
     String? phone,
     String? notes,
+    String? status,
   }) {
     return Client(
       id: id,
@@ -46,6 +57,10 @@ class Client {
       phone: phone ?? this.phone,
       notes: notes ?? this.notes,
       createdAt: createdAt,
+      status: status ?? this.status,
     );
   }
+
+  /// Nome para exibição com indicador de status se inativo
+  String get displayName => isInactive ? '$name (inativo)' : name;
 }

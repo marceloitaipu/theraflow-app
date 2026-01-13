@@ -121,6 +121,23 @@ class MockDataService {
     _clients[_currentUser!.uid]!.removeWhere((c) => c['id'] == id);
   }
 
+  /// Arquiva cliente (soft delete) - mantém histórico financeiro
+  void archiveClient(String id) {
+    updateClient(id, {'status': 'inactive'});
+  }
+
+  /// Reativa cliente arquivado
+  void reactivateClient(String id) {
+    updateClient(id, {'status': 'active'});
+  }
+
+  /// Retorna apenas clientes ativos
+  List<Map<String, dynamic>> getActiveClients() {
+    return getClients().where((c) => 
+      (c['status'] ?? 'active') == 'active'
+    ).toList();
+  }
+
   // ========== SESSÕES ==========
 
   List<Map<String, dynamic>> getSessions() {
