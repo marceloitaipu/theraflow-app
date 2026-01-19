@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../services/profile_service.dart';
-import '../../services/auth_service.dart';
+import '../../services/app_services.dart';
 import '../../widgets/primary_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -37,7 +36,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _loadUserData() async {
     setState(() => _loading = true);
     try {
-      final userData = await AuthService.instance.getCurrentUserData();
+      final userData = await AppAuthService.instance.getCurrentUserData();
       if (userData != null && mounted) {
         _name.text = userData.name;
       }
@@ -63,7 +62,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     setState(() => _saving = true);
     try {
-      await ProfileService.instance.saveProfile(
+      await AppProfileService.instance.saveProfile(
         name: _name.text.trim(),
         phone: _phone.text.trim(),
         city: _city.text.trim(),
