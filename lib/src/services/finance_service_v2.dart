@@ -5,7 +5,7 @@ import '../models/session.dart';
 import '../models/payment.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
-import 'sync_service.dart';
+import 'incremental_sync_service.dart';
 import 'session_service_v2.dart';
 
 class FinanceService {
@@ -14,7 +14,7 @@ class FinanceService {
 
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
-  final SyncService _sync = SyncService.instance;
+  final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final SessionService _sessionService = SessionService.instance;
   final Uuid _uuid = Uuid();
 
@@ -50,8 +50,9 @@ class FinanceService {
       'value': value,
       'paidAt': status == 'pago' ? now.toIso8601String() : null,
       'createdAt': now.toIso8601String(),
-      'synced': _sync.isOnline ? 1 : 0,
-      'lastModified': now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+      'deletedAt': null,
+      'synced': 0,
       'deleted': 0,
     };
 

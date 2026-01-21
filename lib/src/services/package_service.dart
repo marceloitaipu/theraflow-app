@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/package.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
-import 'sync_service.dart';
+import 'incremental_sync_service.dart';
 
 class PackageService {
   PackageService._();
@@ -12,7 +12,7 @@ class PackageService {
 
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
-  final SyncService _sync = SyncService.instance;
+  final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final Uuid _uuid = Uuid();
 
   // Buscar todos os pacotes do banco local
@@ -102,8 +102,9 @@ class PackageService {
       'createdAt': now.toIso8601String(),
       'expirationDate': expirationDate?.toIso8601String(),
       'status': 'active',
-      'synced': _sync.isOnline ? 1 : 0,
-      'lastModified': now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+      'deletedAt': null,
+      'synced': 0,
       'deleted': 0,
     };
 
@@ -161,8 +162,8 @@ class PackageService {
     final updates = <String, dynamic>{
       'remainingSessions': newRemaining,
       'status': newStatus,
-      'lastModified': DateTime.now().toIso8601String(),
-      'synced': _sync.isOnline ? 1 : 0,
+      'updatedAt': DateTime.now().toIso8601String(),
+      'synced': 0,
     };
 
     // Atualizar localmente
@@ -207,8 +208,8 @@ class PackageService {
     if (existing == null) throw Exception('Pacote não encontrado.');
 
     final updates = <String, dynamic>{
-      'lastModified': DateTime.now().toIso8601String(),
-      'synced': _sync.isOnline ? 1 : 0,
+      'updatedAt': DateTime.now().toIso8601String(),
+      'synced': 0,
     };
 
     if (totalSessions != null) updates['totalSessions'] = totalSessions;

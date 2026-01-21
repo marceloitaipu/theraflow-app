@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/session.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
-import 'sync_service.dart';
+import 'incremental_sync_service.dart';
 
 class SessionService {
   SessionService._();
@@ -12,7 +12,7 @@ class SessionService {
 
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
-  final SyncService _sync = SyncService.instance;
+  final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final Uuid _uuid = Uuid();
 
   // Stream de todas as sessões (do banco local)
@@ -133,8 +133,9 @@ class SessionService {
       'paymentStatus': paymentStatus,
       'packageId': packageId,
       'createdAt': now.toIso8601String(),
-      'synced': _sync.isOnline ? 1 : 0,
-      'lastModified': now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+      'deletedAt': null,
+      'synced': 0,
       'deleted': 0,
     };
 
@@ -176,8 +177,8 @@ class SessionService {
     if (existing == null) throw Exception('Sessão não encontrada.');
 
     final updates = <String, dynamic>{
-      'lastModified': DateTime.now().toIso8601String(),
-      'synced': _sync.isOnline ? 1 : 0,
+      'updatedAt': DateTime.now().toIso8601String(),
+      'synced': 0,
     };
 
     if (dateTime != null) updates['dateTime'] = dateTime.toIso8601String();
