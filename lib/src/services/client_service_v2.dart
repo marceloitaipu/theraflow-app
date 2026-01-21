@@ -4,7 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/client.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
-import 'sync_service.dart';
+import 'incremental_sync_service.dart';
 
 class ClientService {
   ClientService._();
@@ -12,7 +12,7 @@ class ClientService {
 
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
-  final SyncService _sync = SyncService.instance;
+  final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final Uuid _uuid = Uuid();
 
   // Stream de todos os clientes (do banco local)
@@ -71,9 +71,10 @@ class ClientService {
       'phone': phone,
       'notes': notes ?? '',
       'createdAt': now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+      'deletedAt': null,
       'status': 'active',
       'synced': _sync.isOnline ? 1 : 0,
-      'lastModified': now.toIso8601String(),
       'deleted': 0,
     };
 
@@ -111,9 +112,10 @@ class ClientService {
     final existing = await _db.getClientById(id);
     if (existing == null) throw Exception('Cliente não encontrado.');
 
+    final now = DateTime.now();
     final updates = <String, dynamic>{
-      'lastModified': DateTime.now().toIso8601String(),
-      'synced': _sync.isOnline ? 1 : 0,
+      'updatedAt': now.toIso8601String(),
+      'synced': 0,
     };
 
     if (name != null) updates['name'] = name;
@@ -124,19 +126,8 @@ class ClientService {
     // Atualizar localmente
     await _db.updateClient(id, updates);
 
-    // Se offline, adicionar à fila de sincronização
-    if (!_sync.isOnline) {
-      final fullData = Map<String, dynamic>.from(existing);
-      fullData.addAll(updates);
-      
-      await _db.addToSyncQueue(
-        operation: 'update',
-        tableName: 'clients',
-        recordId: id,
-        data: jsonEncode(fullData),
-      );
-    } else {
-      // Se online, sincronizar imediatamente
+    // Sincronizar se online
+    if (_sync.isOnline) {
       _sync.syncAll();
     }
   }

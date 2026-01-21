@@ -6,7 +6,9 @@ import 'firebase_options.dart';
 
 import 'src/app_router.dart';
 import 'src/theme/app_theme.dart';
-import 'src/services/sync_service.dart';
+import 'src/database/database_helper.dart';
+import 'src/services/incremental_sync_service.dart';
+import 'src/services/subscription_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,8 +21,14 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Inicializar sincronização
-  await SyncService.instance.initialize();
+  // Inicializar banco de dados local
+  await DatabaseHelper.instance.database;
+  
+  // Inicializar sincronização incremental
+  await IncrementalSyncService.instance.initialize();
+  
+  // Inicializar serviço de assinaturas
+  await SubscriptionService.instance.initialize();
   
   runApp(const TheraFlowApp());
 }
