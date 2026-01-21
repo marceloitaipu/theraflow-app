@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
 import '../../services/app_services.dart';
 import '../../widgets/section_title.dart';
+import '../../providers/theme_provider.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -61,6 +63,25 @@ class ProfileScreen extends StatelessWidget {
                 },
               ),
               const SectionTitle('Configurações'),
+              Consumer<ThemeProvider>(
+                builder: (context, themeProvider, _) {
+                  return SwitchListTile(
+                    value: themeProvider.isDarkMode,
+                    onChanged: (_) {
+                      themeProvider.toggleTheme();
+                    },
+                    title: const Text('Tema escuro'),
+                    subtitle: Text(
+                      themeProvider.isDarkMode ? 'Ativado' : 'Desativado',
+                    ),
+                    secondary: Icon(
+                      themeProvider.isDarkMode 
+                        ? Icons.dark_mode 
+                        : Icons.light_mode,
+                    ),
+                  );
+                },
+              ),
               SwitchListTile(
                 value: true,
                 onChanged: (_) {
