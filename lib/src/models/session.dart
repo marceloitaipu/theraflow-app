@@ -99,9 +99,3 @@ class Session {
     );
   }
 }
-      paymentStatus: paymentStatus ?? this.paymentStatus,
-      createdAt: createdAt,
-      packageId: packageId ?? this.packageId,
-    );
-  }
-}

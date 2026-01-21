@@ -1,4 +1,5 @@
 import 'package:cloud_functions/cloud_functions.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_service.dart';
 import 'incremental_sync_service.dart';
 import '../database/database_helper.dart';
@@ -63,7 +64,8 @@ class SubscriptionService {
       }
 
       // Buscar dados do usuário no Firestore
-      final userDoc = await _auth.firestore.collection('users').doc(userId).get();
+      final firestore = FirebaseFirestore.instance;
+      final userDoc = await firestore.collection('users').doc(userId).get();
       
       if (!userDoc.exists) {
         AppLogger.warning('Documento do usuário não existe - status free', 'SubscriptionService');

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:sqflite/sqflite.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
 
