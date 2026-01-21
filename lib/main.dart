@@ -6,6 +6,7 @@ import 'firebase_options.dart';
 
 import 'src/app_router.dart';
 import 'src/theme/app_theme.dart';
+import 'src/services/sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +18,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Inicializar sincronização
+  await SyncService.instance.initialize();
   
   runApp(const TheraFlowApp());
 }

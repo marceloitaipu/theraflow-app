@@ -1,194 +1,308 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import '../models/package.dart';
+import '../database/database_helper.dart';
 import 'auth_service.dart';
+import 'sync_service.dart';
 
-/// Service para gerenciamento de pacotes de sessões
 class PackageService {
   PackageService._();
   static final instance = PackageService._();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
+  final SyncService _sync = SyncService.instance;
+  final Uuid _uuid = Uuid();
 
-  /// Referência da coleção de pacotes de um cliente
-  CollectionReference<Map<String, dynamic>>? _packagesCollection(String clientId) {
+  // Buscar todos os pacotes do banco local
+  Future<List<Package>> getPackages() async {
     final userId = _auth.currentUser?.uid;
-    if (userId == null) return null;
-    return _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('clients')
-        .doc(clientId)
-        .collection('packages');
-  }
+    if (userId == null) return [];
 
-  /// Listar todos os pacotes de um cliente
-  Future<List<Package>> listPackages(String clientId) async {
-    final collection = _packagesCollection(clientId);
-    if (collection == null) return [];
-
-    final snapshot = await collection
-        .orderBy('createdAt', descending: true)
-        .get();
-
-    return snapshot.docs
-        .map((doc) => Package.fromMap(doc.id, doc.data()))
+    final maps = await _db.getAllPackages(userId);
+    return maps
+        .map((map) => Package.fromMap(map['id'] as String, map))
         .toList();
   }
 
-  /// Stream de pacotes de um cliente
-  Stream<List<Package>> getPackagesStream(String clientId) {
-    final collection = _packagesCollection(clientId);
-    if (collection == null) return Stream.value([]);
-
-    return collection
-        .orderBy('createdAt', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Package.fromMap(doc.id, doc.data()))
-            .toList());
+  // Listar todos os pacotes de um cliente (compatibilidade)
+  Future<List<Package>> listPackages(String clientId) async {
+    return getClientPackages(clientId);
   }
 
-  /// Buscar pacote ativo de um cliente (mais recente com remaining > 0)
+  // Stream de pacotes de um cliente
+  Stream<List<Package>> getPackagesStream(String clientId) async* {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) {
+      yield [];
+      return;
+    }
+
+    // Emitir dados iniciais
+    yield await getClientPackages(clientId);
+
+    // Atualizar periodicamente
+    await for (final _ in Stream.periodic(Duration(seconds: 2))) {
+      yield await getClientPackages(clientId);
+    }
+  }
+
+  // Buscar pacotes de um cliente
+  Future<List<Package>> getClientPackages(String clientId) async {
+    final packages = await getPackages();
+    return packages.where((p) => p.clientId == clientId).toList();
+  }
+
+  // Buscar pacote ativo de um cliente
   Future<Package?> getActivePackage(String clientId) async {
-    final collection = _packagesCollection(clientId);
-    if (collection == null) return null;
-
-    final snapshot = await collection
-        .where('status', isEqualTo: 'active')
-        .where('remainingSessions', isGreaterThan: 0)
-        .orderBy('remainingSessions')
-        .orderBy('createdAt', descending: true)
-        .limit(1)
-        .get();
-
-    if (snapshot.docs.isEmpty) return null;
-    return Package.fromMap(snapshot.docs.first.id, snapshot.docs.first.data());
+    final packages = await getClientPackages(clientId);
+    try {
+      return packages.firstWhere((p) => p.isActive);
+    } catch (e) {
+      return null;
+    }
   }
 
-  /// Buscar pacote por ID
+  // Buscar pacote por ID (compatibilidade com código antigo)
   Future<Package?> getPackageById(String clientId, String packageId) async {
-    final collection = _packagesCollection(clientId);
-    if (collection == null) return null;
-
-    final doc = await collection.doc(packageId).get();
-    if (!doc.exists) return null;
-    return Package.fromMap(doc.id, doc.data()!);
+    final map = await _db.getPackageById(packageId);
+    if (map == null) return null;
+    return Package.fromMap(map['id'] as String, map);
   }
 
-  /// Criar novo pacote
+  // Criar pacote
   Future<String> createPackage({
     required String clientId,
     required int totalSessions,
     required double price,
     DateTime? expirationDate,
   }) async {
-    final collection = _packagesCollection(clientId);
-    if (collection == null) throw Exception('Usuário não autenticado.');
-
-    final package = Package(
-      id: '',
-      clientId: clientId,
-      totalSessions: totalSessions,
-      remainingSessions: totalSessions,
-      price: price,
-      createdAt: DateTime.now(),
-      expirationDate: expirationDate,
-      status: 'active',
-    );
-
-    final docRef = await collection.add(package.toMap());
-    return docRef.id;
-  }
-
-  /// Decrementar sessão do pacote
-  Future<Package?> decrementPackage(String packageId) async {
-    // Precisamos encontrar o pacote primeiro para saber o clientId
-    // Como packageId inclui o path, vamos buscar diretamente
     final userId = _auth.currentUser?.uid;
-    if (userId == null) return null;
+    if (userId == null) throw Exception('Usuário não autenticado.');
 
-    // Buscar o pacote em todos os clientes
-    final clientsSnapshot = await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('clients')
-        .get();
-
-    for (final clientDoc in clientsSnapshot.docs) {
-      final packageDoc = await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('clients')
-          .doc(clientDoc.id)
-          .collection('packages')
-          .doc(packageId)
-          .get();
-
-      if (packageDoc.exists) {
-        final package = Package.fromMap(packageDoc.id, packageDoc.data()!);
-        
-        if (package.remainingSessions <= 0) {
-          throw Exception('Pacote sem sessões restantes.');
-        }
-
-        final newRemaining = package.remainingSessions - 1;
-        final newStatus = newRemaining == 0 ? 'completed' : 'active';
-
-        await packageDoc.reference.update({
-          'remainingSessions': newRemaining,
-          'status': newStatus,
-        });
-
-        return package.copyWith(
-          remainingSessions: newRemaining,
-          status: newStatus,
-        );
-      }
+    // Verificar se já existe pacote ativo para este cliente
+    final activePackage = await getActivePackage(clientId);
+    if (activePackage != null) {
+      throw Exception(
+          'Cliente já possui um pacote ativo. Finalize ou expire o pacote atual antes de criar um novo.');
     }
 
-    return null;
+    // Gerar ID único
+    final id = _uuid.v4();
+
+    final now = DateTime.now();
+    final packageData = {
+      'id': id,
+      'userId': userId,
+      'clientId': clientId,
+      'totalSessions': totalSessions,
+      'remainingSessions': totalSessions,
+      'price': price,
+      'createdAt': now.toIso8601String(),
+      'expirationDate': expirationDate?.toIso8601String(),
+      'status': 'active',
+      'synced': _sync.isOnline ? 1 : 0,
+      'lastModified': now.toIso8601String(),
+      'deleted': 0,
+    };
+
+    // Salvar localmente
+    await _db.insertPackage(packageData);
+
+    // Se offline, adicionar à fila de sincronização
+    if (!_sync.isOnline) {
+      await _db.addToSyncQueue(
+        operation: 'create',
+        tableName: 'packages',
+        recordId: id,
+        data: jsonEncode(packageData),
+      );
+    } else {
+      // Se online, sincronizar imediatamente
+      _sync.syncAll();
+    }
+
+    return id;
   }
 
-  /// Decrementar pacote por clientId e packageId (mais eficiente)
+  // Decrementar pacote (compatibilidade com código antigo)
+  Future<Package?> decrementPackage(String packageId) async {
+    return await useSession(packageId);
+  }
+
+  // Decrementar pacote por clientId e packageId (compatibilidade)
   Future<Package?> decrementPackageByClient(String clientId, String packageId) async {
-    final collection = _packagesCollection(clientId);
-    if (collection == null) return null;
+    return await useSession(packageId);
+  }
 
-    final doc = await collection.doc(packageId).get();
-    if (!doc.exists) return null;
+  // Usar uma sessão do pacote
+  Future<Package?> useSession(String packageId) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) throw Exception('Usuário não autenticado.');
 
-    final package = Package.fromMap(doc.id, doc.data()!);
+    // Buscar pacote existente
+    final existing = await _db.getPackageById(packageId);
+    if (existing == null) return null;
 
-    if (package.remainingSessions <= 0) {
+    final pkg = Package.fromMap(existing['id'] as String, existing);
+
+    if (pkg.remainingSessions <= 0) {
       throw Exception('Pacote sem sessões restantes.');
     }
 
-    final newRemaining = package.remainingSessions - 1;
-    final newStatus = newRemaining == 0 ? 'completed' : 'active';
+    if (pkg.isExpired) {
+      throw Exception('Pacote expirado.');
+    }
 
-    await collection.doc(packageId).update({
+    final newRemaining = pkg.remainingSessions - 1;
+    final newStatus = newRemaining == 0 ? 'completed' : pkg.status;
+
+    final updates = <String, dynamic>{
       'remainingSessions': newRemaining,
       'status': newStatus,
-    });
+      'lastModified': DateTime.now().toIso8601String(),
+      'synced': _sync.isOnline ? 1 : 0,
+    };
 
-    return package.copyWith(
+    // Atualizar localmente
+    await _db.updatePackage(packageId, updates);
+
+    // Se offline, adicionar à fila de sincronização
+    if (!_sync.isOnline) {
+      final fullData = Map<String, dynamic>.from(existing);
+      fullData.addAll(updates);
+
+      await _db.addToSyncQueue(
+        operation: 'update',
+        tableName: 'packages',
+        recordId: packageId,
+        data: jsonEncode(fullData),
+      );
+    } else {
+      // Se online, sincronizar imediatamente
+      _sync.syncAll();
+    }
+
+    return pkg.copyWith(
       remainingSessions: newRemaining,
       status: newStatus,
     );
   }
 
-  /// Verificar se cliente tem pacote ativo
+  // Atualizar pacote
+  Future<void> updatePackage(
+    String id, {
+    int? totalSessions,
+    int? remainingSessions,
+    double? price,
+    DateTime? expirationDate,
+    String? status,
+  }) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) throw Exception('Usuário não autenticado.');
+
+    // Buscar pacote existente
+    final existing = await _db.getPackageById(id);
+    if (existing == null) throw Exception('Pacote não encontrado.');
+
+    final updates = <String, dynamic>{
+      'lastModified': DateTime.now().toIso8601String(),
+      'synced': _sync.isOnline ? 1 : 0,
+    };
+
+    if (totalSessions != null) updates['totalSessions'] = totalSessions;
+    if (remainingSessions != null) {
+      updates['remainingSessions'] = remainingSessions;
+    }
+    if (price != null) updates['price'] = price;
+    if (expirationDate != null) {
+      updates['expirationDate'] = expirationDate.toIso8601String();
+    }
+    if (status != null) updates['status'] = status;
+
+    // Atualizar localmente
+    await _db.updatePackage(id, updates);
+
+    // Se offline, adicionar à fila de sincronização
+    if (!_sync.isOnline) {
+      final fullData = Map<String, dynamic>.from(existing);
+      fullData.addAll(updates);
+
+      await _db.addToSyncQueue(
+        operation: 'update',
+        tableName: 'packages',
+        recordId: id,
+        data: jsonEncode(fullData),
+      );
+    } else {
+      // Se online, sincronizar imediatamente
+      _sync.syncAll();
+    }
+  }
+
+  // Marcar pacote como expirado
+  Future<void> expirePackage(String id) async {
+    await updatePackage(id, status: 'expired');
+  }
+
+  // Marcar pacote como completo (todas as sessões usadas)
+  Future<void> completePackage(String id) async {
+    await updatePackage(id, status: 'completed', remainingSessions: 0);
+  }
+
+  // Verificar se cliente tem pacote ativo
   Future<bool> hasActivePackage(String clientId) async {
     final package = await getActivePackage(clientId);
     return package != null;
   }
 
-  /// Deletar pacote
+  // Deletar pacote (compatibilidade com código antigo)
   Future<void> deletePackage(String clientId, String packageId) async {
-    final collection = _packagesCollection(clientId);
-    if (collection == null) throw Exception('Usuário não autenticado.');
+    await deletePackageById(packageId);
+  }
 
-    await collection.doc(packageId).delete();
+  // Deletar pacote permanentemente
+  Future<void> deletePackageById(String id) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) throw Exception('Usuário não autenticado.');
+
+    // Marcar como deletado (soft delete)
+    await _db.markPackageDeleted(id);
+
+    // Se offline, adicionar à fila de sincronização
+    if (!_sync.isOnline) {
+      await _db.addToSyncQueue(
+        operation: 'delete',
+        tableName: 'packages',
+        recordId: id,
+        data: jsonEncode({'id': id}),
+      );
+    } else {
+      // Se online, sincronizar imediatamente
+      _sync.syncAll();
+    }
+  }
+
+  // Buscar pacotes que estão acabando (2 ou menos sessões)
+  Future<List<Package>> getLowPackages() async {
+    final packages = await getPackages();
+    return packages.where((p) => p.isLow && p.isActive).toList();
+  }
+
+  // Buscar pacotes expirados
+  Future<List<Package>> getExpiredPackages() async {
+    final packages = await getPackages();
+    return packages.where((p) => p.isExpired).toList();
+  }
+
+  // Verificar e atualizar status de pacotes expirados
+  Future<void> checkAndUpdateExpiredPackages() async {
+    final packages = await getPackages();
+    for (final pkg in packages) {
+      if (pkg.status == 'active' && pkg.isExpired) {
+        await expirePackage(pkg.id);
+      }
+    }
   }
 }

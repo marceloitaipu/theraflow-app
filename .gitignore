@@ -5,19 +5,56 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 *.iml
+.fvm/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+*.code-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+.DS_Store?
 
 # Dependencies
 node_modules/
 
 # Logs
 *.log
+
+# Firebase (DESCOMENTAR SE QUISER OCULTAR CONFIGURAÇÕES)
+# Recomendado para múltiplos ambientes ou segurança extra
+# lib/firebase_options.dart
+# android/app/google-services.json
+# ios/Runner/GoogleService-Info.plist
+# ios/firebase_app_id_file.json
+
+# Secrets (NUNCA COMMITAR)
+# Descomentar estas linhas para proteger secrets
+# .env
+# .env.local
+# .env.*.local
+# secrets.yaml
+
+# Coverage
+coverage/
+*.coverage
+*.lcov
+
+# Build artifacts
+*.apk
+*.aab
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Keys e certificados (CRÍTICO - NUNCA COMMITAR)
+*.jks
+*.keystore
+*.p12
+*.key
+*.pem
+*.mobileprovision

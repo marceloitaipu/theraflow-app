@@ -1,8 +1,11 @@
 /// Arquivo de exportação de serviços
-/// Usa serviços mock (sem Firebase) para demonstração
+/// AGORA USANDO FIREBASE REAL!
 /// 
-/// Para usar Firebase real, altere os imports para os serviços originais
+/// Os serviços estão configurados para usar Firebase
 
-export 'mock_services.dart';
-export 'mock_auth_service.dart';
-export 'mock_data_service.dart';
+export 'auth_service.dart';
+export 'client_service.dart';
+export 'session_service.dart';
+export 'finance_service.dart';
+export 'profile_service.dart';
+export 'package_service.dart';

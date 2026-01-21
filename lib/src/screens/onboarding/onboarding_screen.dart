@@ -62,15 +62,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     setState(() => _saving = true);
     try {
-      await AppProfileService.instance.saveProfile(
-        name: _name.text.trim(),
-        phone: _phone.text.trim(),
-        city: _city.text.trim(),
-        defaultDurationMinutes: int.tryParse(_defaultDuration.text.trim()) ?? 60,
-        defaultPrice: double.tryParse(_defaultPrice.text.trim().replaceAll(',', '.')) ?? 150,
-        firstClientName: _firstClientName.text.trim().isNotEmpty ? _firstClientName.text.trim() : null,
-        firstClientPhone: _firstClientPhone.text.trim(),
-      );
+      // Salvar dados do perfil do terapeuta
+      await AppAuthService.instance.updateUserData({
+        'name': _name.text.trim(),
+        'phone': _phone.text.trim(),
+        'city': _city.text.trim(),
+        'defaultDurationMinutes': int.tryParse(_defaultDuration.text.trim()) ?? 60,
+        'defaultPrice': double.tryParse(_defaultPrice.text.trim().replaceAll(',', '.')) ?? 150,
+        'onboardingCompleted': true,
+      });
+      
+      // Se forneceu dados do primeiro cliente, criá-lo
+      if (_firstClientName.text.trim().isNotEmpty && _firstClientPhone.text.trim().isNotEmpty) {
+        await AppClientService.instance.createClient(
+          name: _firstClientName.text.trim(),
+          phone: _firstClientPhone.text.trim(),
+        );
+      }
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bem-vindo ao TheraFlow!')),
