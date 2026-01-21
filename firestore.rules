@@ -12,44 +12,112 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
     
+    // Função para verificar se campos protegidos não foram alterados
+    function protectedFieldsUnchanged() {
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['subscriptionStatus', 'currentPeriodEnd', 'planId']);
+    }
+    
     // Regras para coleção de usuários
     match /users/{userId} {
-      // Usuário pode ler e escrever apenas seus próprios dados
-      allow read, write: if isSignedIn() && isOwner(userId);
+      // Leitura: usuário pode ler apenas seus próprios dados
+      allow read: if isSignedIn() && isOwner(userId);
+      
+      // Criação: permitir criação do próprio documento de usuário
+      allow create: if isSignedIn() && isOwner(userId);
+      
+      // Atualização: permitir apenas se campos protegidos não mudarem
+      // (subscriptionStatus, currentPeriodEnd, planId só podem ser alterados por Cloud Functions)
+      allow update: if isSignedIn() 
+                    && isOwner(userId)
+                    && protectedFieldsUnchanged();
+      
+      // Delete: não permitir deleção do próprio documento
+      allow delete: if false;
       
       // Regras para subcoleção de clientes
       match /clients/{clientId} {
-        // Usuário pode ler e escrever apenas seus próprios clientes
-        allow read, write: if isSignedIn() && isOwner(userId);
+        // Leitura: usuário pode ler apenas seus próprios clientes
+        allow read: if isSignedIn() && isOwner(userId);
         
-        // Validação: verificar limite de clientes baseado no plano
+        // Criação: permitir criar cliente (limite validado por Cloud Function)
         allow create: if isSignedIn() 
                       && isOwner(userId)
-                      && validateClientLimit(userId);
+                      && request.resource.data.userId == userId;
+        
+        // Atualização: permitir atualizar apenas seus próprios clientes
+        allow update: if isSignedIn() 
+                      && isOwner(userId)
+                      && resource.data.userId == userId;
+        
+        // Deleção: permitir deletar apenas seus próprios clientes
+        allow delete: if isSignedIn() 
+                      && isOwner(userId)
+                      && resource.data.userId == userId;
       }
       
       // Regras para subcoleção de sessões
       match /sessions/{sessionId} {
-        // Usuário pode ler e escrever apenas suas próprias sessões
-        allow read, write: if isSignedIn() && isOwner(userId);
+        // Leitura: usuário pode ler apenas suas próprias sessões
+        allow read: if isSignedIn() && isOwner(userId);
+        
+        // Criação: permitir criar sessão
+        allow create: if isSignedIn() 
+                      && isOwner(userId)
+                      && request.resource.data.userId == userId;
+        
+        // Atualização: permitir atualizar apenas suas próprias sessões
+        allow update: if isSignedIn() 
+                      && isOwner(userId)
+                      && resource.data.userId == userId;
+        
+        // Deleção: permitir deletar apenas suas próprias sessões
+        allow delete: if isSignedIn() 
+                      && isOwner(userId)
+                      && resource.data.userId == userId;
       }
       
       // Regras para subcoleção de pagamentos
       match /payments/{paymentId} {
-        // Usuário pode ler e escrever apenas seus próprios pagamentos
-        allow read, write: if isSignedIn() && isOwner(userId);
+        // Leitura: usuário pode ler apenas seus próprios pagamentos
+        allow read: if isSignedIn() && isOwner(userId);
+        
+        // Criação: permitir criar pagamento
+        allow create: if isSignedIn() 
+                      && isOwner(userId)
+                      && request.resource.data.userId == userId;
+        
+        // Atualização: permitir atualizar apenas seus próprios pagamentos
+        allow update: if isSignedIn() 
+                      && isOwner(userId)
+                      && resource.data.userId == userId;
+        
+        // Deleção: permitir deletar apenas seus próprios pagamentos
+        allow delete: if isSignedIn() 
+                      && isOwner(userId)
+                      && resource.data.userId == userId;
       }
-    }
-    
-    // Função para validar limite de clientes por plano
-    function validateClientLimit(userId) {
-      let userDoc = get(/databases/$(database)/documents/users/$(userId));
-      let plan = userDoc.data.plan;
-      let clientsCount = get(/databases/$(database)/documents/users/$(userId)/clients).size();
       
-      return (plan == 'free' && clientsCount < 5) ||
-             (plan == 'professional' && clientsCount < 50) ||
-             (plan == 'premium');
+      // Regras para subcoleção de pacotes
+      match /packages/{packageId} {
+        // Leitura: usuário pode ler apenas seus próprios pacotes
+        allow read: if isSignedIn() && isOwner(userId);
+        
+        // Criação: permitir criar pacote
+        allow create: if isSignedIn() 
+                      && isOwner(userId)
+                      && request.resource.data.userId == userId;
+        
+        // Atualização: permitir atualizar apenas seus próprios pacotes
+        allow update: if isSignedIn() 
+                      && isOwner(userId)
+                      && resource.data.userId == userId;
+        
+        // Deleção: permitir deletar apenas seus próprios pacotes
+        allow delete: if isSignedIn() 
+                      && isOwner(userId)
+                      && resource.data.userId == userId;
+      }
     }
   }
 }

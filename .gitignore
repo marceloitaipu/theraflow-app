@@ -25,19 +25,24 @@ node_modules/
 # Logs
 *.log
 
-# Firebase (DESCOMENTAR SE QUISER OCULTAR CONFIGURAÇÕES)
-# Recomendado para múltiplos ambientes ou segurança extra
+# Firebase Configurations
+# Descomentar para múltiplos ambientes ou segurança extra
 # lib/firebase_options.dart
 # android/app/google-services.json
 # ios/Runner/GoogleService-Info.plist
 # ios/firebase_app_id_file.json
 
+# Cloud Functions
+functions/node_modules/
+functions/.runtimeconfig.json
+functions/package-lock.json
+
 # Secrets (NUNCA COMMITAR)
-# Descomentar estas linhas para proteger secrets
-# .env
-# .env.local
-# .env.*.local
-# secrets.yaml
+.env
+.env.local
+.env.*.local
+secrets.yaml
+*.secret
 
 # Coverage
 coverage/
@@ -58,3 +63,12 @@ coverage/
 *.key
 *.pem
 *.mobileprovision
+
+# Emulators
+.firebase/
+
+# Temporary files
+*.tmp
+*.temp
+.~*
+

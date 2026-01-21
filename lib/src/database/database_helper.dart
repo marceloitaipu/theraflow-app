@@ -19,9 +19,40 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,
     );
+  }
+
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      // Adicionar campos updatedAt e deletedAt
+      await db.execute('ALTER TABLE clients ADD COLUMN updatedAt TEXT');
+      await db.execute('ALTER TABLE clients ADD COLUMN deletedAt TEXT');
+      await db.execute('ALTER TABLE sessions ADD COLUMN updatedAt TEXT');
+      await db.execute('ALTER TABLE sessions ADD COLUMN deletedAt TEXT');
+      await db.execute('ALTER TABLE payments ADD COLUMN updatedAt TEXT');
+      await db.execute('ALTER TABLE payments ADD COLUMN deletedAt TEXT');
+      await db.execute('ALTER TABLE packages ADD COLUMN updatedAt TEXT');
+      await db.execute('ALTER TABLE packages ADD COLUMN deletedAt TEXT');
+
+      // Criar tabela de metadata para sincronização
+      await db.execute('''
+        CREATE TABLE sync_metadata (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          key TEXT UNIQUE NOT NULL,
+          value TEXT NOT NULL,
+          updatedAt TEXT NOT NULL
+        )
+      ''');
+      
+      // Criar índices para os novos campos
+      await db.execute('CREATE INDEX idx_clients_updatedAt ON clients(updatedAt)');
+      await db.execute('CREATE INDEX idx_sessions_updatedAt ON sessions(updatedAt)');
+      await db.execute('CREATE INDEX idx_payments_updatedAt ON payments(updatedAt)');
+      await db.execute('CREATE INDEX idx_packages_updatedAt ON packages(updatedAt)');
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -41,6 +72,8 @@ class DatabaseHelper {
         phone $textType,
         notes TEXT DEFAULT '',
         createdAt $textType,
+        updatedAt $textType,
+        deletedAt $textNullable,
         status TEXT DEFAULT 'active',
         synced $boolType,
         lastModified $textType,
@@ -61,6 +94,8 @@ class DatabaseHelper {
         notes TEXT DEFAULT '',
         paymentStatus $textType,
         createdAt $textType,
+        updatedAt $textType,
+        deletedAt $textNullable,
         packageId $textNullable,
         synced $boolType,
         lastModified $textType,
@@ -79,6 +114,8 @@ class DatabaseHelper {
         value $realType,
         paidAt $textNullable,
         createdAt $textType,
+        updatedAt $textType,
+        deletedAt $textNullable,
         synced $boolType,
         lastModified $textType,
         deleted $boolType
@@ -97,6 +134,8 @@ class DatabaseHelper {
         value $realType,
         expiresAt $textNullable,
         createdAt $textType,
+        updatedAt $textType,
+        deletedAt $textNullable,
         packageStatus TEXT DEFAULT 'active',
         synced $boolType,
         lastModified $textType,
@@ -117,12 +156,26 @@ class DatabaseHelper {
       )
     ''');
 
+    // Tabela de Metadata para Sincronização Incremental
+    await db.execute('''
+      CREATE TABLE sync_metadata (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT UNIQUE NOT NULL,
+        value TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      )
+    ''');
+
     // Índices para melhorar performance
     await db.execute('CREATE INDEX idx_clients_userId ON clients(userId)');
+    await db.execute('CREATE INDEX idx_clients_updatedAt ON clients(updatedAt)');
     await db.execute('CREATE INDEX idx_sessions_userId ON sessions(userId)');
     await db.execute('CREATE INDEX idx_sessions_clientId ON sessions(clientId)');
+    await db.execute('CREATE INDEX idx_sessions_updatedAt ON sessions(updatedAt)');
     await db.execute('CREATE INDEX idx_payments_userId ON payments(userId)');
+    await db.execute('CREATE INDEX idx_payments_updatedAt ON payments(updatedAt)');
     await db.execute('CREATE INDEX idx_packages_userId ON packages(userId)');
+    await db.execute('CREATE INDEX idx_packages_updatedAt ON packages(updatedAt)');
     await db.execute('CREATE INDEX idx_sync_queue_createdAt ON sync_queue(createdAt)');
   }
 
@@ -424,6 +477,67 @@ class DatabaseHelper {
     );
   }
 
+  // ===== SYNC METADATA =====
+
+  /// Salva ou atualiza o timestamp da última sincronização para uma entidade
+  Future<void> setLastSyncTimestamp(String entity, DateTime timestamp) async {
+    final db = await database;
+    final key = 'lastSync_$entity';
+    await db.insert(
+      'sync_metadata',
+      {
+        'key': key,
+        'value': timestamp.toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Obtém o timestamp da última sincronização para uma entidade
+  Future<DateTime?> getLastSyncTimestamp(String entity) async {
+    final db = await database;
+    final key = 'lastSync_$entity';
+    final results = await db.query(
+      'sync_metadata',
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
+    
+    if (results.isEmpty) return null;
+    final value = results.first['value'] as String;
+    return DateTime.parse(value);
+  }
+
+  /// Salva metadado genérico
+  Future<void> setSyncMetadata(String key, String value) async {
+    final db = await database;
+    await db.insert(
+      'sync_metadata',
+      {
+        'key': key,
+        'value': value,
+        'updatedAt': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Obtém metadado genérico
+  Future<String?> getSyncMetadata(String key) async {
+    final db = await database;
+    final results = await db.query(
+      'sync_metadata',
+      where: 'key = ?',
+      whereArgs: [key],
+      limit: 1,
+    );
+    
+    if (results.isEmpty) return null;
+    return results.first['value'] as String;
+  }
+
   // ===== LIMPAR DADOS =====
 
   Future<void> clearAllData() async {
@@ -433,6 +547,7 @@ class DatabaseHelper {
     await db.delete('payments');
     await db.delete('packages');
     await db.delete('sync_queue');
+    await db.delete('sync_metadata');
   }
 
   Future<void> close() async {

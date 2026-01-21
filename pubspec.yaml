@@ -41,6 +41,7 @@ dependencies:
   firebase_core: ^3.0.0
   firebase_auth: ^5.0.0
   cloud_firestore: ^5.0.0
+  cloud_functions: ^5.0.0
   
   # Local Database (SQLite)
   sqflite: ^2.3.0
@@ -50,6 +51,11 @@ dependencies:
   
   # Connectivity
   connectivity_plus: ^6.1.0
+  
+  # In-App Purchase (Adicionar quando implementar)
+  # in_app_purchase: ^3.1.11
+  # in_app_purchase_android: ^0.3.0
+  # in_app_purchase_storekit: ^0.3.6
   
   # Utils
   intl: ^0.20.2

@@ -5,6 +5,8 @@ class Client {
   final String phone;
   final String notes;
   final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
   final String status; // active, inactive
 
   Client({
@@ -14,6 +16,8 @@ class Client {
     required this.phone,
     required this.notes,
     required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
     this.status = 'active',
   });
 
@@ -29,6 +33,8 @@ class Client {
         'phone': phone,
         'notes': notes,
         'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+        'deletedAt': deletedAt?.toIso8601String(),
         'status': status,
       };
 
@@ -41,6 +47,12 @@ class Client {
         createdAt: map['createdAt'] != null
             ? DateTime.parse(map['createdAt'] as String)
             : DateTime.now(),
+        updatedAt: map['updatedAt'] != null
+            ? DateTime.parse(map['updatedAt'] as String)
+            : DateTime.now(),
+        deletedAt: map['deletedAt'] != null
+            ? DateTime.parse(map['deletedAt'] as String)
+            : null,
         status: (map['status'] ?? 'active') as String,
       );
 
@@ -49,6 +61,8 @@ class Client {
     String? phone,
     String? notes,
     String? status,
+    DateTime? updatedAt,
+    DateTime? deletedAt,
   }) {
     return Client(
       id: id,
@@ -57,6 +71,8 @@ class Client {
       phone: phone ?? this.phone,
       notes: notes ?? this.notes,
       createdAt: createdAt,
+      updatedAt: updatedAt ?? DateTime.now(),
+      deletedAt: deletedAt ?? this.deletedAt,
       status: status ?? this.status,
     );
   }
