@@ -191,6 +191,15 @@ class DatabaseHelper {
     );
   }
 
+  Future<int> countClients(String userId) async {
+    final db = await database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) as count FROM clients WHERE userId = ? AND deleted = 0',
+      [userId],
+    );
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
   Future<Map<String, dynamic>?> getClientById(String id) async {
     final db = await database;
     final results = await db.query(

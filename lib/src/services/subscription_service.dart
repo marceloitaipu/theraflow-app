@@ -1,6 +1,7 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'auth_service.dart';
 import 'incremental_sync_service.dart';
+import '../database/database_helper.dart';
 
 /// Status da assinatura do usuário
 enum SubscriptionStatus {
@@ -161,25 +162,33 @@ class SubscriptionService {
       // Recarregar status para garantir dados atualizados
       await loadSubscriptionStatus();
 
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) return false;
+
       // Premium: sem limites
       if (isPremiumPlan && hasActiveSubscription) {
         return true;
       }
 
       // Buscar contagem de clientes do banco local
-      final userId = _auth.currentUser?.uid;
-      if (userId == null) return false;
+      final db = DatabaseHelper.instance;
+      final clientCount = await db.countClients(userId);
+      final limit = getClientLimit();
 
-      // TODO: Implementar contagem de clientes no DatabaseHelper
-      // Por enquanto, permitir se não for free ou se tiver assinatura ativa
+      // Se limite é -1 (ilimitado), sempre permitir
+      if (limit == -1) return true;
+
+      // Verificar se já atingiu o limite
+      final canCreate = clientCount < limit;
       
-      if (isFreePlan && !hasActiveSubscription) {
-        // Free plan: verificar limite (será validado no servidor)
-        AppLogger.warning('Plano free - limite será validado no servidor', 'SubscriptionService');
-        return true; // Deixar servidor validar
+      if (!canCreate) {
+        AppLogger.warning(
+          'Limite de clientes atingido: $clientCount/$limit',
+          'SubscriptionService'
+        );
       }
 
-      return true;
+      return canCreate;
 
     } catch (e, stack) {
       AppLogger.error('Erro ao verificar permissão para criar cliente', e, stack, 'SubscriptionService');
