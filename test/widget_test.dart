@@ -7,13 +7,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
 import 'package:theraflow/main.dart';
+import 'package:theraflow/src/providers/theme_provider.dart';
 
 void main() {
   testWidgets('App should start without errors', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const TheraFlowApp());
+    await tester.pumpWidget(
+      ChangeNotifierProvider<ThemeProvider>(
+        create: (_) => ThemeProvider(),
+        child: const TheraFlowApp(),
+      ),
+    );
 
     // Verify that the app starts without throwing errors
     expect(find.byType(MaterialApp), findsOneWidget);

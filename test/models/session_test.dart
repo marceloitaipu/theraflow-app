@@ -18,6 +18,7 @@ void main() {
           notes: '',
           packageId: null,
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         expect(session.packageId, isNull);
@@ -36,6 +37,7 @@ void main() {
           notes: '',
           packageId: 'package123',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         expect(session.packageId, 'package123');
@@ -56,6 +58,7 @@ void main() {
           notes: 'Notas',
           packageId: 'pkg1',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         final map = session.toMap();
@@ -82,7 +85,7 @@ void main() {
         expect(session.packageId, 'pkg1');
       });
 
-      test('packageId é nulo quando não está no map', () {
+      test('packageId Ã© nulo quando nÃ£o estÃ¡ no map', () {
         final map = {
           'userId': 'user1',
           'clientId': 'client1',
@@ -115,6 +118,7 @@ void main() {
           notes: '',
           packageId: null,
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         final updated = original.copyWith(packageId: 'newPackage');
@@ -123,7 +127,7 @@ void main() {
         expect(updated.clientId, original.clientId);
       });
 
-      test('mantém packageId quando não especificado', () {
+      test('mantÃ©m packageId quando nÃ£o especificado', () {
         final original = Session(
           id: '1',
           userId: 'user1',
@@ -136,6 +140,7 @@ void main() {
           notes: '',
           packageId: 'existingPkg',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         final updated = original.copyWith(status: 'realizada');
@@ -158,6 +163,7 @@ void main() {
           paymentStatus: 'pendente',
           notes: '',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         expect(session.status, 'confirmado');
@@ -175,6 +181,7 @@ void main() {
           paymentStatus: 'pago',
           notes: '',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         expect(session.status, 'realizada');
@@ -192,6 +199,7 @@ void main() {
           paymentStatus: 'pendente',
           notes: '',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         expect(session.status, 'faltou');
@@ -209,6 +217,7 @@ void main() {
           paymentStatus: 'pendente',
           notes: '',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         expect(session.status, 'remarcado');
@@ -228,6 +237,7 @@ void main() {
           paymentStatus: 'pago',
           notes: '',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         expect(session.paymentStatus, 'pago');
@@ -245,6 +255,7 @@ void main() {
           paymentStatus: 'pendente',
           notes: '',
           createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
         );
 
         expect(session.paymentStatus, 'pendente');
