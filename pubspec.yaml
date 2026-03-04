@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.8
   
   # Navigation
@@ -39,10 +41,29 @@ dependencies:
   firebase_core: ^3.0.0
   firebase_auth: ^5.0.0
   cloud_firestore: ^5.0.0
+  cloud_functions: ^5.0.0
+  
+  # Local Database (SQLite)
+  sqflite: ^2.3.0
+  sqflite_common_ffi: ^2.3.0
+  path_provider: ^2.1.0
+  path: ^1.9.0
+  
+  # Preferences
+  shared_preferences: ^2.2.2
+  
+  # Connectivity
+  connectivity_plus: ^6.1.0
+  
+  # In-App Purchase (Adicionar quando implementar)
+  # in_app_purchase: ^3.1.11
+  # in_app_purchase_android: ^0.3.0
+  # in_app_purchase_storekit: ^0.3.6
   
   # Utils
-  intl: ^0.19.0
+  intl: ^0.20.2
   provider: ^6.1.0
+  uuid: ^4.5.1
 
 dev_dependencies:
   flutter_test:

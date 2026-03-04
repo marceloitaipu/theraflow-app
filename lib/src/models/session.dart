@@ -9,6 +9,8 @@ class Session {
   final String notes;
   final String paymentStatus; // pago/pendente
   final DateTime createdAt;
+  final DateTime updatedAt;
+  final DateTime? deletedAt;
   final String? packageId; // ID do pacote vinculado (se houver)
 
   Session({
@@ -22,6 +24,8 @@ class Session {
     required this.notes,
     required this.paymentStatus,
     required this.createdAt,
+    required this.updatedAt,
+    this.deletedAt,
     this.packageId,
   });
 
@@ -35,6 +39,8 @@ class Session {
         'notes': notes,
         'paymentStatus': paymentStatus,
         'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+        'deletedAt': deletedAt?.toIso8601String(),
         'packageId': packageId,
       };
 
@@ -56,6 +62,12 @@ class Session {
       createdAt: map['createdAt'] != null
           ? DateTime.parse(map['createdAt'] as String)
           : DateTime.now(),
+      updatedAt: map['updatedAt'] != null
+          ? DateTime.parse(map['updatedAt'] as String)
+          : DateTime.now(),
+      deletedAt: map['deletedAt'] != null
+          ? DateTime.parse(map['deletedAt'] as String)
+          : null,
       packageId: map['packageId'] as String?,
     );
   }
@@ -68,6 +80,7 @@ class Session {
     String? notes,
     String? paymentStatus,
     String? packageId,
+    DateTime? updatedAt,
   }) {
     return Session(
       id: id,
@@ -80,6 +93,8 @@ class Session {
       notes: notes ?? this.notes,
       paymentStatus: paymentStatus ?? this.paymentStatus,
       createdAt: createdAt,
+      updatedAt: updatedAt ?? DateTime.now(),
+      deletedAt: deletedAt,
       packageId: packageId ?? this.packageId,
     );
   }

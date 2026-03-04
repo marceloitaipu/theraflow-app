@@ -77,6 +77,36 @@ class AuthService {
     }
   }
 
+  // Login com GitHub
+  Future<firebase_auth.User> signInWithGitHub() async {
+    try {
+      final githubProvider = firebase_auth.GithubAuthProvider();
+      final credential = await _auth.signInWithPopup(githubProvider);
+      final user = credential.user;
+      if (user == null) throw Exception('Falha ao autenticar com GitHub');
+
+      // Verificar se é primeiro login e criar documento do usuário
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) {
+        final newUser = models.User(
+          id: user.uid,
+          name: user.displayName ?? 'Usuário GitHub',
+          email: user.email ?? '',
+          plan: 'free',
+          createdAt: DateTime.now(),
+          onboardingCompleted: false,
+        );
+        await _firestore.collection('users').doc(user.uid).set(newUser.toMap());
+      }
+
+      return user;
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      throw Exception(_handleAuthException(e));
+    } catch (e) {
+      throw Exception('Erro ao fazer login com GitHub: $e');
+    }
+  }
+
   // Login com e-mail e senha
   Future<firebase_auth.User> signIn({
     required String email,

@@ -66,6 +66,30 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _loginWithGitHub() async {
+    setState(() => _loading = true);
+    try {
+      await AuthService.instance.signInWithGitHub();
+      
+      // Verificar flag de onboarding
+      final userData = await AuthService.instance.getCurrentUserData();
+      if (!mounted) return;
+      
+      if (userData?.onboardingCompleted == false) {
+        context.go('/onboarding');
+      } else {
+        context.go('/home');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao fazer login com GitHub: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   String _parseError(dynamic e) {
     final errorString = e.toString().toLowerCase();
     if (errorString.contains('user-not-found')) {
@@ -123,6 +147,26 @@ class _LoginScreenState extends State<LoginScreen> {
                 setState(() => _isSignup = !_isSignup);
               },
               child: Text(_isSignup ? 'Já tenho conta' : 'Criar conta'),
+            ),
+            const SizedBox(height: 24),
+            const Row(
+              children: [
+                Expanded(child: Divider()),
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  child: Text('ou'),
+                ),
+                Expanded(child: Divider()),
+              ],
+            ),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: _loading ? null : _loginWithGitHub,
+              icon: const Icon(Icons.code),
+              label: const Text('Continuar com GitHub'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
             ),
             const Spacer(),
             Text(

@@ -1,22 +1,30 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'dart:convert';
+import 'package:uuid/uuid.dart';
 import '../models/session.dart';
 import '../models/payment.dart';
+import '../database/database_helper.dart';
 import 'auth_service.dart';
-import 'session_service.dart';
+import 'incremental_sync_service.dart';
+import 'session_service_v2.dart';
 
 class FinanceService {
   FinanceService._();
   static final instance = FinanceService._();
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
+  final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final SessionService _sessionService = SessionService.instance;
+  final Uuid _uuid = Uuid();
 
-  // Referência da coleção de pagamentos do usuário atual
-  CollectionReference<Map<String, dynamic>>? _paymentsCollection() {
+  // Buscar todos os pagamentos do banco local
+  Future<List<Payment>> getPayments() async {
     final userId = _auth.currentUser?.uid;
-    if (userId == null) return null;
-    return _firestore.collection('users').doc(userId).collection('payments');
+    if (userId == null) return [];
+
+    final maps = await _db.getAllPayments(userId);
+    return maps.map((map) => Payment.fromMap(map['id'] as String, map)).toList();
   }
 
   // Criar pagamento para uma sessão
@@ -26,42 +34,60 @@ class FinanceService {
     required String method,
     String status = 'pago',
   }) async {
-    final collection = _paymentsCollection();
-    if (collection == null) throw Exception('Usuário não autenticado.');
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) throw Exception('Usuário não autenticado.');
 
-    final payment = Payment(
-      id: '',
-      sessionId: sessionId,
-      status: status,
-      method: method,
-      value: value,
-      paidAt: status == 'pago' ? DateTime.now() : null,
-      createdAt: DateTime.now(),
-    );
+    // Gerar ID único
+    final id = _uuid.v4();
 
-    final docRef = await collection.add(payment.toMap());
+    final now = DateTime.now();
+    final paymentData = {
+      'id': id,
+      'userId': userId,
+      'sessionId': sessionId,
+      'status': status,
+      'method': method,
+      'value': value,
+      'paidAt': status == 'pago' ? now.toIso8601String() : null,
+      'createdAt': now.toIso8601String(),
+      'updatedAt': now.toIso8601String(),
+      'deletedAt': null,
+      'synced': 0,
+      'deleted': 0,
+    };
+
+    // Salvar localmente
+    await _db.insertPayment(paymentData);
 
     // Atualizar status de pagamento da sessão
     if (status == 'pago') {
       await _sessionService.markAsPaid(sessionId);
     }
 
-    return docRef.id;
+    // Se offline, adicionar à fila de sincronização
+    if (!_sync.isOnline) {
+      await _db.addToSyncQueue(
+        operation: 'create',
+        tableName: 'payments',
+        recordId: id,
+        data: jsonEncode(paymentData),
+      );
+    } else {
+      // Se online, sincronizar imediatamente
+      _sync.syncAll();
+    }
+
+    return id;
   }
 
   // Buscar pagamento por sessão
   Future<Payment?> getPaymentBySession(String sessionId) async {
-    final collection = _paymentsCollection();
-    if (collection == null) return null;
-
-    final snapshot = await collection
-        .where('sessionId', isEqualTo: sessionId)
-        .limit(1)
-        .get();
-
-    if (snapshot.docs.isEmpty) return null;
-    final doc = snapshot.docs.first;
-    return Payment.fromMap(doc.id, doc.data());
+    final payments = await getPayments();
+    try {
+      return payments.firstWhere((p) => p.sessionId == sessionId);
+    } catch (e) {
+      return null;
+    }
   }
 
   // Relatório financeiro mensal
@@ -118,17 +144,11 @@ class FinanceService {
 
   // Sessões pendentes de pagamento
   Future<List<Session>> getPendingSessions() async {
-    final collection = _sessionService.sessionsCollection();
-    if (collection == null) return [];
-
-    final snapshot = await collection
-        .where('paymentStatus', isEqualTo: 'pendente')
-        .orderBy('dateTime', descending: true)
-        .get();
-
-    return snapshot.docs
-        .map((doc) => Session.fromMap(doc.id, doc.data()))
-        .toList();
+    final sessions = await _sessionService.getSessions();
+    return sessions
+        .where((s) => s.paymentStatus == 'pendente')
+        .toList()
+      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
   }
 
   // Total recebido no período
@@ -175,7 +195,7 @@ class FinanceService {
   /// Comparação mês atual vs mês anterior
   Future<MonthComparison> getMonthOverMonthComparison() async {
     final now = DateTime.now();
-    
+
     // Mês atual
     final currentReport = await getMonthlyReport(
       year: now.year,
@@ -190,13 +210,15 @@ class FinanceService {
     );
 
     final receivedDiff = previousReport.totalReceived > 0
-        ? ((currentReport.totalReceived - previousReport.totalReceived) / 
-           previousReport.totalReceived * 100)
+        ? ((currentReport.totalReceived - previousReport.totalReceived) /
+                previousReport.totalReceived *
+                100)
         : 0.0;
 
     final sessionsDiff = previousReport.totalSessions > 0
-        ? ((currentReport.totalSessions - previousReport.totalSessions) / 
-           previousReport.totalSessions * 100)
+        ? ((currentReport.totalSessions - previousReport.totalSessions) /
+                previousReport.totalSessions *
+                100)
         : 0.0;
 
     return MonthComparison(
@@ -225,7 +247,7 @@ class FinanceService {
         icon: '⚠️',
         type: InsightType.warning,
         message: 'Você tem R\$ ${currentMonth.totalPending.toStringAsFixed(0)} '
-                 'pendentes em $pendingCount sessões.',
+            'pendentes em $pendingCount sessões.',
       ));
     }
 
@@ -235,7 +257,7 @@ class FinanceService {
         icon: '📅',
         type: InsightType.info,
         message: 'Receita esperada nos próximos 7 dias: '
-                 'R\$ ${expectedNext7Days.toStringAsFixed(0)}',
+            'R\$ ${expectedNext7Days.toStringAsFixed(0)}',
       ));
     }
 
@@ -247,24 +269,25 @@ class FinanceService {
         type: isUp ? InsightType.success : InsightType.warning,
         message: isUp
             ? 'Receita ${comparison.receivedPercentChange.toStringAsFixed(0)}% '
-              'maior que o mês anterior!'
+                'maior que o mês anterior!'
             : 'Receita ${comparison.receivedPercentChange.abs().toStringAsFixed(0)}% '
-              'menor que o mês anterior.',
+                'menor que o mês anterior.',
       ));
     }
 
     // Taxa de faltas
-    final totalScheduled = currentMonth.sessionsConfirmed + 
-                           currentMonth.sessionsMissed + 
-                           currentMonth.sessionsRescheduled;
+    final totalScheduled = currentMonth.sessionsConfirmed +
+        currentMonth.sessionsMissed +
+        currentMonth.sessionsRescheduled;
     if (totalScheduled > 0) {
       final noShowRate = currentMonth.sessionsMissed / totalScheduled * 100;
       if (noShowRate > 10) {
         messages.add(InsightMessage(
           icon: '🔔',
           type: InsightType.alert,
-          message: 'Taxa de faltas de ${noShowRate.toStringAsFixed(0)}% este mês. '
-                   'Considere enviar lembretes!',
+          message:
+              'Taxa de faltas de ${noShowRate.toStringAsFixed(0)}% este mês. '
+              'Considere enviar lembretes!',
         ));
       }
     }
@@ -314,8 +337,18 @@ class MonthlyReport {
 
   String get monthName {
     const months = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+      'Janeiro',
+      'Fevereiro',
+      'Março',
+      'Abril',
+      'Maio',
+      'Junho',
+      'Julho',
+      'Agosto',
+      'Setembro',
+      'Outubro',
+      'Novembro',
+      'Dezembro'
     ];
     return months[month - 1];
   }

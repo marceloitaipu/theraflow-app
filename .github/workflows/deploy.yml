@@ -1,9 +1,10 @@
-name: Deploy to GitHub Pages
+name: CI/CD Pipeline
 
 on:
   push:
-    branches:
-      - main
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
 
 permissions:
   contents: read
@@ -11,20 +12,125 @@ permissions:
   id-token: write
 
 jobs:
-  deploy:
+  # Job 1: Testes e análise de código (temporariamente desabilitado)
+  # test:
+  #   name: Run Tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout código
+  #       uses: actions/checkout@v4
+
+  #     - name: Setup Flutter
+  #       uses: subosito/flutter-action@v2
+  #       with:
+  #         flutter-version: '3.27.0'
+  #         channel: 'stable'
+
+  #     - name: Verificar versão Flutter
+  #       run: flutter --version
+
+  #     - name: Instalar dependências
+  #       run: flutter pub get
+
+  #     - name: Analisar código
+  #       run: flutter analyze
+
+  #     - name: Executar testes
+  #       run: flutter test
+
+  # Job 2: Build Web (Development)
+  build-web-dev:
+    name: Build Web (Development)
+    # needs: test
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout código
         uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Build Web (Development)
+        run: flutter build web --release --dart-define=FLAVOR=dev
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build-dev
+          path: build/web/
+
+  # Job 3: Build Web (Production) + Deploy GitHub Pages
+  build-web-prod:
+    name: Build Web (Production)
+    # needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      - name: Build Web (Production)
+        run: flutter build web --release --base-href /theraflow-app/ --dart-define=FLAVOR=prod
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
-      - name: Upload artifact
+      - name: Upload artifact para GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './demo-web'
+          path: 'build/web'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  # Job 4: Build Android (opcional)
+  build-android:
+    name: Build Android APK
+    # needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0'
+          channel: 'stable'
+
+      - name: Instalar dependências
+        run: flutter pub get
+
+      # Nota: google-services.json deve estar commitado ou via secrets
+      - name: Build APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
