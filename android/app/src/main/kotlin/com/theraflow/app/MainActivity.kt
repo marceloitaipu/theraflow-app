@@ -1,4 +1,4 @@
-package com.example.theraflow
+package com.theraflow.app
 
 import io.flutter.embedding.android.FlutterActivity
 
