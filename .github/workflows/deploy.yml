@@ -51,7 +51,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
           channel: 'stable'
 
       - name: Instalar dependências
@@ -79,7 +78,6 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
           channel: 'stable'
 
       - name: Instalar dependências
@@ -119,13 +117,12 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'
           channel: 'stable'
 
       - name: Instalar dependências
         run: flutter pub get
 
-      # Nota: google-services.json deve estar commitado ou via secrets
+      # google-services.json já está commitado no repositório
       - name: Build APK
         run: flutter build apk --release
 
