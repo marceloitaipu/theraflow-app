@@ -1,19 +1,28 @@
-/// Wrapper unificado de serviços
-/// Usa mock services para demonstração sem Firebase
-/// 
-/// Este arquivo fornece acesso unificado a todos os serviços
+/// Wrapper unificado de serviços — Arquitetura Multi-Tenant
+///
+/// Todos os serviços recebem businessId do BusinessService.
+/// Usa mock services para demonstração sem Firebase.
 
 import '../models/client.dart';
 import '../models/session.dart';
+import '../models/appointment.dart';
 import '../models/package.dart';
+import '../models/service_item.dart';
 import '../models/user.dart' as models;
 import 'mock_data_service.dart';
 import 'mock_auth_service.dart';
+import 'business_service.dart';
 
 export '../models/client.dart';
 export '../models/session.dart';
+export '../models/appointment.dart';
 export '../models/package.dart';
+export '../models/service_item.dart';
 export '../models/user.dart';
+export '../models/business.dart';
+export '../models/app_module.dart';
+export '../models/appointment_metadata.dart';
+export '../models/transaction.dart';
 
 // ========== AUTH SERVICE ==========
 
@@ -39,12 +48,23 @@ class AppAuthService {
     required String password,
   }) => _mock.signIn(email: email, password: password);
 
-  Future<void> signOut() => _mock.signOut();
+  Future<void> signOut() async {
+    BusinessService.instance.clear();
+    await _mock.signOut();
+  }
   Future<void> resetPassword({required String email}) => _mock.resetPassword(email: email);
   Future<void> updateUserData(Map<String, dynamic> data) => _mock.updateUserData(data);
 }
 
-// ========== CLIENT SERVICE ==========
+// ========== HELPER: resolve businessId ==========
+
+String _bizId() {
+  final id = BusinessService.instance.currentBusinessId;
+  if (id == null) throw Exception('Business não resolvido. Faça login primeiro.');
+  return id;
+}
+
+// ========== CLIENT SERVICE (business-scoped) ==========
 
 class AppClientService {
   AppClientService._();
@@ -53,15 +73,17 @@ class AppClientService {
   final MockDataService _mock = MockDataService.instance;
 
   Stream<List<Client>> getClientsStream() {
-    return Stream.value(_mock.getClients().map((m) => Client.fromMap(m['id'], m)).toList());
+    return Stream.value(
+      _mock.getBizClients(_bizId()).map((m) => Client.fromMap(m['id'], m)).toList(),
+    );
   }
 
   Future<List<Client>> getClients() async {
-    return _mock.getClients().map((m) => Client.fromMap(m['id'], m)).toList();
+    return _mock.getBizClients(_bizId()).map((m) => Client.fromMap(m['id'], m)).toList();
   }
 
   Future<Client?> getClientById(String id) async {
-    final data = _mock.getClientById(id);
+    final data = _mock.getBizClientById(_bizId(), id);
     if (data == null) return null;
     return Client.fromMap(data['id'], data);
   }
@@ -69,12 +91,16 @@ class AppClientService {
   Future<String> createClient({
     required String name,
     required String phone,
+    String? email,
     String? notes,
+    List<String>? tags,
   }) async {
-    return _mock.addClient({
+    return _mock.addBizClient(_bizId(), {
       'name': name,
       'phone': phone,
+      'email': email ?? '',
       'notes': notes ?? '',
+      'tags': tags ?? [],
       'createdAt': DateTime.now().toIso8601String(),
     });
   }
@@ -82,48 +108,178 @@ class AppClientService {
   Future<void> updateClient(String id, {
     String? name,
     String? phone,
+    String? email,
     String? notes,
     String? status,
+    List<String>? tags,
   }) async {
     final updates = <String, dynamic>{};
     if (name != null) updates['name'] = name;
     if (phone != null) updates['phone'] = phone;
+    if (email != null) updates['email'] = email;
     if (notes != null) updates['notes'] = notes;
     if (status != null) updates['status'] = status;
-    _mock.updateClient(id, updates);
+    if (tags != null) updates['tags'] = tags;
+    _mock.updateBizClient(_bizId(), id, updates);
   }
 
   /// Arquiva cliente (soft delete) - mantém histórico financeiro
   Future<void> archiveClient(String id) async {
-    _mock.archiveClient(id);
+    _mock.archiveBizClient(_bizId(), id);
   }
 
   /// Reativa cliente arquivado
   Future<void> reactivateClient(String id) async {
-    _mock.reactivateClient(id);
+    _mock.reactivateBizClient(_bizId(), id);
   }
 
   /// Deleta cliente permanentemente (não recomendado)
   Future<void> deleteClient(String id) async {
-    _mock.deleteClient(id);
+    _mock.deleteBizClient(_bizId(), id);
   }
 
   /// Retorna apenas clientes ativos
   Future<List<Client>> getActiveClients() async {
-    return _mock.getActiveClients().map((m) => Client.fromMap(m['id'], m)).toList();
+    return _mock.getActiveBizClients(_bizId())
+        .map((m) => Client.fromMap(m['id'], m))
+        .toList();
   }
 
   Future<int> getClientCount() async {
-    return _mock.getClients().length;
+    return _mock.getBizClients(_bizId()).length;
   }
 
   /// Conta apenas clientes ativos
   Future<int> getActiveClientCount() async {
-    return _mock.getActiveClients().length;
+    return _mock.getActiveBizClients(_bizId()).length;
   }
 }
 
-// ========== SESSION SERVICE ==========
+// ========== APPOINTMENT SERVICE (business-scoped) ==========
+
+class AppAppointmentService {
+  AppAppointmentService._();
+  static final instance = AppAppointmentService._();
+
+  final MockDataService _mock = MockDataService.instance;
+
+  Stream<List<Appointment>> getAppointmentsStream() {
+    return Stream.value(
+      _mock.getBizAppointments(_bizId())
+          .map((m) => Appointment.fromMap(m['id'], m))
+          .toList(),
+    );
+  }
+
+  Stream<List<Appointment>> getClientAppointmentsStream(String clientId) {
+    return Stream.value(
+      _mock.getBizAppointmentsByClient(_bizId(), clientId)
+          .map((m) => Appointment.fromMap(m['id'], m))
+          .toList(),
+    );
+  }
+
+  Future<List<Appointment>> getTodayAppointments() async {
+    return _mock.getBizTodayAppointments(_bizId())
+        .map((m) => Appointment.fromMap(m['id'], m))
+        .toList();
+  }
+
+  Future<List<Appointment>> getAppointmentsByPeriod({
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    return _mock.getBizAppointmentsByPeriod(_bizId(), start, end)
+        .map((m) => Appointment.fromMap(m['id'], m))
+        .toList();
+  }
+
+  Future<Appointment?> getAppointmentById(String id) async {
+    final data = _mock.getBizAppointmentById(_bizId(), id);
+    if (data == null) return null;
+    return Appointment.fromMap(data['id'], data);
+  }
+
+  Future<String> createAppointment({
+    required String clientId,
+    required String module,
+    required DateTime startAt,
+    required DateTime endAt,
+    required double price,
+    String? staffUid,
+    String? serviceId,
+    String status = 'confirmado',
+    String paymentStatus = 'pendente',
+    Map<String, dynamic>? metadata,
+    String? packageId,
+  }) async {
+    return _mock.addBizAppointment(_bizId(), {
+      'clientId': clientId,
+      'staffUid': staffUid,
+      'serviceId': serviceId,
+      'module': module,
+      'startAt': startAt.toIso8601String(),
+      'endAt': endAt.toIso8601String(),
+      'status': status,
+      'price': price,
+      'paymentStatus': paymentStatus,
+      'metadata': metadata ?? {},
+      'packageId': packageId,
+      'createdAt': DateTime.now().toIso8601String(),
+    });
+  }
+
+  Future<void> updateAppointment(String id, {
+    DateTime? startAt,
+    DateTime? endAt,
+    String? module,
+    String? status,
+    double? price,
+    String? paymentStatus,
+    Map<String, dynamic>? metadata,
+    String? packageId,
+  }) async {
+    final updates = <String, dynamic>{};
+    if (startAt != null) updates['startAt'] = startAt.toIso8601String();
+    if (endAt != null) updates['endAt'] = endAt.toIso8601String();
+    if (module != null) updates['module'] = module;
+    if (status != null) updates['status'] = status;
+    if (price != null) updates['price'] = price;
+    if (paymentStatus != null) updates['paymentStatus'] = paymentStatus;
+    if (metadata != null) updates['metadata'] = metadata;
+    if (packageId != null) updates['packageId'] = packageId;
+    _mock.updateBizAppointment(_bizId(), id, updates);
+  }
+
+  Future<void> deleteAppointment(String id) async {
+    _mock.deleteBizAppointment(_bizId(), id);
+  }
+
+  Future<void> markAsPaid(String id) async {
+    await updateAppointment(id, paymentStatus: 'pago');
+  }
+
+  Future<void> markAsNoShow(String id) async {
+    await updateAppointment(id, status: 'faltou');
+  }
+
+  Future<Appointment?> getLastAppointmentByClient(String clientId,
+      {String? excludeId}) async {
+    final appointments = _mock.getBizAppointmentsByClient(_bizId(), clientId)
+      ..sort((a, b) =>
+          ((b['startAt'] ?? b['dateTime']) as String)
+              .compareTo((a['startAt'] ?? a['dateTime']) as String));
+
+    for (final a in appointments) {
+      if (excludeId == null || a['id'] != excludeId) {
+        return Appointment.fromMap(a['id'], a);
+      }
+    }
+    return null;
+  }
+}
+
+// ========== LEGACY SESSION SERVICE (backward compatibility) ==========
 
 class AppSessionService {
   AppSessionService._();
@@ -227,7 +383,44 @@ class AppSessionService {
   }
 }
 
-// ========== PACKAGE SERVICE ==========
+// ========== SERVICE ITEM SERVICE (business-scoped) ==========
+
+class AppServiceItemService {
+  AppServiceItemService._();
+  static final instance = AppServiceItemService._();
+
+  final MockDataService _mock = MockDataService.instance;
+
+  Future<List<ServiceItem>> getServices() async {
+    return _mock.getBizServices(_bizId())
+        .map((m) => ServiceItem.fromMap(m['id'], m))
+        .toList();
+  }
+
+  Future<List<ServiceItem>> getServicesByModule(String module) async {
+    return _mock.getBizServices(_bizId())
+        .where((m) => m['module'] == module)
+        .map((m) => ServiceItem.fromMap(m['id'], m))
+        .toList();
+  }
+
+  Future<String> createService({
+    required String name,
+    required String module,
+    required int durationMin,
+    required double price,
+  }) async {
+    return _mock.addBizService(_bizId(), {
+      'name': name,
+      'module': module,
+      'durationMin': durationMin,
+      'price': price,
+      'active': true,
+    });
+  }
+}
+
+// ========== PACKAGE SERVICE (business-scoped) ==========
 
 class AppPackageService {
   AppPackageService._();
@@ -236,17 +429,21 @@ class AppPackageService {
   final MockDataService _mock = MockDataService.instance;
 
   Future<List<Package>> listPackages(String clientId) async {
-    return _mock.getPackages(clientId).map((m) => Package.fromMap(m['id'], m)).toList();
+    return _mock.getBizPackages(_bizId(), clientId)
+        .map((m) => Package.fromMap(m['id'], m))
+        .toList();
   }
 
   Stream<List<Package>> getPackagesStream(String clientId) {
     return Stream.value(
-      _mock.getPackages(clientId).map((m) => Package.fromMap(m['id'], m)).toList()
+      _mock.getBizPackages(_bizId(), clientId)
+          .map((m) => Package.fromMap(m['id'], m))
+          .toList(),
     );
   }
 
   Future<Package?> getActivePackage(String clientId) async {
-    final data = _mock.getActivePackage(clientId);
+    final data = _mock.getActiveBizPackage(_bizId(), clientId);
     if (data == null) return null;
     return Package.fromMap(data['id'], data);
   }
@@ -257,7 +454,7 @@ class AppPackageService {
     required double price,
     DateTime? expirationDate,
   }) async {
-    return _mock.addPackage(clientId, {
+    return _mock.addBizPackage(_bizId(), clientId, {
       'totalSessions': totalSessions,
       'remainingSessions': totalSessions,
       'price': price,
@@ -268,13 +465,15 @@ class AppPackageService {
   }
 
   Future<Package?> decrementPackage(String packageId) async {
-    final clients = _mock.getClients();
+    final clients = _mock.getBizClients(_bizId());
     for (final client in clients) {
-      final packages = _mock.getPackages(client['id']);
+      final packages = _mock.getBizPackages(_bizId(), client['id']);
       final pkg = packages.where((p) => p['id'] == packageId).firstOrNull;
       if (pkg != null) {
-        _mock.decrementPackage(client['id'], packageId);
-        final updated = _mock.getPackages(client['id']).where((p) => p['id'] == packageId).firstOrNull;
+        _mock.decrementBizPackage(_bizId(), client['id'], packageId);
+        final updated = _mock.getBizPackages(_bizId(), client['id'])
+            .where((p) => p['id'] == packageId)
+            .firstOrNull;
         if (updated != null) {
           return Package.fromMap(updated['id'], updated);
         }
@@ -284,11 +483,11 @@ class AppPackageService {
   }
 
   Future<bool> hasActivePackage(String clientId) async {
-    return _mock.getActivePackage(clientId) != null;
+    return _mock.getActiveBizPackage(_bizId(), clientId) != null;
   }
 }
 
-// ========== FINANCE SERVICE ==========
+// ========== FINANCE SERVICE (business-scoped) ==========
 
 class MonthlyReport {
   final int year;
@@ -380,7 +579,7 @@ class AppFinanceService {
     final start = DateTime(year, month, 1);
     final end = DateTime(year, month + 1, 0, 23, 59, 59);
     
-    final sessions = _mock.getSessionsByPeriod(start, end);
+    final appointments = _mock.getBizAppointmentsByPeriod(_bizId(), start, end);
     
     double totalReceived = 0;
     double totalPending = 0;
@@ -388,15 +587,17 @@ class AppFinanceService {
     int missed = 0;
     int rescheduled = 0;
     
-    for (final s in sessions) {
-      final value = (s['value'] as num).toDouble();
-      if (s['paymentStatus'] == 'pago') {
+    for (final a in appointments) {
+      final value = (a['price'] ?? a['value'] ?? 0) is num
+          ? ((a['price'] ?? a['value']) as num).toDouble()
+          : 0.0;
+      if (a['paymentStatus'] == 'pago') {
         totalReceived += value;
       } else {
         totalPending += value;
       }
       
-      switch (s['status']) {
+      switch (a['status']) {
         case 'realizada':
         case 'confirmado':
           confirmed++;
@@ -413,7 +614,7 @@ class AppFinanceService {
     return MonthlyReport(
       year: year,
       month: month,
-      totalSessions: sessions.length,
+      totalSessions: appointments.length,
       sessionsConfirmed: confirmed,
       sessionsMissed: missed,
       sessionsRescheduled: rescheduled,
@@ -423,6 +624,13 @@ class AppFinanceService {
     );
   }
 
+  Future<List<Appointment>> getPendingAppointments() async {
+    return _mock.getBizPendingAppointments(_bizId())
+        .map((m) => Appointment.fromMap(m['id'], m))
+        .toList();
+  }
+
+  /// Alias para compatibilidade com telas existentes
   Future<List<Session>> getPendingSessions() async {
     return _mock.getPendingSessions().map((m) => Session.fromMap(m['id'], m)).toList();
   }
@@ -451,14 +659,14 @@ class AppFinanceService {
       sessionsPercentChange: sessionsDiff,
     );
     
-    final pendingSessions = await getPendingSessions();
+    final pendingAppointments = await getPendingAppointments();
     final messages = <InsightMessage>[];
     
     if (currentReport.totalPending > 0) {
       messages.add(InsightMessage(
         icon: '⚠️',
         type: InsightType.warning,
-        message: 'Você tem R\$ ${currentReport.totalPending.toStringAsFixed(0)} pendentes em ${pendingSessions.length} sessões.',
+        message: 'Você tem R\$ ${currentReport.totalPending.toStringAsFixed(0)} pendentes em ${pendingAppointments.length} agendamentos.',
       ));
     }
     
@@ -481,16 +689,18 @@ class AppFinanceService {
     return FinanceInsights(
       comparison: comparison,
       expectedNext7Days: 0,
-      pendingCount: pendingSessions.length,
+      pendingCount: pendingAppointments.length,
       pendingTotal: currentReport.totalPending,
       messages: messages,
     );
   }
 }
 
-// Aliases para compatibilidade
+// ========== ALIASES (backward compatibility) ==========
 typedef ClientService = AppClientService;
 typedef SessionService = AppSessionService;
+typedef AppointmentService = AppAppointmentService;
 typedef PackageService = AppPackageService;
 typedef FinanceService = AppFinanceService;
 typedef AuthService = AppAuthService;
+typedef ServiceItemService = AppServiceItemService;

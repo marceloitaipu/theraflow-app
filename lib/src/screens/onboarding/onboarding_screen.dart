@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../models/app_module.dart';
 import '../../services/profile_service.dart';
 import '../../services/auth_service.dart';
+import '../../services/business_service.dart';
 import '../../widgets/primary_button.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -13,16 +15,25 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
+  static const _totalSteps = 4;
+
   int _step = 0;
   bool _loading = true;
 
+  // Step 1 — Dados pessoais
   final _name = TextEditingController();
   final _phone = TextEditingController();
   final _city = TextEditingController();
 
+  // Step 2 — Nicho/Módulo principal
+  AppModule? _selectedModule;
+
+  // Step 3 — Preferências
   final _defaultDuration = TextEditingController(text: '60');
   final _defaultPrice = TextEditingController(text: '150');
+  final _businessName = TextEditingController();
 
+  // Step 4 — Primeiro cliente
   final _firstClientName = TextEditingController();
   final _firstClientPhone = TextEditingController();
 
@@ -55,6 +66,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     _city.dispose();
     _defaultDuration.dispose();
     _defaultPrice.dispose();
+    _businessName.dispose();
     _firstClientName.dispose();
     _firstClientPhone.dispose();
     super.dispose();
@@ -63,6 +75,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     setState(() => _saving = true);
     try {
+      final uid = AuthService.instance.currentUser?.uid ?? 'demo';
+
+      // Criar negócio (Business) com módulo selecionado
+      final bName = _businessName.text.trim().isNotEmpty
+          ? _businessName.text.trim()
+          : '${_name.text.trim()} - Consultório';
+
+      await BusinessService.instance.createBusiness(
+        ownerUid: uid,
+        name: bName,
+        plan: 'starter',
+        enabledModules: [_selectedModule ?? AppModule.therapy],
+      );
+
+      // Salvar perfil
       await ProfileService.instance.saveProfile(
         name: _name.text.trim(),
         phone: _phone.text.trim(),
@@ -72,6 +99,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         firstClientName: _firstClientName.text.trim().isNotEmpty ? _firstClientName.text.trim() : null,
         firstClientPhone: _firstClientPhone.text.trim(),
       );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Bem-vindo ao TheraFlow!')),
@@ -97,8 +125,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         return;
       }
     }
-    
-    if (_step < 2) {
+    if (_step == 1) {
+      if (_selectedModule == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Selecione sua área de atuação')),
+        );
+        return;
+      }
+    }
+
+    if (_step < _totalSteps - 1) {
       setState(() => _step++);
     } else {
       _finish();
@@ -114,15 +150,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Widget _stepView() {
     switch (_step) {
       case 0:
-        return _Step1();
+        return _buildStep1PersonalData();
       case 1:
-        return _Step2();
+        return _buildStep2NicheSelection();
+      case 2:
+        return _buildStep3Preferences();
       default:
-        return _Step3();
+        return _buildStep4FirstClient();
     }
   }
 
-  Widget _Step1() {
+  // ========== STEP 1 — Dados pessoais ==========
+  Widget _buildStep1PersonalData() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -133,14 +172,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Vamos configurar sua conta em 3 passos simples.',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
+        Text(
+          'Vamos configurar sua conta em $_totalSteps passos simples.',
+          style: const TextStyle(fontSize: 16, color: Colors.grey),
         ),
         const SizedBox(height: 32),
-        const Text(
-          'Passo 1/3 — Seus dados',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        Text(
+          'Passo 1/$_totalSteps — Seus dados',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 16),
         TextField(
@@ -175,22 +214,62 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _Step2() {
+  // ========== STEP 2 — Seleção de nicho ==========
+  Widget _buildStep2NicheSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Icon(Icons.category, size: 64, color: Colors.blue),
+        const SizedBox(height: 24),
+        Text(
+          'Passo 2/$_totalSteps — Área de atuação',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'Escolha sua especialidade principal. Você poderá ativar módulos adicionais depois.',
+          style: TextStyle(fontSize: 14, color: Colors.grey),
+        ),
+        const SizedBox(height: 24),
+        ...AppModule.values.map((module) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _NicheCard(
+                module: module,
+                selected: _selectedModule == module,
+                onTap: () => setState(() => _selectedModule = module),
+              ),
+            )),
+      ],
+    );
+  }
+
+  // ========== STEP 3 — Preferências ==========
+  Widget _buildStep3Preferences() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Icon(Icons.settings, size: 64, color: Colors.blue),
         const SizedBox(height: 24),
-        const Text(
-          'Passo 2/3 — Preferências',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        Text(
+          'Passo 3/$_totalSteps — Preferências',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         const Text(
-          'Configure valores padrão para suas sessões.',
+          'Configure valores padrão para seus atendimentos.',
           style: TextStyle(fontSize: 14, color: Colors.grey),
         ),
         const SizedBox(height: 24),
+        TextField(
+          controller: _businessName,
+          decoration: InputDecoration(
+            labelText: 'Nome do consultório / clínica',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.business),
+            hintText: '${_name.text.trim()} - Consultório',
+          ),
+        ),
+        const SizedBox(height: 16),
         TextField(
           controller: _defaultDuration,
           keyboardType: TextInputType.number,
@@ -236,15 +315,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  Widget _Step3() {
+  // ========== STEP 4 — Primeiro cliente ==========
+  Widget _buildStep4FirstClient() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Icon(Icons.person_add, size: 64, color: Colors.blue),
         const SizedBox(height: 24),
-        const Text(
-          'Passo 3/3 — Primeiro cliente',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        Text(
+          'Passo 4/$_totalSteps — Primeiro cliente',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         const Text(
@@ -317,10 +397,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               // Progress indicator
               Row(
                 children: List.generate(
-                  3,
+                  _totalSteps,
                   (index) => Expanded(
                     child: Container(
-                      margin: EdgeInsets.only(right: index < 2 ? 8 : 0),
+                      margin: EdgeInsets.only(right: index < _totalSteps - 1 ? 8 : 0),
                       height: 4,
                       decoration: BoxDecoration(
                         color: index <= _step ? Colors.blue : Colors.grey[300],
@@ -355,13 +435,76 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       onPressed: _saving ? null : _nextStep,
                       label: _saving
                           ? 'Salvando...'
-                          : (_step < 2 ? 'Próximo' : 'Finalizar'),
+                          : (_step < _totalSteps - 1 ? 'Próximo' : 'Finalizar'),
                     ),
                   ),
                 ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Card para seleção de nicho/módulo no onboarding
+class _NicheCard extends StatelessWidget {
+  final AppModule module;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _NicheCard({
+    required this.module,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? Theme.of(context).primaryColor : Colors.grey[300]!;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color, width: selected ? 2 : 1),
+          color: selected ? color.withOpacity(0.08) : Colors.white,
+        ),
+        child: Row(
+          children: [
+            Icon(module.icon, size: 36, color: selected ? color : Colors.grey),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    module.displayName,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: selected ? color : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    module.description,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_circle, color: color, size: 28),
+          ],
         ),
       ),
     );

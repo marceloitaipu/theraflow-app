@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// Tela de Paywall - Comparação de Planos
+import '../../services/business_service.dart';
+import '../../config/billing_config.dart';
+
+/// Tela de Paywall — Planos Starter / Pro / Clinic
 class PaywallScreen extends StatelessWidget {
   const PaywallScreen({super.key});
+
+  String get _currentPlan =>
+      BusinessService.instance.currentBusiness?.plan ?? 'starter';
 
   @override
   Widget build(BuildContext context) {
@@ -66,66 +72,114 @@ class PaywallScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Plano Free
+                  // ===== Plano Starter =====
                   _PlanCard(
-                    name: 'Gratuito',
-                    price: 'R\$ 0',
-                    period: '/mês',
+                    name: 'Starter',
+                    price: 'Grátis',
+                    period: '',
+                    icon: Icons.rocket_launch,
                     features: const [
-                      PlanFeature('Até 5 clientes', true),
+                      PlanFeature('Até 10 clientes', true),
+                      PlanFeature('1 módulo incluso', true),
                       PlanFeature('Agenda básica', true),
-                      PlanFeature('Histórico de sessões', true),
+                      PlanFeature('Histórico de atendimentos', true),
                       PlanFeature('Pacotes de sessões', false),
                       PlanFeature('Relatórios avançados', false),
-                      PlanFeature('Alertas inteligentes', false),
-                      PlanFeature('Exportar dados', false),
+                      PlanFeature('Módulos adicionais', false),
                     ],
-                    isCurrentPlan: true,
-                    onSelect: null,
+                    isCurrentPlan: _currentPlan == 'starter',
+                    onSelect: _currentPlan == 'starter'
+                        ? null
+                        : () => _showComingSoon(context, 'Starter'),
                   ),
 
                   const SizedBox(height: 16),
 
-                  // Plano Pro
+                  // ===== Plano Pro =====
                   _PlanCard(
-                    name: 'Profissional',
+                    name: 'Pro',
                     price: 'R\$ 49,90',
                     period: '/mês',
+                    icon: Icons.star,
                     isRecommended: true,
                     features: const [
-                      PlanFeature('Até 50 clientes', true),
+                      PlanFeature('Até 100 clientes', true),
+                      PlanFeature('2 módulos inclusos', true),
                       PlanFeature('Agenda completa', true),
-                      PlanFeature('Histórico ilimitado', true),
                       PlanFeature('Pacotes de sessões', true),
                       PlanFeature('Relatórios financeiros', true),
                       PlanFeature('Alertas inteligentes', true),
                       PlanFeature('Exportar CSV', true),
                     ],
-                    onSelect: () => _showComingSoon(context, 'Profissional'),
+                    isCurrentPlan: _currentPlan == 'pro',
+                    onSelect: _currentPlan == 'pro'
+                        ? null
+                        : () => _handleSelectPlan(context, 'pro'),
                   ),
 
                   const SizedBox(height: 16),
 
-                  // Plano Premium
+                  // ===== Plano Clinic =====
                   _PlanCard(
-                    name: 'Premium',
+                    name: 'Clinic',
                     price: 'R\$ 99,90',
                     period: '/mês',
+                    icon: Icons.business,
                     features: const [
                       PlanFeature('Clientes ilimitados', true),
-                      PlanFeature('Tudo do Profissional', true),
+                      PlanFeature('Todos os módulos', true),
                       PlanFeature('Múltiplos profissionais', true),
                       PlanFeature('Relatórios PDF', true),
                       PlanFeature('Backup na nuvem', true),
                       PlanFeature('Suporte prioritário', true),
                       PlanFeature('Personalização', true),
                     ],
-                    onSelect: () => _showComingSoon(context, 'Premium'),
+                    isCurrentPlan: _currentPlan == 'clinic',
+                    onSelect: _currentPlan == 'clinic'
+                        ? null
+                        : () => _handleSelectPlan(context, 'clinic'),
                   ),
 
                   const SizedBox(height: 24),
 
-                  // Benefícios
+                  // Módulos disponíveis
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.deepPurple[50],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.extension, color: Colors.deepPurple, size: 32),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Módulos disponíveis',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Terapia • Estética • Podologia • Massagem',
+                          style: TextStyle(color: Colors.grey[700]),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Cada plano inclui um ou mais módulos. '
+                          'No plano Clinic todos os módulos são desbloqueados.',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Garantia
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -157,17 +211,19 @@ class PaywallScreen extends StatelessWidget {
 
                   // FAQ rápido
                   ExpansionTile(
-                    title: const Text('Por que assinar?'),
+                    title: const Text('O que são módulos?'),
                     children: [
                       Padding(
                         padding: const EdgeInsets.all(16),
                         child: Text(
-                          'Com o plano Pro você pode:\n\n'
-                          '• Criar pacotes de sessões para fidelizar clientes\n'
-                          '• Ver relatórios detalhados do seu faturamento\n'
-                          '• Receber alertas sobre clientes inativos\n'
-                          '• Exportar seus dados a qualquer momento\n'
-                          '• Gerenciar até 50 clientes simultaneamente',
+                          'Módulos são conjuntos de funcionalidades específicas '
+                          'para cada área profissional:\n\n'
+                          '• Terapia — notas clínicas, metas, evolução\n'
+                          '• Estética — fotos antes/depois, protocolos, consentimento\n'
+                          '• Podologia — mapa podal, avaliação de risco\n'
+                          '• Massagem — mapa corporal, técnicas, escala de dor\n\n'
+                          'No plano Starter você usa 1 módulo. '
+                          'No Pro são 2 e no Clinic todos ficam liberados.',
                           style: TextStyle(color: Colors.grey[700]),
                         ),
                       ),
@@ -188,6 +244,20 @@ class PaywallScreen extends StatelessWidget {
                     ],
                   ),
 
+                  ExpansionTile(
+                    title: const Text('Posso trocar de plano depois?'),
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'Claro! Faça upgrade ou downgrade quando quiser. '
+                          'Ao fazer upgrade, o valor é proporcional ao período restante.',
+                          style: TextStyle(color: Colors.grey[700]),
+                        ),
+                      ),
+                    ],
+                  ),
+
                   const SizedBox(height: 32),
                 ],
               ),
@@ -196,6 +266,15 @@ class PaywallScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _handleSelectPlan(BuildContext context, String plan) {
+    if (BillingConfig.mode == BillingMode.mock) {
+      _showComingSoon(context, plan == 'pro' ? 'Pro' : 'Clinic');
+    } else {
+      // TODO: Integrar RevenueCat purchase flow
+      _showComingSoon(context, plan == 'pro' ? 'Pro' : 'Clinic');
+    }
   }
 
   void _showComingSoon(BuildContext context, String planName) {
@@ -229,6 +308,7 @@ class _PlanCard extends StatelessWidget {
   final String name;
   final String price;
   final String period;
+  final IconData? icon;
   final List<PlanFeature> features;
   final bool isRecommended;
   final bool isCurrentPlan;
@@ -239,6 +319,7 @@ class _PlanCard extends StatelessWidget {
     required this.price,
     required this.period,
     required this.features,
+    this.icon,
     this.isRecommended = false,
     this.isCurrentPlan = false,
     this.onSelect,

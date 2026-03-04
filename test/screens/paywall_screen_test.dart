@@ -14,47 +14,47 @@ void main() {
       expect(find.text('Escolha seu Plano'), findsOneWidget);
     });
 
-    testWidgets('exibe o plano Gratuito', (tester) async {
+    testWidgets('exibe o plano Starter', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PaywallScreen(),
         ),
       );
 
-      expect(find.text('Gratuito'), findsOneWidget);
+      expect(find.text('Starter'), findsOneWidget);
     });
 
-    testWidgets('exibe o plano Profissional', (tester) async {
+    testWidgets('exibe o plano Pro', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PaywallScreen(),
         ),
       );
 
-      expect(find.text('Profissional'), findsOneWidget);
+      expect(find.text('Pro'), findsOneWidget);
     });
 
-    testWidgets('exibe o plano Premium', (tester) async {
+    testWidgets('exibe o plano Clinic', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PaywallScreen(),
         ),
       );
 
-      expect(find.text('Premium'), findsOneWidget);
+      expect(find.text('Clinic'), findsOneWidget);
     });
 
-    testWidgets('exibe preço R\$ 0 do plano gratuito', (tester) async {
+    testWidgets('exibe preço Grátis do plano Starter', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PaywallScreen(),
         ),
       );
 
-      expect(find.text('R\$ 0'), findsOneWidget);
+      expect(find.text('Grátis'), findsOneWidget);
     });
 
-    testWidgets('exibe preço R\$ 49,90 do plano profissional', (tester) async {
+    testWidgets('exibe preço R\$ 49,90 do plano Pro', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PaywallScreen(),
@@ -64,7 +64,7 @@ void main() {
       expect(find.text('R\$ 49,90'), findsOneWidget);
     });
 
-    testWidgets('exibe preço R\$ 99,90 do plano premium', (tester) async {
+    testWidgets('exibe preço R\$ 99,90 do plano Clinic', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PaywallScreen(),
@@ -74,15 +74,30 @@ void main() {
       expect(find.text('R\$ 99,90'), findsOneWidget);
     });
 
-    testWidgets('plano atual mostra botão diferenciado', (tester) async {
+    testWidgets('plano starter mostra Plano Atual por padrão', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: PaywallScreen(),
         ),
       );
 
-      // O plano free deve mostrar "Plano Atual"
       expect(find.text('Plano Atual'), findsOneWidget);
+    });
+
+    testWidgets('exibe seção de módulos disponíveis', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: PaywallScreen(),
+        ),
+      );
+
+      await tester.scrollUntilVisible(
+        find.text('Módulos disponíveis'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      expect(find.text('Módulos disponíveis'), findsOneWidget);
     });
 
     testWidgets('tem AppBar com botão de voltar', (tester) async {

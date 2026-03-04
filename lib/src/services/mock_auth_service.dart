@@ -1,6 +1,7 @@
 import 'dart:async';
 import '../models/user.dart' as models;
 import 'mock_data_service.dart';
+import 'business_service.dart';
 
 /// AuthService que usa dados mock (sem Firebase)
 /// Para testes e desenvolvimento local
@@ -54,6 +55,9 @@ class MockAuthService {
     
     // Carregar dados demo se for o primeiro login
     _mock.loadDemoData();
+
+    // Resolver business do usuário
+    await BusinessService.instance.resolveBusinessForUser(user.uid);
     
     return user;
   }

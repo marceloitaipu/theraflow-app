@@ -5,6 +5,7 @@ build/
 .flutter-plugins
 .flutter-plugins-dependencies
 *.iml
+.metadata
 
 # IDE
 .idea/
@@ -18,6 +19,36 @@ Thumbs.db
 
 # Dependencies
 node_modules/
+pubspec.lock
 
 # Logs
 *.log
+
+# Build artifacts
+**/build/
+**/.dart_tool/
+**/.packages
+
+# Firebase
+.firebase/
+firebase-debug.log
+
+# Generated
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+doc/api/
+
+# Android
+android/.gradle/
+android/local.properties
+android/key.properties
+*.jks
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+
+# Coverage
+coverage/
+*.lcov

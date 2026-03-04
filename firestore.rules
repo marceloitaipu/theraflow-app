@@ -1,55 +1,85 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Função auxiliar para verificar autenticação
+
+    // ===== Helpers =====
     function isSignedIn() {
       return request.auth != null;
     }
-    
-    // Função auxiliar para verificar se o usuário é dono do recurso
-    function isOwner(userId) {
-      return request.auth.uid == userId;
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
     }
-    
-    // Regras para coleção de usuários
+
+    // Verifica se o usuário autenticado é dono do business
+    function isBusinessOwner(businessId) {
+      let biz = get(/databases/$(database)/documents/businesses/$(businessId));
+      return biz.data.ownerUid == request.auth.uid;
+    }
+
+    // Verifica se o usuário é membro do business (owner ou staff)
+    function isBusinessMember(businessId) {
+      return isBusinessOwner(businessId) ||
+             exists(/databases/$(database)/documents/businesses/$(businessId)/staff/$(request.auth.uid));
+    }
+
+    // ===== /users/{userId} — perfil do usuário =====
     match /users/{userId} {
-      // Usuário pode ler e escrever apenas seus próprios dados
       allow read, write: if isSignedIn() && isOwner(userId);
-      
-      // Regras para subcoleção de clientes
+    }
+
+    // ===== /businesses/{businessId} — entidade multi-tenant =====
+    match /businesses/{businessId} {
+      // Apenas o owner pode ler/atualizar o business
+      allow read: if isSignedIn() && isBusinessMember(businessId);
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && isBusinessOwner(businessId);
+      allow delete: if isSignedIn() && isBusinessOwner(businessId);
+
+      // --- Clientes ---
       match /clients/{clientId} {
-        // Usuário pode ler e escrever apenas seus próprios clientes
-        allow read, write: if isSignedIn() && isOwner(userId);
-        
-        // Validação: verificar limite de clientes baseado no plano
-        allow create: if isSignedIn() 
-                      && isOwner(userId)
-                      && validateClientLimit(userId);
+        allow read, write: if isSignedIn() && isBusinessMember(businessId);
+        // Validar limite de clientes ao criar
+        allow create: if isSignedIn()
+                      && isBusinessMember(businessId)
+                      && validateClientLimit(businessId);
       }
-      
-      // Regras para subcoleção de sessões
-      match /sessions/{sessionId} {
-        // Usuário pode ler e escrever apenas suas próprias sessões
-        allow read, write: if isSignedIn() && isOwner(userId);
+
+      // --- Atendimentos (appointments) ---
+      match /appointments/{appointmentId} {
+        allow read, write: if isSignedIn() && isBusinessMember(businessId);
       }
-      
-      // Regras para subcoleção de pagamentos
-      match /payments/{paymentId} {
-        // Usuário pode ler e escrever apenas seus próprios pagamentos
-        allow read, write: if isSignedIn() && isOwner(userId);
+
+      // --- Serviços oferecidos ---
+      match /services/{serviceId} {
+        allow read, write: if isSignedIn() && isBusinessMember(businessId);
+      }
+
+      // --- Pacotes ---
+      match /packages/{packageId} {
+        allow read, write: if isSignedIn() && isBusinessMember(businessId);
+      }
+
+      // --- Transações financeiras ---
+      match /transactions/{transactionId} {
+        allow read, write: if isSignedIn() && isBusinessMember(businessId);
+      }
+
+      // --- Staff / profissionais adicionais ---
+      match /staff/{staffUid} {
+        allow read: if isSignedIn() && isBusinessMember(businessId);
+        allow write: if isSignedIn() && isBusinessOwner(businessId);
       }
     }
-    
-    // Função para validar limite de clientes por plano
-    function validateClientLimit(userId) {
-      let userDoc = get(/databases/$(database)/documents/users/$(userId));
-      let plan = userDoc.data.plan;
-      let clientsCount = get(/databases/$(database)/documents/users/$(userId)/clients).size();
-      
-      return (plan == 'free' && clientsCount < 5) ||
-             (plan == 'professional' && clientsCount < 50) ||
-             (plan == 'premium');
+
+    // ===== Função: validar limite de clientes por plano =====
+    function validateClientLimit(businessId) {
+      let biz = get(/databases/$(database)/documents/businesses/$(businessId));
+      let plan = biz.data.plan;
+      // Nota: Firestore rules não suportam count() nativo.
+      // A validação real de limite deve ser feita no backend (Cloud Functions).
+      // Aqui permitimos a criação e delegamos o enforcement ao servidor.
+      return plan == 'starter' || plan == 'pro' || plan == 'clinic';
     }
   }
 }
