@@ -1,7 +1,10 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import 'screens/auth/login_screen.dart';
-import 'screens/auth/test_auth_screen.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/shell/app_shell.dart';
 import 'screens/home/home_screen.dart';
@@ -14,30 +17,73 @@ import 'screens/clients/package_create_screen.dart';
 import 'screens/sessions/session_edit_screen.dart';
 import 'screens/sessions/session_start_screen.dart';
 import 'screens/billing/paywall_screen.dart';
+import 'screens/splash/splash_screen.dart';
+import 'services/auth_service.dart';
+
+/// Listenable adapter para o `FirebaseAuth.authStateChanges()` reagir no router.
+class _AuthStateNotifier extends ChangeNotifier {
+  _AuthStateNotifier() {
+    _sub = AuthService.instance.authStateChanges.listen((_) {
+      notifyListeners();
+    });
+  }
+
+  late final StreamSubscription<User?> _sub;
+
+  @override
+  void dispose() {
+    _sub.cancel();
+    super.dispose();
+  }
+}
+
+final _authNotifier = _AuthStateNotifier();
 
 final GoRouter appRouter = GoRouter(
-  initialLocation: '/test-auth',
+  initialLocation: '/splash',
+  refreshListenable: _authNotifier,
+  redirect: (context, state) async {
+    final loc = state.matchedLocation;
+    final isAuthFlow = loc == '/login' || loc == '/splash';
+    final user = AuthService.instance.currentUser;
+
+    // Ainda carregando: deixa na splash.
+    if (loc == '/splash') {
+      if (user == null) return '/login';
+      final data = await AuthService.instance.getCurrentUserData();
+      if (data == null || !data.onboardingCompleted) return '/onboarding';
+      return '/home';
+    }
+
+    // Sem usuário → força login.
+    if (user == null && !isAuthFlow) return '/login';
+
+    // Usuário logado tentando entrar em /login → vai pra home.
+    if (user != null && loc == '/login') return '/home';
+
+    return null;
+  },
   routes: [
     GoRoute(
-      path: '/test-auth',
-      builder: (_, __) => const TestAuthScreen(),
+      path: '/splash',
+      builder: (_, _) => const SplashScreen(),
     ),
     GoRoute(
       path: '/login',
-      builder: (_, __) => const LoginScreen(),
+      builder: (_, _) => const LoginScreen(),
     ),
     GoRoute(
       path: '/onboarding',
-      builder: (_, __) => const OnboardingScreen(),
+      builder: (_, _) => const OnboardingScreen(),
     ),
     ShellRoute(
-      builder: (_, __, child) => AppShell(child: child),
+      builder: (_, _, child) => AppShell(child: child),
       routes: [
-        GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
-        GoRoute(path: '/agenda', builder: (_, __) => const AgendaScreen()),
-        GoRoute(path: '/clients', builder: (_, __) => const ClientsScreen()),
-        GoRoute(path: '/finance', builder: (_, __) => const FinanceScreen()),
-        GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
+        GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+        GoRoute(path: '/agenda', builder: (_, _) => const AgendaScreen()),
+        GoRoute(path: '/clients', builder: (_, _) => const ClientsScreen()),
+        GoRoute(path: '/finance', builder: (_, _) => const FinanceScreen()),
+        GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
       ],
     ),
     GoRoute(
@@ -62,7 +108,7 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/paywall',
-      builder: (_, __) => const PaywallScreen(),
+      builder: (_, _) => const PaywallScreen(),
     ),
   ],
 );

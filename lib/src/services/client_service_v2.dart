@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/client.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
+import 'data_change_bus.dart';
 import 'incremental_sync_service.dart';
 
 class ClientService {
@@ -13,21 +14,12 @@ class ClientService {
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
   final IncrementalSyncService _sync = IncrementalSyncService.instance;
-  final Uuid _uuid = Uuid();
+  final Uuid _uuid = const Uuid();
 
-  // Stream de todos os clientes (do banco local)
+  // Stream reativa de todos os clientes. Reemite apenas quando dados mudam.
   Stream<List<Client>> getClientsStream() async* {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) {
-      yield [];
-      return;
-    }
-
-    // Emitir dados iniciais
     yield await getClients();
-
-    // Atualizar periodicamente (simular stream)
-    await for (final _ in Stream.periodic(Duration(seconds: 2))) {
+    await for (final _ in DataChangeBus.instance.streamFor('clients')) {
       yield await getClients();
     }
   }
@@ -80,6 +72,7 @@ class ClientService {
 
     // Salvar localmente
     await _db.insertClient(clientData);
+    DataChangeBus.instance.notify('clients');
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {
@@ -125,6 +118,7 @@ class ClientService {
 
     // Atualizar localmente
     await _db.updateClient(id, updates);
+    DataChangeBus.instance.notify('clients');
 
     // Sincronizar se online
     if (_sync.isOnline) {
@@ -149,6 +143,7 @@ class ClientService {
 
     // Marcar como deletado (soft delete)
     await _db.markClientDeleted(id);
+    DataChangeBus.instance.notify('clients');
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {

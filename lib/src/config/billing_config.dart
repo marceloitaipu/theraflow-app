@@ -1,8 +1,14 @@
 /// Configuração do modo de billing.
 ///
-/// Em desenvolvimento, usa mock.
-/// Em produção, usa RevenueCat.
+/// - [disabled]: billing desativado. `showPaywall()` retorna false e não simula
+///   compras. Todos os usuários ficam no plano starter. **Use em produção até
+///   que a integração real com Google Play / App Store / RevenueCat esteja
+///   validada ponta-a-ponta.**
+/// - [mock]: apenas para desenvolvimento local. Simula upgrade automático.
+///   NUNCA usar em builds de produção.
+/// - [revenuecat]: implementação real via SDK `purchases_flutter`.
 enum BillingMode {
+  disabled,
   mock,
   revenuecat,
 }
@@ -10,13 +16,14 @@ enum BillingMode {
 class BillingConfig {
   BillingConfig._();
 
-  /// Altere para BillingMode.revenuecat em produção
-  static BillingMode mode = BillingMode.mock;
+  /// Modo padrão de produção: [BillingMode.disabled].
+  /// Ative `mock` apenas em desenvolvimento local.
+  static BillingMode mode = BillingMode.disabled;
 
-  /// RevenueCat API Key (iOS)
+  /// RevenueCat API Key (iOS) — configure via variável de ambiente no build.
   static const String revenueCatApiKeyIos = 'YOUR_IOS_API_KEY';
 
-  /// RevenueCat API Key (Android)
+  /// RevenueCat API Key (Android) — configure via variável de ambiente no build.
   static const String revenueCatApiKeyAndroid = 'YOUR_ANDROID_API_KEY';
 
   /// Entitlements IDs no RevenueCat

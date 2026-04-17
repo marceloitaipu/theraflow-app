@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/user.dart';
 import 'auth_service.dart';
 import 'client_service_v2.dart';
 
@@ -17,6 +16,8 @@ class ProfileService {
     required String city,
     required int defaultDurationMinutes,
     required double defaultPrice,
+    String? module,
+    String? businessName,
     String? firstClientName,
     String? firstClientPhone,
   }) async {
@@ -27,17 +28,21 @@ class ProfileService {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
 
-    // Atualizar dados do usuário
-    await _firestore.collection('users').doc(userId).update({
+    final updates = <String, dynamic>{
       'name': name,
       'phone': phone,
       'city': city,
       'defaultDurationMinutes': defaultDurationMinutes,
       'defaultPrice': defaultPrice,
       'onboardingCompleted': true,
-    });
+    };
+    if (module != null && module.isNotEmpty) updates['module'] = module;
+    if (businessName != null && businessName.isNotEmpty) {
+      updates['businessName'] = businessName;
+    }
 
-    // Criar primeiro cliente se informado
+    await _firestore.collection('users').doc(userId).update(updates);
+
     if (firstClientName != null && firstClientName.trim().isNotEmpty) {
       await ClientService.instance.createClient(
         name: firstClientName.trim(),
@@ -46,7 +51,6 @@ class ProfileService {
     }
   }
 
-  // Buscar perfil do usuário
   Future<UserProfile?> getUserProfile() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return null;
@@ -55,14 +59,15 @@ class ProfileService {
     if (!doc.exists) return null;
 
     final data = doc.data()!;
+    final priceRaw = data['defaultPrice'] ?? 150.0;
     return UserProfile(
-      name: data['name'] ?? '',
-      phone: data['phone'] ?? '',
-      city: data['city'] ?? '',
-      defaultDurationMinutes: data['defaultDurationMinutes'] ?? 60,
-      defaultPrice: (data['defaultPrice'] ?? 150.0) is int
-          ? (data['defaultPrice'] as int).toDouble()
-          : (data['defaultPrice'] ?? 150.0) as double,
+      name: (data['name'] ?? '') as String,
+      phone: (data['phone'] ?? '') as String,
+      city: (data['city'] ?? '') as String,
+      module: (data['module'] ?? 'therapy') as String,
+      businessName: (data['businessName'] ?? '') as String,
+      defaultDurationMinutes: (data['defaultDurationMinutes'] ?? 60) as int,
+      defaultPrice: priceRaw is int ? priceRaw.toDouble() : priceRaw as double,
     );
   }
 }
@@ -71,6 +76,8 @@ class UserProfile {
   final String name;
   final String phone;
   final String city;
+  final String module;
+  final String businessName;
   final int defaultDurationMinutes;
   final double defaultPrice;
 
@@ -78,6 +85,8 @@ class UserProfile {
     required this.name,
     required this.phone,
     required this.city,
+    required this.module,
+    required this.businessName,
     required this.defaultDurationMinutes,
     required this.defaultPrice,
   });

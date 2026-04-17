@@ -16,7 +16,7 @@ class FinanceService {
   final AuthService _auth = AuthService.instance;
   final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final SessionService _sessionService = SessionService.instance;
-  final Uuid _uuid = Uuid();
+  final Uuid _uuid = const Uuid();
 
   // Buscar todos os pagamentos do banco local
   Future<List<Payment>> getPayments() async {

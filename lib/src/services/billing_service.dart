@@ -1,52 +1,33 @@
-import '../models/app_module.dart';
 import '../config/billing_config.dart';
-import 'business_service.dart';
 
 /// Informações do cliente de billing (resultado do fetch)
 class BillingCustomerInfo {
-  final String plan; // starter, pro, clinic
-  final List<AppModule> enabledModules;
+  final String plan; // free, professional, premium
   final String subscriptionStatus; // active, expired, cancelled
 
   BillingCustomerInfo({
     required this.plan,
-    required this.enabledModules,
     required this.subscriptionStatus,
   });
 }
 
 /// Interface abstrata do serviço de billing.
+///
+/// Mantida intencionalmente simples enquanto a integração real com
+/// Google Play / App Store / RevenueCat não está validada ponta-a-ponta
+/// (incluindo a Cloud Function `validateSubscription` do backend).
 abstract class BillingService {
-  /// Inicializa o SDK de billing
   Future<void> initialize();
-
-  /// Faz login no provider de billing
   Future<void> logIn(String userId);
-
-  /// Busca as informações de assinatura do usuário
   Future<BillingCustomerInfo> fetchCustomerInfo();
-
-  /// Exibe a paywall nativa (ou custom)
   Future<bool> showPaywall();
-
-  /// Restaura compras
   Future<BillingCustomerInfo> restorePurchases();
-
-  /// Faz logout do provider
   Future<void> logOut();
 
-  /// Sincroniza plano + módulos no Firestore e BusinessService
-  Future<void> syncWithBusiness(BillingCustomerInfo info) async {
-    await BusinessService.instance.updatePlanAndModules(
-      plan: info.plan,
-      enabledModules: info.enabledModules,
-      subscriptionStatus: info.subscriptionStatus,
-    );
-  }
-
-  /// Factory que retorna a implementação correta baseado no billing mode
   static BillingService create() {
     switch (BillingConfig.mode) {
+      case BillingMode.disabled:
+        return DisabledBillingService();
       case BillingMode.mock:
         return MockBillingService();
       case BillingMode.revenuecat:
@@ -55,154 +36,83 @@ abstract class BillingService {
   }
 }
 
-// ========== MOCK IMPLEMENTATION ==========
+/// Billing desativado: todos os usuários ficam no plano `free`.
+/// Default de produção enquanto não há integração real.
+class DisabledBillingService extends BillingService {
+  @override
+  Future<void> initialize() async {}
 
-/// Mock para desenvolvimento sem RevenueCat.
-/// Simula plano starter com therapy e massage habilitados.
+  @override
+  Future<void> logIn(String userId) async {}
+
+  @override
+  Future<BillingCustomerInfo> fetchCustomerInfo() async {
+    return BillingCustomerInfo(plan: 'free', subscriptionStatus: 'active');
+  }
+
+  @override
+  Future<bool> showPaywall() async => false;
+
+  @override
+  Future<BillingCustomerInfo> restorePurchases() async => fetchCustomerInfo();
+
+  @override
+  Future<void> logOut() async {}
+}
+
+/// Mock para desenvolvimento. Simula upgrade em memória, sem persistência.
 class MockBillingService extends BillingService {
-  String _plan = 'starter';
-  List<AppModule> _modules = [AppModule.therapy, AppModule.massage];
+  String _plan = 'free';
   String _status = 'active';
 
   @override
-  Future<void> initialize() async {
-    // Noop
-  }
+  Future<void> initialize() async {}
 
   @override
-  Future<void> logIn(String userId) async {
-    // Noop — mock não precisa login
-  }
+  Future<void> logIn(String userId) async {}
 
   @override
   Future<BillingCustomerInfo> fetchCustomerInfo() async {
-    await Future.delayed(const Duration(milliseconds: 300));
-    return BillingCustomerInfo(
-      plan: _plan,
-      enabledModules: _modules,
-      subscriptionStatus: _status,
-    );
+    await Future.delayed(const Duration(milliseconds: 200));
+    return BillingCustomerInfo(plan: _plan, subscriptionStatus: _status);
   }
 
   @override
   Future<bool> showPaywall() async {
-    // Simula upgrade para pro
-    _plan = 'pro';
-    _modules = [
-      AppModule.therapy,
-      AppModule.aesthetics,
-      AppModule.podiatry,
-      AppModule.massage,
-    ];
+    _plan = 'professional';
     _status = 'active';
-
-    final info = await fetchCustomerInfo();
-    await syncWithBusiness(info);
-    return true; // compra bem sucedida
+    return true;
   }
 
   @override
-  Future<BillingCustomerInfo> restorePurchases() async {
-    return fetchCustomerInfo();
-  }
+  Future<BillingCustomerInfo> restorePurchases() async => fetchCustomerInfo();
 
   @override
   Future<void> logOut() async {
-    _plan = 'starter';
-    _modules = [AppModule.therapy, AppModule.massage];
+    _plan = 'free';
     _status = 'active';
-  }
-
-  /// Para testes: permite mudar o plano manualmente
-  void setMockPlan(String plan, List<AppModule> modules) {
-    _plan = plan;
-    _modules = modules;
   }
 }
 
-// ========== REVENUECAT IMPLEMENTATION (STUB) ==========
-
-/// Implementação com RevenueCat (a ser integrada com SDK real).
-///
-/// Requer adicionar `purchases_flutter` ao pubspec.yaml:
-/// ```yaml
-/// dependencies:
-///   purchases_flutter: ^6.0.0
-/// ```
+/// Stub para RevenueCat. Não integrado — ver pubspec e IN_APP_PURCHASE_SETUP.md.
 class RevenueCatBillingService extends BillingService {
   @override
-  Future<void> initialize() async {
-    // TODO: Descomentar quando purchases_flutter estiver no pubspec
-    //
-    // final config = PurchasesConfiguration(
-    //   Platform.isIOS
-    //       ? BillingConfig.revenueCatApiKeyIos
-    //       : BillingConfig.revenueCatApiKeyAndroid,
-    // );
-    // await Purchases.configure(config);
-  }
+  Future<void> initialize() async {}
 
   @override
-  Future<void> logIn(String userId) async {
-    // TODO: Implementar
-    // final result = await Purchases.logIn(userId);
-  }
+  Future<void> logIn(String userId) async {}
 
   @override
   Future<BillingCustomerInfo> fetchCustomerInfo() async {
-    // TODO: Implementar
-    // final info = await Purchases.getCustomerInfo();
-    // return _mapCustomerInfo(info);
-
-    // Fallback
-    return BillingCustomerInfo(
-      plan: 'starter',
-      enabledModules: [AppModule.therapy],
-      subscriptionStatus: 'active',
-    );
+    return BillingCustomerInfo(plan: 'free', subscriptionStatus: 'active');
   }
 
   @override
-  Future<bool> showPaywall() async {
-    // TODO: Implementar paywall nativa do RevenueCat
-    // ou usar PaywallScreen customizada
-    return false;
-  }
+  Future<bool> showPaywall() async => false;
 
   @override
-  Future<BillingCustomerInfo> restorePurchases() async {
-    // TODO: Implementar
-    // final info = await Purchases.restorePurchases();
-    // return _mapCustomerInfo(info);
-    return fetchCustomerInfo();
-  }
+  Future<BillingCustomerInfo> restorePurchases() async => fetchCustomerInfo();
 
   @override
-  Future<void> logOut() async {
-    // TODO: Implementar
-    // await Purchases.logOut();
-  }
-
-  // Helper para mapear entitlements do RC para nosso modelo
-  // BillingCustomerInfo _mapCustomerInfo(CustomerInfo info) {
-  //   String plan = 'starter';
-  //   final modules = <AppModule>[];
-  //
-  //   if (info.entitlements.active.containsKey(BillingConfig.entitlementClinic)) {
-  //     plan = 'clinic';
-  //   } else if (info.entitlements.active.containsKey(BillingConfig.entitlementPro)) {
-  //     plan = 'pro';
-  //   }
-  //
-  //   if (info.entitlements.active.containsKey(BillingConfig.entitlementTherapy)) {
-  //     modules.add(AppModule.therapy);
-  //   }
-  //   // ... etc
-  //
-  //   return BillingCustomerInfo(
-  //     plan: plan,
-  //     enabledModules: modules,
-  //     subscriptionStatus: 'active',
-  //   );
-  // }
+  Future<void> logOut() async {}
 }

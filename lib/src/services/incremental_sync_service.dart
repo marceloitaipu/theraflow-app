@@ -1,32 +1,57 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:sqflite/sqflite.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
+import 'data_change_bus.dart';
 
-/// Sistema de logging profissional
+/// Sistema de logging profissional. Usa `dart:developer` em produção para
+/// evitar o lint `avoid_print`.
 class AppLogger {
-  static void info(String message, [String? context]) {
-    final contextStr = context != null ? '[$context] ' : '';
-    print('[INFO] $contextStr$message');
+  static void info(String message, [String? context]) =>
+      _log('INFO', message, context);
+
+  static void error(String message,
+      [Object? error, StackTrace? stack, String? context]) {
+    _log('ERROR', message, context, error: error, stackTrace: stack);
   }
 
-  static void error(String message, [Object? error, StackTrace? stack, String? context]) {
+  static void warning(String message, [String? context]) =>
+      _log('WARNING', message, context);
+
+  static void debug(String message, [String? context]) =>
+      _log('DEBUG', message, context);
+
+  static void _log(
+    String level,
+    String message,
+    String? context, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
     final contextStr = context != null ? '[$context] ' : '';
-    print('[ERROR] $contextStr$message');
-    if (error != null) print('  Error: $error');
-    if (stack != null) print('  Stack: $stack');
+    developer.log(
+      '$contextStr$message',
+      name: 'theraflow.sync',
+      level: _levelValue(level),
+      error: error,
+      stackTrace: stackTrace,
+    );
   }
 
-  static void warning(String message, [String? context]) {
-    final contextStr = context != null ? '[$context] ' : '';
-    print('[WARNING] $contextStr$message');
-  }
-
-  static void debug(String message, [String? context]) {
-    final contextStr = context != null ? '[$context] ' : '';
-    print('[DEBUG] $contextStr$message');
+  static int _levelValue(String level) {
+    switch (level) {
+      case 'ERROR':
+        return 1000;
+      case 'WARNING':
+        return 900;
+      case 'INFO':
+        return 800;
+      default:
+        return 500;
+    }
   }
 }
 
@@ -49,7 +74,8 @@ class IncrementalSyncService {
   final AuthService _auth = AuthService.instance;
   final Connectivity _connectivity = Connectivity();
 
-  StreamController<SyncStatus> _statusController = StreamController.broadcast();
+  final StreamController<SyncStatus> _statusController =
+      StreamController.broadcast();
   Stream<SyncStatus> get statusStream => _statusController.stream;
   SyncStatus _currentStatus = SyncStatus.idle;
   SyncStatus get currentStatus => _currentStatus;
@@ -62,27 +88,49 @@ class IncrementalSyncService {
   Future<void> initialize() async {
     AppLogger.info('Inicializando serviço de sincronização', 'IncrementalSyncService');
 
-    // Verificar conectividade inicial
-    final connectivityResult = await _connectivity.checkConnectivity();
-    _isOnline = connectivityResult.contains(ConnectivityResult.mobile) ||
-        connectivityResult.contains(ConnectivityResult.wifi);
+    // Verificar conectividade inicial. `connectivity_plus` pode lançar em
+    // plataformas sem suporte (ex.: testes unitários, desktop sem D-Bus).
+    try {
+      final connectivityResult = await _connectivity.checkConnectivity();
+      _isOnline = connectivityResult.contains(ConnectivityResult.mobile) ||
+          connectivityResult.contains(ConnectivityResult.wifi);
+    } catch (e, st) {
+      AppLogger.warning(
+        'Falha ao consultar conectividade inicial; assumindo ONLINE. $e',
+        'IncrementalSyncService',
+      );
+      AppLogger.error('connectivity checkConnectivity', e, st);
+      _isOnline = true;
+    }
 
     AppLogger.info('Status de conectividade: ${_isOnline ? "ONLINE" : "OFFLINE"}', 'IncrementalSyncService');
 
-    // Monitorar mudanças de conectividade
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((results) {
-      final wasOnline = _isOnline;
-      _isOnline = results.contains(ConnectivityResult.mobile) ||
-          results.contains(ConnectivityResult.wifi);
+    // Monitorar mudanças de conectividade com proteção contra erros do stream.
+    try {
+      _connectivitySubscription =
+          _connectivity.onConnectivityChanged.listen((results) {
+        final wasOnline = _isOnline;
+        _isOnline = results.contains(ConnectivityResult.mobile) ||
+            results.contains(ConnectivityResult.wifi);
 
-      AppLogger.info('Mudança de conectividade: ${_isOnline ? "ONLINE" : "OFFLINE"}', 'IncrementalSyncService');
+        AppLogger.info(
+          'Mudança de conectividade: ${_isOnline ? "ONLINE" : "OFFLINE"}',
+          'IncrementalSyncService',
+        );
 
-      // Se voltou online, sincronizar imediatamente
-      if (!wasOnline && _isOnline) {
-        AppLogger.info('Reconectado - iniciando sincronização automática', 'IncrementalSyncService');
-        syncAll();
-      }
-    });
+        if (!wasOnline && _isOnline) {
+          AppLogger.info(
+            'Reconectado - iniciando sincronização automática',
+            'IncrementalSyncService',
+          );
+          syncAll();
+        }
+      }, onError: (Object e, StackTrace st) {
+        AppLogger.error('connectivity stream error', e, st);
+      });
+    } catch (e, st) {
+      AppLogger.error('Falha ao registrar listener de conectividade', e, st);
+    }
 
     // Sincronização inicial se online
     if (_isOnline) {
@@ -200,13 +248,16 @@ class IncrementalSyncService {
         }
 
         await _pullCollection(table, userId, lastSync);
-        
+
         // Atualizar timestamp da última sincronização
         await _db.setLastSyncTimestamp(table, DateTime.now());
       } catch (e, stack) {
         AppLogger.error('Pull: Erro ao baixar $table', e, stack, 'IncrementalSyncService');
       }
     }
+
+    // Notifica streams reativas (UI) após pull completo.
+    DataChangeBus.instance.notifyAll(tables);
   }
 
   /// Pull individual de uma coleção

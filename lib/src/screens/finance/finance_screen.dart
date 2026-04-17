@@ -327,7 +327,7 @@ class _PendingSessionTile extends StatelessWidget {
         return ListTile(
           leading: CircleAvatar(
             backgroundColor: isInactive ? Colors.grey : Colors.orange,
-            child: Icon(Icons.pending, color: Colors.white, size: 20),
+            child: const Icon(Icons.pending, color: Colors.white, size: 20),
           ),
           title: Row(
             children: [
@@ -383,10 +383,12 @@ class _PendingSessionTile extends StatelessWidget {
             if (confirm == true && context.mounted) {
               try {
                 await SessionService.instance.markAsPaid(session.id);
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Pagamento confirmado!')),
                 );
               } catch (e) {
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Erro: $e')),
                 );

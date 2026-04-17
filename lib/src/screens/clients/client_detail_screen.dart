@@ -14,9 +14,6 @@ class ClientDetailScreen extends StatefulWidget {
 }
 
 class _ClientDetailScreenState extends State<ClientDetailScreen> {
-  final _notesController = TextEditingController();
-  bool _isEditingNotes = false;
-
   void _showEditDialog(Client client) {
     final nameController = TextEditingController(text: client.name);
     final phoneController = TextEditingController(text: client.phone);

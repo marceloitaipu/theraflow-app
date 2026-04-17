@@ -1,5 +1,5 @@
-/// Configuração do aplicativo
-/// Permite alternar entre modo mock (desenvolvimento) e Firebase (produção)
+// Configuração do aplicativo.
+// Permite alternar entre modo mock (desenvolvimento) e Firebase (produção).
 
 class AppConfig {
   /// Define se o app está em modo mock (sem Firebase)

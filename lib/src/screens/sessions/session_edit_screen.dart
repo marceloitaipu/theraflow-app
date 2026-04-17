@@ -247,7 +247,7 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
         child: ListView(
           children: [
             DropdownButtonFormField<String>(
-              value: _selectedClientId,
+              initialValue: _selectedClientId,
               decoration: const InputDecoration(
                 labelText: 'Cliente',
                 border: OutlineInputBorder(),
@@ -294,7 +294,7 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _status,
+              initialValue: _status,
               decoration: const InputDecoration(
                 labelText: 'Status',
                 border: OutlineInputBorder(),
@@ -308,7 +308,7 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _payment,
+              initialValue: _payment,
               decoration: const InputDecoration(
                 labelText: 'Pagamento',
                 border: OutlineInputBorder(),
@@ -326,11 +326,11 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
               Card(
                 color: _usePackage ? Colors.green[50] : Colors.grey[100],
                 child: SwitchListTile(
-                  title: Row(
+                  title: const Row(
                     children: [
-                      const Icon(Icons.inventory_2, size: 20),
-                      const SizedBox(width: 8),
-                      const Text('Usar pacote ativo'),
+                      Icon(Icons.inventory_2, size: 20),
+                      SizedBox(width: 8),
+                      Text('Usar pacote ativo'),
                     ],
                   ),
                   subtitle: Text(
@@ -341,7 +341,7 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
                   ),
                   value: _usePackage,
                   onChanged: (v) => setState(() => _usePackage = v),
-                  activeColor: Colors.green,
+                  activeThumbColor: Colors.green,
                 ),
               ),
             ],

@@ -52,3 +52,4 @@ ios/.symlinks/
 # Coverage
 coverage/
 *.lcov
+deploy_log.txt

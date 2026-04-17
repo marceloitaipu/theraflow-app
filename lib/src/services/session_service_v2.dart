@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/session.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
+import 'data_change_bus.dart';
 import 'incremental_sync_service.dart';
 
 class SessionService {
@@ -13,21 +14,12 @@ class SessionService {
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
   final IncrementalSyncService _sync = IncrementalSyncService.instance;
-  final Uuid _uuid = Uuid();
+  final Uuid _uuid = const Uuid();
 
-  // Stream de todas as sessões (do banco local)
+  // Stream reativa de todas as sessões. Reemite apenas em mudanças.
   Stream<List<Session>> getSessionsStream() async* {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) {
-      yield [];
-      return;
-    }
-
-    // Emitir dados iniciais
     yield await getSessions();
-
-    // Atualizar periodicamente (simular stream)
-    await for (final _ in Stream.periodic(Duration(seconds: 2))) {
+    await for (final _ in DataChangeBus.instance.streamFor('sessions')) {
       yield await getSessions();
     }
   }
@@ -44,19 +36,10 @@ class SessionService {
       ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
   }
 
-  // Stream de sessões de um cliente
+  // Stream reativa de sessões de um cliente.
   Stream<List<Session>> getClientSessionsStream(String clientId) async* {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) {
-      yield [];
-      return;
-    }
-
-    // Emitir dados iniciais
     yield await getClientSessions(clientId);
-
-    // Atualizar periodicamente
-    await for (final _ in Stream.periodic(Duration(seconds: 2))) {
+    await for (final _ in DataChangeBus.instance.streamFor('sessions')) {
       yield await getClientSessions(clientId);
     }
   }
@@ -141,6 +124,7 @@ class SessionService {
 
     // Salvar localmente
     await _db.insertSession(sessionData);
+    DataChangeBus.instance.notify('sessions');
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {
@@ -191,6 +175,7 @@ class SessionService {
 
     // Atualizar localmente
     await _db.updateSession(id, updates);
+    DataChangeBus.instance.notify('sessions');
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {
@@ -216,6 +201,7 @@ class SessionService {
 
     // Marcar como deletado (soft delete)
     await _db.markSessionDeleted(id);
+    DataChangeBus.instance.notify('sessions');
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {

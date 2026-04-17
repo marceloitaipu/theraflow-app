@@ -209,7 +209,7 @@ class _PackageCreateScreenState extends State<PackageCreateScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -260,7 +260,7 @@ class _PackageCreateScreenState extends State<PackageCreateScreen> {
                   label: Text(preset['name']),
                   selected: isSelected,
                   onSelected: (_) => _applyPreset(preset),
-                  selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+                  selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
                 );
               }).toList(),
             ),

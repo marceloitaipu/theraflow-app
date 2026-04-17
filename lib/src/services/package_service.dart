@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../models/package.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
+import 'data_change_bus.dart';
 import 'incremental_sync_service.dart';
 
 class PackageService {
@@ -13,7 +14,7 @@ class PackageService {
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
   final IncrementalSyncService _sync = IncrementalSyncService.instance;
-  final Uuid _uuid = Uuid();
+  final Uuid _uuid = const Uuid();
 
   // Buscar todos os pacotes do banco local
   Future<List<Package>> getPackages() async {
@@ -31,19 +32,10 @@ class PackageService {
     return getClientPackages(clientId);
   }
 
-  // Stream de pacotes de um cliente
+  // Stream reativa de pacotes de um cliente. Reemite apenas em mudanças.
   Stream<List<Package>> getPackagesStream(String clientId) async* {
-    final userId = _auth.currentUser?.uid;
-    if (userId == null) {
-      yield [];
-      return;
-    }
-
-    // Emitir dados iniciais
     yield await getClientPackages(clientId);
-
-    // Atualizar periodicamente
-    await for (final _ in Stream.periodic(Duration(seconds: 2))) {
+    await for (final _ in DataChangeBus.instance.streamFor('packages')) {
       yield await getClientPackages(clientId);
     }
   }
@@ -110,6 +102,7 @@ class PackageService {
 
     // Salvar localmente
     await _db.insertPackage(packageData);
+    DataChangeBus.instance.notify('packages');
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {
@@ -168,6 +161,7 @@ class PackageService {
 
     // Atualizar localmente
     await _db.updatePackage(packageId, updates);
+    DataChangeBus.instance.notify('packages');
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {

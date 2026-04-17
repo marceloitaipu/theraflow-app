@@ -179,7 +179,7 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
                 gradient: LinearGradient(
                   colors: [
                     Theme.of(context).primaryColor,
-                    Theme.of(context).primaryColor.withOpacity(0.8),
+                    Theme.of(context).primaryColor.withValues(alpha: 0.8),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
@@ -425,7 +425,7 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
       onTap: () => setState(() => _status = value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: isSelected ? color.withOpacity(0.1) : null,
+        color: isSelected ? color.withValues(alpha: 0.1) : null,
         child: Row(
           children: [
             Icon(
@@ -452,7 +452,7 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
       onTap: () => setState(() => _paymentStatus = value),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        color: isSelected ? color.withOpacity(0.1) : null,
+        color: isSelected ? color.withValues(alpha: 0.1) : null,
         child: Row(
           children: [
             Icon(

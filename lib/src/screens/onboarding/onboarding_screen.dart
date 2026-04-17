@@ -4,9 +4,11 @@ import 'package:go_router/go_router.dart';
 import '../../models/app_module.dart';
 import '../../services/profile_service.dart';
 import '../../services/auth_service.dart';
-import '../../services/business_service.dart';
 import '../../widgets/primary_button.dart';
 
+/// Onboarding em 4 passos. Salva preferências do usuário no Firestore
+/// e opcionalmente cria o primeiro cliente. Arquitetura single-tenant:
+/// as preferências ficam em `users/{uid}` — não há entidade Business separada.
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
@@ -52,7 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       if (userData != null && mounted) {
         _name.text = userData.name;
       }
-    } catch (e) {
+    } catch (_) {
       // Continuar com campos vazios
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -75,28 +77,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     setState(() => _saving = true);
     try {
-      final uid = AuthService.instance.currentUser?.uid ?? 'demo';
-
-      // Criar negócio (Business) com módulo selecionado
+      final module = (_selectedModule ?? AppModule.therapy).name;
       final bName = _businessName.text.trim().isNotEmpty
           ? _businessName.text.trim()
           : '${_name.text.trim()} - Consultório';
 
-      await BusinessService.instance.createBusiness(
-        ownerUid: uid,
-        name: bName,
-        plan: 'starter',
-        enabledModules: [_selectedModule ?? AppModule.therapy],
-      );
-
-      // Salvar perfil
       await ProfileService.instance.saveProfile(
         name: _name.text.trim(),
         phone: _phone.text.trim(),
         city: _city.text.trim(),
-        defaultDurationMinutes: int.tryParse(_defaultDuration.text.trim()) ?? 60,
-        defaultPrice: double.tryParse(_defaultPrice.text.trim().replaceAll(',', '.')) ?? 150,
-        firstClientName: _firstClientName.text.trim().isNotEmpty ? _firstClientName.text.trim() : null,
+        defaultDurationMinutes:
+            int.tryParse(_defaultDuration.text.trim()) ?? 60,
+        defaultPrice: double.tryParse(
+              _defaultPrice.text.trim().replaceAll(',', '.'),
+            ) ??
+            150,
+        module: module,
+        businessName: bName,
+        firstClientName: _firstClientName.text.trim().isNotEmpty
+            ? _firstClientName.text.trim()
+            : null,
         firstClientPhone: _firstClientPhone.text.trim(),
       );
 
@@ -117,21 +117,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _nextStep() {
-    if (_step == 0) {
-      if (_name.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Informe seu nome')),
-        );
-        return;
-      }
+    if (_step == 0 && _name.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Informe seu nome')),
+      );
+      return;
     }
-    if (_step == 1) {
-      if (_selectedModule == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Selecione sua área de atuação')),
-        );
-        return;
-      }
+    if (_step == 1 && _selectedModule == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecione sua área de atuação')),
+      );
+      return;
     }
 
     if (_step < _totalSteps - 1) {
@@ -142,9 +138,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   void _previousStep() {
-    if (_step > 0) {
-      setState(() => _step--);
-    }
+    if (_step > 0) setState(() => _step--);
   }
 
   Widget _stepView() {
@@ -160,7 +154,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     }
   }
 
-  // ========== STEP 1 — Dados pessoais ==========
   Widget _buildStep1PersonalData() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,7 +207,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // ========== STEP 2 — Seleção de nicho ==========
   Widget _buildStep2NicheSelection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -227,23 +219,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Escolha sua especialidade principal. Você poderá ativar módulos adicionais depois.',
+          'Escolha sua especialidade principal.',
           style: TextStyle(fontSize: 14, color: Colors.grey),
         ),
         const SizedBox(height: 24),
-        ...AppModule.values.map((module) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _NicheCard(
-                module: module,
-                selected: _selectedModule == module,
-                onTap: () => setState(() => _selectedModule = module),
-              ),
-            )),
+        ...AppModule.values.map(
+          (module) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _NicheCard(
+              module: module,
+              selected: _selectedModule == module,
+              onTap: () => setState(() => _selectedModule = module),
+            ),
+          ),
+        ),
       ],
     );
   }
 
-  // ========== STEP 3 — Preferências ==========
   Widget _buildStep3Preferences() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,31 +284,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             hintText: '150',
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.blue),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Você pode ajustar esses valores a qualquer momento.',
-                  style: TextStyle(fontSize: 12, color: Colors.blue),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
 
-  // ========== STEP 4 — Primeiro cliente ==========
   Widget _buildStep4FirstClient() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,26 +323,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             hintText: '(00) 00000-0000',
           ),
         ),
-        const SizedBox(height: 16),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.lightbulb_outline, color: Colors.orange),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Você pode pular e cadastrar depois na tela Clientes.',
-                  style: TextStyle(fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
@@ -394,13 +346,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Progress indicator
               Row(
                 children: List.generate(
                   _totalSteps,
                   (index) => Expanded(
                     child: Container(
-                      margin: EdgeInsets.only(right: index < _totalSteps - 1 ? 8 : 0),
+                      margin: EdgeInsets.only(
+                        right: index < _totalSteps - 1 ? 8 : 0,
+                      ),
                       height: 4,
                       decoration: BoxDecoration(
                         color: index <= _step ? Colors.blue : Colors.grey[300],
@@ -411,14 +364,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
               const SizedBox(height: 32),
-              // Step content
               Expanded(
-                child: SingleChildScrollView(
-                  child: _stepView(),
-                ),
+                child: SingleChildScrollView(child: _stepView()),
               ),
               const SizedBox(height: 24),
-              // Buttons
               Row(
                 children: [
                   if (_step > 0)
@@ -435,7 +384,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       onPressed: _saving ? null : _nextStep,
                       label: _saving
                           ? 'Salvando...'
-                          : (_step < _totalSteps - 1 ? 'Próximo' : 'Finalizar'),
+                          : (_step < _totalSteps - 1
+                              ? 'Próximo'
+                              : 'Finalizar'),
                     ),
                   ),
                 ],
@@ -448,7 +399,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
-/// Card para seleção de nicho/módulo no onboarding
 class _NicheCard extends StatelessWidget {
   final AppModule module;
   final bool selected;
@@ -473,7 +423,7 @@ class _NicheCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: color, width: selected ? 2 : 1),
-          color: selected ? color.withOpacity(0.08) : Colors.white,
+          color: selected ? color.withValues(alpha: 0.08) : Colors.white,
         ),
         child: Row(
           children: [
@@ -494,16 +444,12 @@ class _NicheCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     module.description,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Colors.grey[600],
-                    ),
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                   ),
                 ],
               ),
             ),
-            if (selected)
-              Icon(Icons.check_circle, color: color, size: 28),
+            if (selected) Icon(Icons.check_circle, color: color, size: 28),
           ],
         ),
       ),

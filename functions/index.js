@@ -24,6 +24,25 @@ exports.validateSubscription = functions.https.onCall(async (data, context) => {
     );
   }
 
+  // ============================================================
+  // SEGURANÇA: validação de compra NÃO está implementada.
+  //
+  // Até que exista integração real com:
+  //   - Google Play Developer API (androidpublisher.purchases.subscriptions.get)
+  //   - App Store Server API (verifyReceipt / App Store Server Notifications v2)
+  //
+  // esta função DEVE recusar qualquer requisição. Não há "modo simulado" em
+  // produção — aceitar tokens sem validar permitiria fraude de assinatura.
+  //
+  // Para ativar, implementar a validação real e remover este early-return.
+  // ============================================================
+  throw new functions.https.HttpsError(
+    'unimplemented',
+    'Validação de assinatura ainda não foi integrada com Google Play/App Store. ' +
+    'Billing está desativado nesta versão.'
+  );
+
+  // eslint-disable-next-line no-unreachable
   const userId = context.auth.uid;
   const { platform, purchaseToken, productId } = data;
 
@@ -38,24 +57,23 @@ exports.validateSubscription = functions.https.onCall(async (data, context) => {
   try {
     console.log(`Validando assinatura: userId=${userId}, platform=${platform}, productId=${productId}`);
 
-    // TODO: Implementar validação real com Google Play Billing ou App Store
-    // Por enquanto, apenas simular validação
-    
+    // TODO: Implementar validação real com Google Play Billing ou App Store.
+    // Referências:
+    //   - https://developers.google.com/android-publisher/api-ref/rest/v3/purchases.subscriptions/get
+    //   - https://developer.apple.com/documentation/appstoreserverapi
     let subscriptionData;
-    
+
     if (platform === 'android') {
-      // subscriptionData = await validateGooglePlaySubscription(purchaseToken, productId);
       subscriptionData = {
-        isValid: true,
-        expiryDate: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 dias
-        autoRenewing: true
+        isValid: false,
+        expiryDate: 0,
+        autoRenewing: false,
       };
     } else if (platform === 'ios') {
-      // subscriptionData = await validateAppStoreSubscription(purchaseToken);
       subscriptionData = {
-        isValid: true,
-        expiryDate: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 dias
-        autoRenewing: true
+        isValid: false,
+        expiryDate: 0,
+        autoRenewing: false,
       };
     } else {
       throw new functions.https.HttpsError(
