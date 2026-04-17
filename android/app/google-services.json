@@ -7,7 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:725483264741:android:310fa069aa6ebf3a21920c",
+        "mobilesdk_app_id": "1:725483264741:android:28022badfe64351b21920c",
         "android_client_info": {
           "package_name": "com.theraflow.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC5bURxlZmDanIwaFJPEhXqktFyRDD78YY"
+          "current_key": "REDACTED_OLD_ANDROID_KEY"
         }
       ],
       "services": {

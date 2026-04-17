@@ -22,9 +22,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        return ios;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for iOS - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macOS - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -43,7 +49,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyC5bURxlZmDanIwaFJPEhXqktFyRDD78YY',
+    apiKey: 'REDACTED_OLD_WEB_KEY',
     appId: '1:725483264741:web:310fa069aa6ebf3a21920c',
     messagingSenderId: '725483264741',
     projectId: 'theraflow-app-83126',
@@ -52,31 +58,10 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC5bURxlZmDanIwaFJPEhXqktFyRDD78YY',
-    appId: '1:725483264741:android:310fa069aa6ebf3a21920c',
+    apiKey: 'REDACTED_OLD_ANDROID_KEY',
+    appId: '1:725483264741:android:28022badfe64351b21920c',
     messagingSenderId: '725483264741',
     projectId: 'theraflow-app-83126',
-    authDomain: 'theraflow-app-83126.firebaseapp.com',
     storageBucket: 'theraflow-app-83126.firebasestorage.app',
-  );
-
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyC5bURxlZmDanIwaFJPEhXqktFyRDD78YY',
-    appId: '1:725483264741:ios:310fa069aa6ebf3a21920c',
-    messagingSenderId: '725483264741',
-    projectId: 'theraflow-app-83126',
-    authDomain: 'theraflow-app-83126.firebaseapp.com',
-    storageBucket: 'theraflow-app-83126.firebasestorage.app',
-    iosBundleId: 'com.theraflow.app',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyC5bURxlZmDanIwaFJPEhXqktFyRDD78YY',
-    appId: '1:725483264741:ios:310fa069aa6ebf3a21920c',
-    messagingSenderId: '725483264741',
-    projectId: 'theraflow-app-83126',
-    authDomain: 'theraflow-app-83126.firebaseapp.com',
-    storageBucket: 'theraflow-app-83126.firebasestorage.app',
-    iosBundleId: 'com.theraflow.app',
   );
 }
