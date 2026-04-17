@@ -1,8 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'firebase_options.dart';
 
 import 'src/app_router.dart';
@@ -18,16 +22,30 @@ void main() async {
   // Inicializar dados de localização para português
   await initializeDateFormatting('pt_BR', null);
   
+  // Inicializar databaseFactory para web/desktop (sqflite não suporta nativamente)
+  if (kIsWeb) {
+    databaseFactory = databaseFactoryFfiWeb;
+  } else if (!defaultTargetPlatform.toString().contains('android') &&
+      !defaultTargetPlatform.toString().contains('iOS')) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+  
   // Inicializar Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Inicializar banco de dados local
-  await DatabaseHelper.instance.database;
-  
-  // Inicializar sincronização incremental
-  await IncrementalSyncService.instance.initialize();
+  // Inicializar banco de dados local e sync (somente em plataformas nativas)
+  // Em web, o app usa Firestore diretamente.
+  if (!kIsWeb) {
+    try {
+      await DatabaseHelper.instance.database;
+      await IncrementalSyncService.instance.initialize();
+    } catch (e) {
+      debugPrint('Falha ao inicializar DB local/sync: $e');
+    }
+  }
   
   // Inicializar serviço de assinaturas
   await SubscriptionService.instance.initialize();

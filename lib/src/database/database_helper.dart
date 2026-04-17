@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -14,12 +15,12 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDB(String filePath) async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, filePath);
+    // Em web, usa apenas o nome do arquivo (IndexedDB)
+    final path = kIsWeb ? filePath : join(await getDatabasesPath(), filePath);
 
     return await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -46,12 +47,35 @@ class DatabaseHelper {
           updatedAt TEXT NOT NULL
         )
       ''');
-      
+
       // Criar índices para os novos campos
       await db.execute('CREATE INDEX idx_clients_updatedAt ON clients(updatedAt)');
       await db.execute('CREATE INDEX idx_sessions_updatedAt ON sessions(updatedAt)');
       await db.execute('CREATE INDEX idx_payments_updatedAt ON payments(updatedAt)');
       await db.execute('CREATE INDEX idx_packages_updatedAt ON packages(updatedAt)');
+    }
+
+    if (oldVersion < 3) {
+      // v3: padronizar nomes de colunas entre SQLite e Models
+      // Requer SQLite >= 3.25 (Android API 24+, iOS 12+). sqflite usa versões modernas.
+
+      // sessions: sessionStatus -> status
+      await db.execute('ALTER TABLE sessions RENAME COLUMN sessionStatus TO status');
+
+      // payments: paymentStatus -> status
+      await db.execute('ALTER TABLE payments RENAME COLUMN paymentStatus TO status');
+
+      // packages: packageStatus -> status, expiresAt -> expirationDate, value -> price
+      await db.execute('ALTER TABLE packages RENAME COLUMN packageStatus TO status');
+      await db.execute('ALTER TABLE packages RENAME COLUMN expiresAt TO expirationDate');
+      await db.execute('ALTER TABLE packages RENAME COLUMN value TO price');
+
+      // packages: adicionar remainingSessions (derivado de totalSessions - usedSessions)
+      await db.execute('ALTER TABLE packages ADD COLUMN remainingSessions INTEGER DEFAULT 0');
+      await db.execute('''
+        UPDATE packages
+        SET remainingSessions = MAX(totalSessions - COALESCE(usedSessions, 0), 0)
+      ''');
     }
   }
 
@@ -89,10 +113,10 @@ class DatabaseHelper {
         clientId $textType,
         dateTime $textType,
         therapyType $textType,
-        sessionStatus $textType,
+        status TEXT DEFAULT 'confirmado',
         value $realType,
         notes TEXT DEFAULT '',
-        paymentStatus $textType,
+        paymentStatus TEXT DEFAULT 'pendente',
         createdAt $textType,
         updatedAt $textType,
         deletedAt $textNullable,
@@ -109,7 +133,7 @@ class DatabaseHelper {
         id $idType,
         userId $textType,
         sessionId $textType,
-        paymentStatus $textType,
+        status TEXT DEFAULT 'pendente',
         method $textType,
         value $realType,
         paidAt $textNullable,
@@ -128,15 +152,15 @@ class DatabaseHelper {
         id $idType,
         userId $textType,
         clientId $textType,
-        name $textType,
+        name TEXT DEFAULT '',
         totalSessions $intType,
-        usedSessions INTEGER DEFAULT 0,
-        value $realType,
-        expiresAt $textNullable,
+        remainingSessions INTEGER DEFAULT 0,
+        price $realType,
+        expirationDate $textNullable,
         createdAt $textType,
         updatedAt $textType,
         deletedAt $textNullable,
-        packageStatus TEXT DEFAULT 'active',
+        status TEXT DEFAULT 'active',
         synced $boolType,
         lastModified $textType,
         deleted $boolType
