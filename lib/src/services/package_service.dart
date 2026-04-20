@@ -73,12 +73,7 @@ class PackageService {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
 
-    // Verificar se já existe pacote ativo para este cliente
-    final activePackage = await getActivePackage(clientId);
-    if (activePackage != null) {
-      throw Exception(
-          'Cliente já possui um pacote ativo. Finalize ou expire o pacote atual antes de criar um novo.');
-    }
+    // Permite múltiplos pacotes ativos simultâneos por cliente.
 
     // Gerar ID único
     final id = _uuid.v4();
