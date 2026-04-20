@@ -53,6 +53,7 @@ class FinanceService {
       'updatedAt': now.toIso8601String(),
       'deletedAt': null,
       'synced': 0,
+      'lastModified': now.toIso8601String(),
       'deleted': 0,
     };
 

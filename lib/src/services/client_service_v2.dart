@@ -67,6 +67,7 @@ class ClientService {
       'deletedAt': null,
       'status': 'active',
       'synced': _sync.isOnline ? 1 : 0,
+      'lastModified': now.toIso8601String(),
       'deleted': 0,
     };
 
