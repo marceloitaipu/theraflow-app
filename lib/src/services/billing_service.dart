@@ -1,4 +1,5 @@
 import '../config/billing_config.dart';
+import 'iap_billing_service.dart';
 
 /// Informações do cliente de billing (resultado do fetch)
 class BillingCustomerInfo {
@@ -32,6 +33,8 @@ abstract class BillingService {
         return MockBillingService();
       case BillingMode.revenuecat:
         return RevenueCatBillingService();
+      case BillingMode.inAppPurchase:
+        return InAppPurchaseBillingService();
     }
   }
 }

@@ -80,7 +80,8 @@ class PackageService {
     if (kIsWeb) {
       final doc = await _packagesCollection(userId).doc(packageId).get();
       if (!doc.exists) return null;
-      return Package.fromMap(doc.id, doc.data()!);
+      final pkg = Package.fromMap(doc.id, doc.data()!);
+      return pkg.status == 'deleted' ? null : pkg;
     }
 
     final map = await _db.getPackageById(packageId);

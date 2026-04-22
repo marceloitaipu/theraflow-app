@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../services/app_services.dart';
+import '../../widgets/revenue_sparkline.dart';
 import '../../widgets/section_title.dart';
 
 class FinanceScreen extends StatefulWidget {
@@ -106,6 +107,42 @@ class _FinanceScreenState extends State<FinanceScreen> {
                         ],
                       ),
                     )),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Tendência de receita (últimos 6 meses)
+          FutureBuilder<List<MonthlyRevenuePoint>>(
+            future: FinanceService.instance.getRevenueLastMonths(6),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              return Container(
+                margin: const EdgeInsets.symmetric(horizontal: 12),
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'Receita — últimos 6 meses',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    RevenueSparkline(points: snapshot.data!),
                   ],
                 ),
               );

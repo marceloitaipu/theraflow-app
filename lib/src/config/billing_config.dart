@@ -7,10 +7,15 @@
 /// - [mock]: apenas para desenvolvimento local. Simula upgrade automático.
 ///   NUNCA usar em builds de produção.
 /// - [revenuecat]: implementação real via SDK `purchases_flutter`.
+/// - [inAppPurchase]: integração nativa via pacote oficial `in_app_purchase`
+///   (Google Play / App Store). Esqueleto pronto em
+///   `lib/src/services/iap_billing_service.dart`. Requer descomentar a
+///   dependência no pubspec e configurar produtos nas lojas.
 enum BillingMode {
   disabled,
   mock,
   revenuecat,
+  inAppPurchase,
 }
 
 class BillingConfig {

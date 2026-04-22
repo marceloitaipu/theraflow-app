@@ -235,6 +235,13 @@ class ClientService {
     return clients.where((c) => c.isActive).length;
   }
 
+  /// Quantidade de clientes criados nos últimos [days] dias.
+  Future<int> getNewClientsCount({int days = 30}) async {
+    final clients = await getClients();
+    final cutoff = DateTime.now().subtract(Duration(days: days));
+    return clients.where((c) => c.createdAt.isAfter(cutoff)).length;
+  }
+
   // Verificar limite de clientes do plano
   Future<void> _checkClientLimit() async {
     if (AppConfig.isWebTestMode) return;

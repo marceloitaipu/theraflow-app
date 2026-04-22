@@ -202,6 +202,24 @@ class FinanceService {
 
   // ========== INSIGHTS FINANCEIROS ==========
 
+  /// Receita (recebida) por mês nos últimos [months] meses, do mais antigo
+  /// para o mais recente. Útil para sparklines/gráficos de tendência.
+  Future<List<MonthlyRevenuePoint>> getRevenueLastMonths(int months) async {
+    if (months <= 0) return const [];
+    final now = DateTime.now();
+    final points = <MonthlyRevenuePoint>[];
+    for (int i = months - 1; i >= 0; i--) {
+      final ref = DateTime(now.year, now.month - i, 1);
+      final report = await getMonthlyReport(year: ref.year, month: ref.month);
+      points.add(MonthlyRevenuePoint(
+        year: ref.year,
+        month: ref.month,
+        received: report.totalReceived,
+      ));
+    }
+    return points;
+  }
+
   /// Receita esperada nos próximos 7 dias (sessões agendadas)
   Future<double> getExpectedNext7Days() async {
     final now = DateTime.now();
@@ -432,5 +450,18 @@ class FinanceInsights {
     required this.pendingCount,
     required this.pendingTotal,
     required this.messages,
+  });
+}
+
+/// Ponto de receita mensal (usado por gráficos de tendência).
+class MonthlyRevenuePoint {
+  final int year;
+  final int month;
+  final double received;
+
+  const MonthlyRevenuePoint({
+    required this.year,
+    required this.month,
+    required this.received,
   });
 }

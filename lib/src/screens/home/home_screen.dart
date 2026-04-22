@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../services/app_services.dart';
+import '../../widgets/home_dashboard.dart';
 import '../../widgets/section_title.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -51,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (sessions.isEmpty) {
               return ListView(
                 children: [
-                  const _FinanceSummaryCard(),
+                  const HomeDashboard(),
                   Center(
                     child: Padding(
                       padding: const EdgeInsets.all(48),
@@ -79,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             return ListView(
               children: [
-                const _FinanceSummaryCard(),
+                const HomeDashboard(),
                 if (nextSession != null) ...[
                   const SectionTitle('Próxima sessão'),
                   _NextSessionCard(session: nextSession),
@@ -91,103 +92,6 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
       ),
-    );
-  }
-}
-
-// Card de resumo financeiro
-class _FinanceSummaryCard extends StatelessWidget {
-  const _FinanceSummaryCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-    final now = DateTime.now();
-
-    return FutureBuilder<MonthlyReport>(
-      future: FinanceService.instance.getMonthlyReport(
-        year: now.year,
-        month: now.month,
-      ),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const SizedBox.shrink();
-        }
-
-        final report = snapshot.data!;
-
-        return Card(
-          margin: const EdgeInsets.all(12),
-          child: InkWell(
-            onTap: () => context.go('/finance'),
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Este mês',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          currencyFormat.format(report.totalReceived),
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.green,
-                          ),
-                        ),
-                        Text(
-                          'recebidos',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    width: 1,
-                    height: 50,
-                    color: Colors.grey[300],
-                  ),
-                  Expanded(
-                    child: Column(
-                      children: [
-                        Text(
-                          currencyFormat.format(report.totalPending),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                            color: report.totalPending > 0 ? Colors.orange : Colors.grey,
-                          ),
-                        ),
-                        Text(
-                          'pendentes',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.grey[400]),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
