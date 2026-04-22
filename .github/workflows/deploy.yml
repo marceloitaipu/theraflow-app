@@ -7,9 +7,7 @@ on:
     branches: [main, develop]
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 jobs:
   # Job 1: Testes e análise de código (temporariamente desabilitado)
@@ -86,17 +84,17 @@ jobs:
       - name: Build Web (Production)
         run: flutter build web --release --base-href /theraflow-app/ --dart-define=FLAVOR=prod
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
+      - name: Garantir .nojekyll
+        run: touch build/web/.nojekyll
 
-      - name: Upload artifact para GitHub Pages
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: 'build/web'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web
+          publish_branch: gh-pages
+          force_orphan: true
+          commit_message: "deploy: ${{ github.event.head_commit.message }}"
 
   # Job 4: Build Android (opcional)
   build-android:
