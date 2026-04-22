@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Payment {
   final String id;
   final String sessionId;
@@ -26,21 +28,30 @@ class Payment {
         'createdAt': createdAt.toIso8601String(),
       };
 
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
   static Payment fromMap(String id, Map<String, dynamic> map) {
     return Payment(
       id: id,
       sessionId: (map['sessionId'] ?? '') as String,
       status: (map['status'] ?? 'pendente') as String,
       method: (map['method'] ?? 'dinheiro') as String,
-      value: (map['value'] ?? 0.0) is int
-          ? (map['value'] as int).toDouble()
-          : (map['value'] ?? 0.0) as double,
-      paidAt: map['paidAt'] != null
-          ? DateTime.parse(map['paidAt'] as String)
-          : null,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : DateTime.now(),
+      value: _parseDouble(map['value']),
+      paidAt: map['paidAt'] != null ? _parseDateTime(map['paidAt']) : null,
+      createdAt: _parseDateTime(map['createdAt']),
     );
   }
 

@@ -49,7 +49,7 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'REDACTED_OLD_WEB_KEY',
+    apiKey: 'AIzaSyCPznDIysLF3ULBejnio_5jGE5DV5Zq6bE',
     appId: '1:725483264741:web:310fa069aa6ebf3a21920c',
     messagingSenderId: '725483264741',
     projectId: 'theraflow-app-83126',
@@ -58,7 +58,7 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'REDACTED_OLD_ANDROID_KEY',
+    apiKey: 'AIzaSyAqxmKpmA5QL0glj-KNg516Z_KcoL5WS7c',
     appId: '1:725483264741:android:28022badfe64351b21920c',
     messagingSenderId: '725483264741',
     projectId: 'theraflow-app-83126',

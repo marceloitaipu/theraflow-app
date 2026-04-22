@@ -1,6 +1,9 @@
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
+import '../config/app_config.dart';
 import 'auth_service.dart';
+import 'client_service.dart';
 import 'incremental_sync_service.dart';
 import '../database/database_helper.dart';
 
@@ -76,7 +79,11 @@ class SubscriptionService {
 
       final data = userDoc.data()!;
       final statusStr = data['subscriptionStatus'] as String?;
-      _currentPlan = data['planId'] as String? ?? 'free';
+      _currentPlan = data['planId'] as String? ?? data['plan'] as String? ?? 'free';
+
+      if (AppConfig.isWebTestMode && _currentPlan == 'free') {
+        _currentStatus = SubscriptionStatus.active;
+      }
       
       final periodEndTimestamp = data['currentPeriodEnd'];
       if (periodEndTimestamp != null) {
@@ -95,7 +102,9 @@ class SubscriptionService {
           _currentStatus = SubscriptionStatus.cancelled;
           break;
         default:
-          _currentStatus = SubscriptionStatus.free;
+          _currentStatus = AppConfig.isWebTestMode
+              ? SubscriptionStatus.active
+              : SubscriptionStatus.free;
       }
 
       AppLogger.info(
@@ -172,9 +181,10 @@ class SubscriptionService {
         return true;
       }
 
-      // Buscar contagem de clientes do banco local
-      final db = DatabaseHelper.instance;
-      final clientCount = await db.countClients(userId);
+      // Na web, usa Firestore diretamente via serviço de clientes.
+      final clientCount = kIsWeb
+          ? await ClientService.instance.getClientCount()
+          : await DatabaseHelper.instance.countClients(userId);
       final limit = getClientLimit();
 
       // Se limite é -1 (ilimitado), sempre permitir

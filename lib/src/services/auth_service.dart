@@ -1,5 +1,10 @@
+import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import '../config/app_config.dart';
 import '../models/user.dart' as models;
 
 class AuthService {
@@ -8,6 +13,14 @@ class AuthService {
 
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Inicializa configurações de auth (chamar no main antes de usar).
+  Future<void> initialize() async {
+    if (kIsWeb) {
+      // Desabilita reCAPTCHA Enterprise que causa 400 no signup web
+      await _auth.setSettings(appVerificationDisabledForTesting: kDebugMode);
+    }
+  }
 
   // Stream do usuário atual
   Stream<firebase_auth.User?> get authStateChanges => _auth.authStateChanges();
@@ -43,10 +56,17 @@ class AuthService {
     }
 
     try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+      firebase_auth.UserCredential credential;
+
+      if (kIsWeb) {
+        // Na web, usa REST API para evitar bloqueio do reCAPTCHA Enterprise
+        credential = await _signUpViaRestApi(email, password);
+      } else {
+        credential = await _auth.createUserWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      }
 
       // Criar documento do usuário no Firestore
       final user = models.User(
@@ -73,13 +93,55 @@ class AuthService {
       } else if (errorString.contains('weak-password')) {
         throw Exception('Senha muito fraca.');
       }
-      throw Exception('Erro ao criar conta. Tente novamente.');
+      rethrow;
     }
+  }
+
+  /// Cria conta via REST API do Firebase Auth (sem reCAPTCHA Enterprise).
+  Future<firebase_auth.UserCredential> _signUpViaRestApi(
+      String email, String password) async {
+    final apiKey = Firebase.app().options.apiKey;
+    final url = Uri.parse(
+        'https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=$apiKey');
+
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': email,
+        'password': password,
+        'returnSecureToken': true,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      final body = jsonDecode(response.body);
+      final errorMsg =
+          body['error']?['message'] ?? 'Erro desconhecido ao criar conta';
+      if (errorMsg == 'EMAIL_EXISTS') {
+        throw Exception('E-mail já cadastrado.');
+      } else if (errorMsg == 'WEAK_PASSWORD') {
+        throw Exception('Senha muito fraca.');
+      } else if (errorMsg == 'INVALID_EMAIL') {
+        throw Exception('E-mail inválido.');
+      }
+      throw Exception(errorMsg);
+    }
+
+    // Faz login com as credenciais para obter o UserCredential do SDK
+    return await _auth.signInWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
   // Login com GitHub
   Future<firebase_auth.User> signInWithGitHub() async {
     try {
+      if (!kIsWeb) {
+        throw Exception('Login com GitHub está disponível apenas na web nesta fase de testes.');
+      }
+
       final githubProvider = firebase_auth.GithubAuthProvider();
       final credential = await _auth.signInWithPopup(githubProvider);
       final user = credential.user;
@@ -101,8 +163,20 @@ class AuthService {
 
       return user;
     } on firebase_auth.FirebaseAuthException catch (e) {
+      if (e.code == 'popup-closed-by-user') {
+        throw Exception('Login com GitHub cancelado.');
+      }
+      if (e.code == 'popup-blocked') {
+        throw Exception('O navegador bloqueou o popup do GitHub. Libere popups e tente novamente.');
+      }
+      if (e.code == 'operation-not-supported-in-this-environment') {
+        throw Exception('Login com GitHub indisponível neste ambiente. Use email e senha para continuar.');
+      }
       throw Exception(_handleAuthException(e));
     } catch (e) {
+      if (AppConfig.isWebTestMode) {
+        throw Exception('Erro no login GitHub para teste web: $e');
+      }
       throw Exception('Erro ao fazer login com GitHub: $e');
     }
   }
@@ -181,6 +255,10 @@ class AuthService {
         return 'Senha muito fraca.';
       case 'too-many-requests':
         return 'Muitas tentativas. Tente novamente mais tarde.';
+      case 'popup-blocked':
+        return 'O navegador bloqueou o popup de autenticação.';
+      case 'popup-closed-by-user':
+        return 'Autenticação cancelada.';
       default:
         return 'Erro ao autenticar: ${e.message}';
     }

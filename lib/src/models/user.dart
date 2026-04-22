@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class User {
   final String id;
   final String name;
@@ -7,6 +9,14 @@ class User {
   final bool onboardingCompleted;
   final int clientLimit;
 
+  // Campos de perfil de negócio (preenchidos no onboarding)
+  final String? module;
+  final String? businessName;
+  final String? phone;
+  final String? city;
+  final int? defaultDurationMinutes;
+  final double? defaultPrice;
+
   User({
     required this.id,
     required this.name,
@@ -15,6 +25,12 @@ class User {
     required this.createdAt,
     this.onboardingCompleted = false,
     int? clientLimit,
+    this.module,
+    this.businessName,
+    this.phone,
+    this.city,
+    this.defaultDurationMinutes,
+    this.defaultPrice,
   }) : clientLimit = clientLimit ?? _getClientLimitForPlan(plan);
 
   static int _getClientLimitForPlan(String plan) {
@@ -81,7 +97,31 @@ class User {
         'plan': plan,
         'createdAt': createdAt.toIso8601String(),
         'onboardingCompleted': onboardingCompleted,
+        if (module != null) 'module': module,
+        if (businessName != null) 'businessName': businessName,
+        if (phone != null) 'phone': phone,
+        if (city != null) 'city': city,
+        if (defaultDurationMinutes != null)
+          'defaultDurationMinutes': defaultDurationMinutes,
+        if (defaultPrice != null) 'defaultPrice': defaultPrice,
       };
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
 
   static User fromMap(String id, Map<String, dynamic> map) {
     return User(
@@ -89,10 +129,14 @@ class User {
       name: (map['name'] ?? '') as String,
       email: (map['email'] ?? '') as String,
       plan: (map['plan'] ?? 'free') as String,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : DateTime.now(),
+      createdAt: _parseDateTime(map['createdAt']),
       onboardingCompleted: (map['onboardingCompleted'] ?? false) as bool,
+      module: map['module'] as String?,
+      businessName: map['businessName'] as String?,
+      phone: map['phone'] as String?,
+      city: map['city'] as String?,
+      defaultDurationMinutes: map['defaultDurationMinutes'] as int?,
+      defaultPrice: _parseDouble(map['defaultPrice']),
     );
   }
 
@@ -102,6 +146,12 @@ class User {
     String? plan,
     DateTime? createdAt,
     bool? onboardingCompleted,
+    String? module,
+    String? businessName,
+    String? phone,
+    String? city,
+    int? defaultDurationMinutes,
+    double? defaultPrice,
   }) {
     return User(
       id: id,
@@ -110,6 +160,13 @@ class User {
       plan: plan ?? this.plan,
       createdAt: createdAt ?? this.createdAt,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
+      module: module ?? this.module,
+      businessName: businessName ?? this.businessName,
+      phone: phone ?? this.phone,
+      city: city ?? this.city,
+      defaultDurationMinutes:
+          defaultDurationMinutes ?? this.defaultDurationMinutes,
+      defaultPrice: defaultPrice ?? this.defaultPrice,
     );
   }
 }

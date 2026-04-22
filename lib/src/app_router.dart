@@ -96,7 +96,9 @@ final GoRouter appRouter = GoRouter(
     ),
     GoRoute(
       path: '/session/new',
-      builder: (_, state) => const SessionEditScreen(),
+      builder: (_, state) => SessionEditScreen(
+        initialClientId: state.uri.queryParameters['clientId'],
+      ),
     ),
     GoRoute(
       path: '/session/:id',

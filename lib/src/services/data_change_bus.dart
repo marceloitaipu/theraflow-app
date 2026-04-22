@@ -1,3 +1,5 @@
+// ignore_for_file: close_sinks
+
 import 'dart:async';
 
 /// Barramento simples de notificação de mudanças em dados locais.
@@ -12,7 +14,7 @@ class DataChangeBus {
   static final instance = DataChangeBus._();
 
   // Os controllers persistem durante o ciclo de vida do app (singleton).
-  // ignore: close_sinks
+  // O barramento oferece dispose explícito, mas o lint não reconhece bem esse padrão.
   final _controllers = <String, StreamController<void>>{};
 
   /// Stream broadcast de mudanças para uma [table] (ex: `clients`, `sessions`).
@@ -38,5 +40,15 @@ class DataChangeBus {
     for (final t in tables) {
       notify(t);
     }
+  }
+
+  /// Libera os controllers do barramento.
+  void dispose() {
+    for (final controller in _controllers.values) {
+      if (!controller.isClosed) {
+        controller.close();
+      }
+    }
+    _controllers.clear();
   }
 }

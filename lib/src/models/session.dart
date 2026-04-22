@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Session {
   final String id;
   final String userId;
@@ -44,30 +46,35 @@ class Session {
         'packageId': packageId,
       };
 
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
   static Session fromMap(String id, Map<String, dynamic> map) {
     return Session(
       id: id,
       userId: (map['userId'] ?? '') as String,
       clientId: (map['clientId'] ?? '') as String,
-      dateTime: map['dateTime'] != null
-          ? DateTime.parse(map['dateTime'] as String)
-          : DateTime.now(),
+      dateTime: _parseDateTime(map['dateTime']),
       therapyType: (map['therapyType'] ?? '') as String,
       status: (map['status'] ?? 'confirmado') as String,
-      value: (map['value'] ?? 0.0) is int
-          ? (map['value'] as int).toDouble()
-          : (map['value'] ?? 0.0) as double,
+      value: _parseDouble(map['value']),
       notes: (map['notes'] ?? '') as String,
       paymentStatus: (map['paymentStatus'] ?? 'pendente') as String,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : DateTime.now(),
-      updatedAt: map['updatedAt'] != null
-          ? DateTime.parse(map['updatedAt'] as String)
-          : DateTime.now(),
-      deletedAt: map['deletedAt'] != null
-          ? DateTime.parse(map['deletedAt'] as String)
-          : null,
+      createdAt: _parseDateTime(map['createdAt']),
+      updatedAt: _parseDateTime(map['updatedAt']),
+      deletedAt: map['deletedAt'] != null ? _parseDateTime(map['deletedAt']) : null,
       packageId: map['packageId'] as String?,
     );
   }

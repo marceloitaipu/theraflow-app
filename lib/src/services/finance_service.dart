@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/session.dart';
 import '../models/payment.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
 import 'incremental_sync_service.dart';
-import 'session_service_v2.dart';
+import 'session_service.dart';
 
 class FinanceService {
   FinanceService._();
@@ -14,17 +16,36 @@ class FinanceService {
 
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final SessionService _sessionService = SessionService.instance;
   final Uuid _uuid = const Uuid();
+
+  CollectionReference<Map<String, dynamic>> _paymentsCollection(String userId) {
+    return _firestore.collection('users').doc(userId).collection('payments');
+  }
 
   // Buscar todos os pagamentos do banco local
   Future<List<Payment>> getPayments() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return [];
+    if (kIsWeb) {
+      final snapshot = await _paymentsCollection(userId).get();
+      final payments = snapshot.docs
+          .map((doc) => Payment.fromMap(doc.id, doc.data()))
+          .where((payment) => payment.status != 'deleted')
+          .toList();
+      payments.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return payments;
+    }
+    if (_db.isUnavailable) return [];
 
-    final maps = await _db.getAllPayments(userId);
-    return maps.map((map) => Payment.fromMap(map['id'] as String, map)).toList();
+    try {
+      final maps = await _db.getAllPayments(userId);
+      return maps.map((map) => Payment.fromMap(map['id'] as String, map)).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   // Criar pagamento para uma sessão
@@ -56,6 +77,14 @@ class FinanceService {
       'lastModified': now.toIso8601String(),
       'deleted': 0,
     };
+
+    if (kIsWeb) {
+      await _paymentsCollection(userId).doc(id).set(paymentData);
+      if (status == 'pago') {
+        await _sessionService.markAsPaid(sessionId);
+      }
+      return id;
+    }
 
     // Salvar localmente
     await _db.insertPayment(paymentData);

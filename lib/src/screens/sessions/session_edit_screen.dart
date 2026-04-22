@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../config/app_config.dart';
 import '../../services/app_services.dart';
 import '../../widgets/primary_button.dart';
 
 class SessionEditScreen extends StatefulWidget {
   final String? sessionId;
-  const SessionEditScreen({super.key, this.sessionId});
+  final String? initialClientId;
+
+  const SessionEditScreen({super.key, this.sessionId, this.initialClientId});
 
   @override
   State<SessionEditScreen> createState() => _SessionEditScreenState();
@@ -40,10 +43,11 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
     setState(() => _loading = true);
     try {
       _clients = await ClientService.instance.getClients();
+      _selectedClientId = widget.initialClientId;
       
       // Verificar se pode usar pacotes
       final user = await AuthService.instance.getCurrentUserData();
-      _canUsePackages = user?.canUsePackages() ?? false;
+      _canUsePackages = AppConfig.isWebTestMode || (user?.canUsePackages() ?? false);
       
       if (widget.sessionId != null) {
         _existingSession = await SessionService.instance.getSessionById(widget.sessionId!);
@@ -62,6 +66,8 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
             _activePackage = await PackageService.instance.getActivePackage(_selectedClientId!);
           }
         }
+      } else if (_canUsePackages && _selectedClientId != null) {
+        _activePackage = await PackageService.instance.getActivePackage(_selectedClientId!);
       }
     } catch (e) {
       if (mounted) {

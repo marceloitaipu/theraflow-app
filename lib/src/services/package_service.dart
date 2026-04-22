@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/package.dart';
 import '../database/database_helper.dart';
@@ -13,13 +15,28 @@ class PackageService {
 
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final Uuid _uuid = const Uuid();
+
+  CollectionReference<Map<String, dynamic>> _packagesCollection(String userId) {
+    return _firestore.collection('users').doc(userId).collection('packages');
+  }
 
   // Buscar todos os pacotes do banco local
   Future<List<Package>> getPackages() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return [];
+
+    if (kIsWeb) {
+      final snapshot = await _packagesCollection(userId).get();
+      final packages = snapshot.docs
+          .map((doc) => Package.fromMap(doc.id, doc.data()))
+          .where((package) => package.status != 'deleted')
+          .toList();
+      packages.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return packages;
+    }
 
     final maps = await _db.getAllPackages(userId);
     return maps
@@ -58,6 +75,14 @@ class PackageService {
 
   // Buscar pacote por ID (compatibilidade com código antigo)
   Future<Package?> getPackageById(String clientId, String packageId) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return null;
+    if (kIsWeb) {
+      final doc = await _packagesCollection(userId).doc(packageId).get();
+      if (!doc.exists) return null;
+      return Package.fromMap(doc.id, doc.data()!);
+    }
+
     final map = await _db.getPackageById(packageId);
     if (map == null) return null;
     return Package.fromMap(map['id'] as String, map);
@@ -96,6 +121,12 @@ class PackageService {
       'deleted': 0,
     };
 
+    if (kIsWeb) {
+      await _packagesCollection(userId).doc(id).set(packageData);
+      DataChangeBus.instance.notify('packages');
+      return id;
+    }
+
     // Salvar localmente
     await _db.insertPackage(packageData);
     DataChangeBus.instance.notify('packages');
@@ -132,10 +163,12 @@ class PackageService {
     if (userId == null) throw Exception('Usuário não autenticado.');
 
     // Buscar pacote existente
-    final existing = await _db.getPackageById(packageId);
+    final existing = kIsWeb
+        ? (await _packagesCollection(userId).doc(packageId).get()).data()
+        : await _db.getPackageById(packageId);
     if (existing == null) return null;
 
-    final pkg = Package.fromMap(existing['id'] as String, existing);
+    final pkg = Package.fromMap(packageId, existing);
 
     if (pkg.remainingSessions <= 0) {
       throw Exception('Pacote sem sessões restantes.');
@@ -154,6 +187,15 @@ class PackageService {
       'updatedAt': DateTime.now().toIso8601String(),
       'synced': 0,
     };
+
+    if (kIsWeb) {
+      await _packagesCollection(userId).doc(packageId).update(updates);
+      DataChangeBus.instance.notify('packages');
+      return pkg.copyWith(
+        remainingSessions: newRemaining,
+        status: newStatus,
+      );
+    }
 
     // Atualizar localmente
     await _db.updatePackage(packageId, updates);
@@ -193,9 +235,15 @@ class PackageService {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
 
-    // Buscar pacote existente
-    final existing = await _db.getPackageById(id);
-    if (existing == null) throw Exception('Pacote não encontrado.');
+    Map<String, dynamic>? existing;
+
+    if (kIsWeb) {
+      final doc = await _packagesCollection(userId).doc(id).get();
+      if (!doc.exists) throw Exception('Pacote não encontrado.');
+    } else {
+      existing = await _db.getPackageById(id);
+      if (existing == null) throw Exception('Pacote não encontrado.');
+    }
 
     final updates = <String, dynamic>{
       'updatedAt': DateTime.now().toIso8601String(),
@@ -212,12 +260,18 @@ class PackageService {
     }
     if (status != null) updates['status'] = status;
 
+    if (kIsWeb) {
+      await _packagesCollection(userId).doc(id).update(updates);
+      DataChangeBus.instance.notify('packages');
+      return;
+    }
+
     // Atualizar localmente
     await _db.updatePackage(id, updates);
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {
-      final fullData = Map<String, dynamic>.from(existing);
+      final fullData = Map<String, dynamic>.from(existing!);
       fullData.addAll(updates);
 
       await _db.addToSyncQueue(
@@ -257,6 +311,16 @@ class PackageService {
   Future<void> deletePackageById(String id) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
+
+    if (kIsWeb) {
+      await _packagesCollection(userId).doc(id).update({
+        'status': 'deleted',
+        'deletedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+      DataChangeBus.instance.notify('packages');
+      return;
+    }
 
     // Marcar como deletado (soft delete)
     await _db.markPackageDeleted(id);

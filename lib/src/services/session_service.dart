@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/session.dart';
 import '../database/database_helper.dart';
@@ -13,8 +15,13 @@ class SessionService {
 
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final Uuid _uuid = const Uuid();
+
+  CollectionReference<Map<String, dynamic>> _sessionsCollection(String userId) {
+    return _firestore.collection('users').doc(userId).collection('sessions');
+  }
 
   // Stream reativa de todas as sessões. Reemite apenas em mudanças.
   Stream<List<Session>> getSessionsStream() async* {
@@ -28,12 +35,26 @@ class SessionService {
   Future<List<Session>> getSessions() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return [];
+    if (kIsWeb) {
+      final snapshot = await _sessionsCollection(userId).get();
+      final sessions = snapshot.docs
+          .map((doc) => Session.fromMap(doc.id, doc.data()))
+          .where((session) => session.deletedAt == null)
+          .toList();
+      sessions.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      return sessions;
+    }
+    if (_db.isUnavailable) return [];
 
-    final maps = await _db.getAllSessions(userId);
-    return maps
-        .map((map) => Session.fromMap(map['id'] as String, map))
-        .toList()
-      ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    try {
+      final maps = await _db.getAllSessions(userId);
+      return maps
+          .map((map) => Session.fromMap(map['id'] as String, map))
+          .toList()
+        ..sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    } catch (e) {
+      return [];
+    }
   }
 
   // Stream reativa de sessões de um cliente.
@@ -81,6 +102,15 @@ class SessionService {
 
   // Buscar sessão por ID
   Future<Session?> getSessionById(String id) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return null;
+    if (kIsWeb) {
+      final doc = await _sessionsCollection(userId).doc(id).get();
+      if (!doc.exists) return null;
+      final session = Session.fromMap(doc.id, doc.data()!);
+      return session.deletedAt == null ? session : null;
+    }
+
     final map = await _db.getSessionById(id);
     if (map == null) return null;
     return Session.fromMap(map['id'] as String, map);
@@ -123,6 +153,12 @@ class SessionService {
       'deleted': 0,
     };
 
+    if (kIsWeb) {
+      await _sessionsCollection(userId).doc(id).set(sessionData);
+      DataChangeBus.instance.notify('sessions');
+      return id;
+    }
+
     // Salvar localmente
     await _db.insertSession(sessionData);
     DataChangeBus.instance.notify('sessions');
@@ -157,9 +193,15 @@ class SessionService {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
 
-    // Buscar sessão existente
-    final existing = await _db.getSessionById(id);
-    if (existing == null) throw Exception('Sessão não encontrada.');
+    Map<String, dynamic>? existing;
+    if (kIsWeb) {
+      final doc = await _sessionsCollection(userId).doc(id).get();
+      if (!doc.exists) throw Exception('Sessão não encontrada.');
+      existing = doc.data();
+    } else {
+      existing = await _db.getSessionById(id);
+      if (existing == null) throw Exception('Sessão não encontrada.');
+    }
 
     final updates = <String, dynamic>{
       'updatedAt': DateTime.now().toIso8601String(),
@@ -174,13 +216,19 @@ class SessionService {
     if (paymentStatus != null) updates['paymentStatus'] = paymentStatus;
     if (packageId != null) updates['packageId'] = packageId;
 
+    if (kIsWeb) {
+      await _sessionsCollection(userId).doc(id).update(updates);
+      DataChangeBus.instance.notify('sessions');
+      return;
+    }
+
     // Atualizar localmente
     await _db.updateSession(id, updates);
     DataChangeBus.instance.notify('sessions');
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {
-      final fullData = Map<String, dynamic>.from(existing);
+      final fullData = Map<String, dynamic>.from(existing!);
       fullData.addAll(updates);
 
       await _db.addToSyncQueue(
@@ -199,6 +247,15 @@ class SessionService {
   Future<void> deleteSession(String id) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
+
+    if (kIsWeb) {
+      await _sessionsCollection(userId).doc(id).update({
+        'deletedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+      DataChangeBus.instance.notify('sessions');
+      return;
+    }
 
     // Marcar como deletado (soft delete)
     await _db.markSessionDeleted(id);

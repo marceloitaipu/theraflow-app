@@ -5,12 +5,26 @@ import 'package:path/path.dart';
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
+  static bool _webInitFailed = false;
 
   DatabaseHelper._init();
 
+  /// Retorna true se o banco não está disponível (falha na web).
+  bool get isUnavailable => kIsWeb && _webInitFailed;
+
   Future<Database> get database async {
+    if (_webInitFailed) throw Exception('SQLite indisponível na web');
     if (_database != null) return _database!;
-    _database = await _initDB('theraflow.db');
+    try {
+      _database = await _initDB('theraflow.db');
+    } catch (e) {
+      if (kIsWeb) {
+        _webInitFailed = true;
+        debugPrint('SQLite web indisponível: $e');
+        rethrow;
+      }
+      rethrow;
+    }
     return _database!;
   }
 

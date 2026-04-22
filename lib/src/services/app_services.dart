@@ -12,7 +12,7 @@ export '../models/payment.dart';
 export '../models/user.dart';
 
 export 'auth_service.dart';
-export 'client_service_v2.dart';
-export 'session_service_v2.dart';
+export 'client_service.dart';
+export 'session_service.dart';
 export 'package_service.dart';
-export 'finance_service_v2.dart';
+export 'finance_service.dart';

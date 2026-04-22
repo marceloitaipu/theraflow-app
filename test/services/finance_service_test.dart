@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:theraflow/src/services/finance_service_v2.dart';
+import 'package:theraflow/src/services/finance_service.dart';
 
 void main() {
   group('FinanceService Classes', () {

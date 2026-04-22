@@ -165,14 +165,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
-        Text(
-          'Vamos configurar sua conta em $_totalSteps passos simples.',
-          style: const TextStyle(fontSize: 16, color: Colors.grey),
+        const Text(
+          'Vamos configurar sua conta em 4 passos simples.',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
         ),
         const SizedBox(height: 32),
-        Text(
-          'Passo 1/$_totalSteps — Seus dados',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        const Text(
+          'Passo 1/4 — Seus dados',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 16),
         TextField(
@@ -213,9 +213,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         const Icon(Icons.category, size: 64, color: Colors.blue),
         const SizedBox(height: 24),
-        Text(
-          'Passo 2/$_totalSteps — Área de atuação',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        const Text(
+          'Passo 2/4 — Área de atuação',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         const Text(
@@ -243,9 +243,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         const Icon(Icons.settings, size: 64, color: Colors.blue),
         const SizedBox(height: 24),
-        Text(
-          'Passo 3/$_totalSteps — Preferências',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        const Text(
+          'Passo 3/4 — Preferências',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         const Text(
@@ -294,9 +294,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       children: [
         const Icon(Icons.person_add, size: 64, color: Colors.blue),
         const SizedBox(height: 24),
-        Text(
-          'Passo 4/$_totalSteps — Primeiro cliente',
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+        const Text(
+          'Passo 4/4 — Primeiro cliente',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
         const Text(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../config/app_config.dart';
 import '../../services/app_services.dart';
 import '../../widgets/section_title.dart';
 
@@ -372,6 +373,7 @@ class _PackagesSection extends StatelessWidget {
 
   Future<bool> _canUsePackages() async {
     try {
+      if (AppConfig.isWebTestMode) return true;
       final user = await AuthService.instance.getCurrentUserData();
       return user?.canUsePackages() ?? false;
     } catch (e) {

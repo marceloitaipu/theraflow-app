@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 /// Model de Pacote de Sessões para monetização
 class Package {
   final String id;
@@ -51,20 +53,37 @@ class Package {
         'status': status,
       };
 
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
+  static int _parseInt(dynamic value) {
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static double _parseDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
   static Package fromMap(String id, Map<String, dynamic> map) {
     return Package(
       id: id,
       clientId: (map['clientId'] ?? '') as String,
-      totalSessions: (map['totalSessions'] ?? 0) as int,
-      remainingSessions: (map['remainingSessions'] ?? 0) as int,
-      price: (map['price'] ?? 0.0) is int
-          ? (map['price'] as int).toDouble()
-          : (map['price'] ?? 0.0) as double,
-      createdAt: map['createdAt'] != null
-          ? DateTime.parse(map['createdAt'] as String)
-          : DateTime.now(),
+      totalSessions: _parseInt(map['totalSessions']),
+      remainingSessions: _parseInt(map['remainingSessions']),
+      price: _parseDouble(map['price']),
+      createdAt: _parseDateTime(map['createdAt']),
       expirationDate: map['expirationDate'] != null
-          ? DateTime.parse(map['expirationDate'] as String)
+          ? _parseDateTime(map['expirationDate'])
           : null,
       status: (map['status'] ?? 'active') as String,
     );

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Client {
   final String id;
   final String userId;
@@ -38,21 +40,24 @@ class Client {
         'status': status,
       };
 
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String && value.isNotEmpty) {
+      return DateTime.tryParse(value) ?? DateTime.now();
+    }
+    return DateTime.now();
+  }
+
   static Client fromMap(String id, Map<String, dynamic> map) => Client(
         id: id,
         userId: (map['userId'] ?? '') as String,
         name: (map['name'] ?? '') as String,
         phone: (map['phone'] ?? '') as String,
         notes: (map['notes'] ?? '') as String,
-        createdAt: map['createdAt'] != null
-            ? DateTime.parse(map['createdAt'] as String)
-            : DateTime.now(),
-        updatedAt: map['updatedAt'] != null
-            ? DateTime.parse(map['updatedAt'] as String)
-            : DateTime.now(),
-        deletedAt: map['deletedAt'] != null
-            ? DateTime.parse(map['deletedAt'] as String)
-            : null,
+        createdAt: _parseDateTime(map['createdAt']),
+        updatedAt: _parseDateTime(map['updatedAt']),
+        deletedAt: map['deletedAt'] != null ? _parseDateTime(map['deletedAt']) : null,
         status: (map['status'] ?? 'active') as String,
       );
 

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 // Configuração do aplicativo.
 // Permite alternar entre modo mock (desenvolvimento) e Firebase (produção).
 
@@ -29,6 +31,12 @@ class AppConfig {
 
   /// Habilitar logs de debug
   static const bool debugMode = true;
+
+  /// Relaxamentos para usar a web apenas como ambiente de teste funcional.
+  ///
+  /// Não afeta Android/iOS. Na web, em debug, permite validar fluxos sem
+  /// depender de SQLite local nem de bloqueios comerciais como paywall.
+  static bool get isWebTestMode => kIsWeb && debugMode;
 
   /// URL da landing page (para redirecionamento)
   static const String landingPageUrl = 'https://theraflow.com.br';

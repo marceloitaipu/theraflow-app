@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_service.dart';
-import 'client_service_v2.dart';
+import 'client_service.dart';
 
 class ProfileService {
   ProfileService._();

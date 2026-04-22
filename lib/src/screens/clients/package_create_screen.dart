@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../config/app_config.dart';
 import '../../services/app_services.dart';
 import '../../widgets/primary_button.dart';
 
@@ -82,6 +83,11 @@ class _PackageCreateScreenState extends State<PackageCreateScreen> {
   }
 
   Future<void> _checkPlanAndCreate() async {
+    if (AppConfig.isWebTestMode) {
+      _createPackage();
+      return;
+    }
+
     // Verificar plano do usuário
     final user = await AuthService.instance.getCurrentUserData();
     if (user != null && user.plan == 'free') {

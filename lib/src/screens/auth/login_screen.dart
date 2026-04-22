@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../services/auth_service.dart';
@@ -149,25 +150,27 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Text(_isSignup ? 'Já tenho conta' : 'Criar conta'),
             ),
             const SizedBox(height: 24),
-            const Row(
-              children: [
-                Expanded(child: Divider()),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16),
-                  child: Text('ou'),
-                ),
-                Expanded(child: Divider()),
-              ],
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: _loading ? null : _loginWithGitHub,
-              icon: const Icon(Icons.code),
-              label: const Text('Continuar com GitHub'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
+            if (kIsWeb) ...[
+              const Row(
+                children: [
+                  Expanded(child: Divider()),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('ou'),
+                  ),
+                  Expanded(child: Divider()),
+                ],
               ),
-            ),
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: _loading ? null : _loginWithGitHub,
+                icon: const Icon(Icons.code),
+                label: const Text('Continuar com GitHub'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 48),
+                ),
+              ),
+            ],
             const Spacer(),
             Text(
               'Organize seus atendimentos, clientes e pagamentos',

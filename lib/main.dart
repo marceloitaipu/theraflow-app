@@ -4,17 +4,18 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'firebase_options.dart';
 
 import 'src/app_router.dart';
+import 'src/config/app_config.dart';
 import 'src/theme/app_theme.dart';
 import 'src/providers/theme_provider.dart';
 import 'src/database/database_helper.dart';
 import 'src/services/incremental_sync_service.dart';
 import 'src/services/subscription_service.dart';
+import 'src/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +24,7 @@ void main() async {
   await initializeDateFormatting('pt_BR', null);
   
   // Inicializar databaseFactory para web/desktop (sqflite não suporta nativamente)
-  if (kIsWeb) {
+  if (kIsWeb && !AppConfig.isWebTestMode) {
     databaseFactory = databaseFactoryFfiWeb;
   } else if (!defaultTargetPlatform.toString().contains('android') &&
       !defaultTargetPlatform.toString().contains('iOS')) {
@@ -36,12 +37,17 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Inicializar banco de dados local e sync (somente em plataformas nativas)
-  // Em web, o app usa Firestore diretamente.
-  if (!kIsWeb) {
+  // Inicializar auth (desabilita reCAPTCHA Enterprise em debug web)
+  await AuthService.instance.initialize();
+  
+  // Inicializar banco de dados local e sync.
+  // Na web em modo de teste funcional, o app usa Firestore direto.
+  if (!AppConfig.isWebTestMode) {
     try {
       await DatabaseHelper.instance.database;
-      await IncrementalSyncService.instance.initialize();
+      if (!kIsWeb) {
+        await IncrementalSyncService.instance.initialize();
+      }
     } catch (e) {
       debugPrint('Falha ao inicializar DB local/sync: $e');
     }

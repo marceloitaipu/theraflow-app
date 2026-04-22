@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
+import '../config/app_config.dart';
 import '../models/client.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
@@ -13,8 +16,13 @@ class ClientService {
 
   final DatabaseHelper _db = DatabaseHelper.instance;
   final AuthService _auth = AuthService.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final IncrementalSyncService _sync = IncrementalSyncService.instance;
   final Uuid _uuid = const Uuid();
+
+  CollectionReference<Map<String, dynamic>> _clientsCollection(String userId) {
+    return _firestore.collection('users').doc(userId).collection('clients');
+  }
 
   // Stream reativa de todos os clientes. Reemite apenas quando dados mudam.
   Stream<List<Client>> getClientsStream() async* {
@@ -28,13 +36,36 @@ class ClientService {
   Future<List<Client>> getClients() async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) return [];
+    if (kIsWeb) {
+      final snapshot = await _clientsCollection(userId).get();
+      final clients = snapshot.docs
+          .map((doc) => Client.fromMap(doc.id, doc.data()))
+          .where((client) => client.deletedAt == null)
+          .toList();
+      clients.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      return clients;
+    }
+    if (_db.isUnavailable) return [];
 
-    final maps = await _db.getAllClients(userId);
-    return maps.map((map) => Client.fromMap(map['id'] as String, map)).toList();
+    try {
+      final maps = await _db.getAllClients(userId);
+      return maps.map((map) => Client.fromMap(map['id'] as String, map)).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   // Buscar cliente por ID
   Future<Client?> getClientById(String id) async {
+    final userId = _auth.currentUser?.uid;
+    if (userId == null) return null;
+    if (kIsWeb) {
+      final doc = await _clientsCollection(userId).doc(id).get();
+      if (!doc.exists) return null;
+      final client = Client.fromMap(doc.id, doc.data()!);
+      return client.deletedAt == null ? client : null;
+    }
+
     final map = await _db.getClientById(id);
     if (map == null) return null;
     return Client.fromMap(map['id'] as String, map);
@@ -71,6 +102,12 @@ class ClientService {
       'deleted': 0,
     };
 
+    if (kIsWeb) {
+      await _clientsCollection(userId).doc(id).set(clientData);
+      DataChangeBus.instance.notify('clients');
+      return id;
+    }
+
     // Salvar localmente
     await _db.insertClient(clientData);
     DataChangeBus.instance.notify('clients');
@@ -102,9 +139,13 @@ class ClientService {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
 
-    // Buscar cliente existente
-    final existing = await _db.getClientById(id);
-    if (existing == null) throw Exception('Cliente não encontrado.');
+    if (kIsWeb) {
+      final doc = await _clientsCollection(userId).doc(id).get();
+      if (!doc.exists) throw Exception('Cliente não encontrado.');
+    } else {
+      final existing = await _db.getClientById(id);
+      if (existing == null) throw Exception('Cliente não encontrado.');
+    }
 
     final now = DateTime.now();
     final updates = <String, dynamic>{
@@ -116,6 +157,12 @@ class ClientService {
     if (phone != null) updates['phone'] = phone;
     if (notes != null) updates['notes'] = notes;
     if (status != null) updates['status'] = status;
+
+    if (kIsWeb) {
+      await _clientsCollection(userId).doc(id).update(updates);
+      DataChangeBus.instance.notify('clients');
+      return;
+    }
 
     // Atualizar localmente
     await _db.updateClient(id, updates);
@@ -141,6 +188,15 @@ class ClientService {
   Future<void> deleteClient(String id) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
+
+    if (kIsWeb) {
+      await _clientsCollection(userId).doc(id).update({
+        'deletedAt': DateTime.now().toIso8601String(),
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+      DataChangeBus.instance.notify('clients');
+      return;
+    }
 
     // Marcar como deletado (soft delete)
     await _db.markClientDeleted(id);
@@ -181,6 +237,8 @@ class ClientService {
 
   // Verificar limite de clientes do plano
   Future<void> _checkClientLimit() async {
+    if (AppConfig.isWebTestMode) return;
+
     final userData = await _auth.getCurrentUserData();
     if (userData == null) throw Exception('Dados do usuário não encontrados.');
 

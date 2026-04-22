@@ -100,7 +100,7 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
               SnackBar(
                 content: Text('⚠️ Atenção: Restam apenas ${result.remainingSessions} sessões no pacote.'),
                 backgroundColor: Colors.amber,
-                duration: Duration(seconds: 3),
+                duration: const Duration(seconds: 3),
               ),
             );
           }
