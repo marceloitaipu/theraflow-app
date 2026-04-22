@@ -54,7 +54,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '725483264741',
     projectId: 'theraflow-app-83126',
     authDomain: 'theraflow-app-83126.firebaseapp.com',
-    storageBucket: 'theraflow-app-83126.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -62,6 +61,5 @@ class DefaultFirebaseOptions {
     appId: '1:725483264741:android:28022badfe64351b21920c',
     messagingSenderId: '725483264741',
     projectId: 'theraflow-app-83126',
-    storageBucket: 'theraflow-app-83126.firebasestorage.app',
   );
 }
