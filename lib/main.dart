@@ -37,8 +37,10 @@ Future<void> _bootstrap() async {
   await initializeDateFormatting('pt_BR', null);
 
   // Inicializar databaseFactory para web/desktop (sqflite não suporta nativamente)
-  if (kIsWeb && !AppConfig.isWebTestMode) {
-    databaseFactory = databaseFactoryFfiWeb;
+  if (kIsWeb) {
+    if (!AppConfig.isWebTestMode) {
+      databaseFactory = databaseFactoryFfiWeb;
+    }
   } else if (!defaultTargetPlatform.toString().contains('android') &&
       !defaultTargetPlatform.toString().contains('iOS')) {
     sqfliteFfiInit();
