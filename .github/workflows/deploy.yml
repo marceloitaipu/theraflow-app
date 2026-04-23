@@ -82,7 +82,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Web (Production)
-        run: flutter build web --release --base-href /theraflow-app/ --dart-define=FLAVOR=prod
+        run: flutter build web --release --base-href /theraflow-app/ --dart-define=FLAVOR=prod --source-maps
 
       - name: Garantir .nojekyll
         run: touch build/web/.nojekyll
