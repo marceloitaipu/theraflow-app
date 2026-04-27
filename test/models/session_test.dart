@@ -84,7 +84,7 @@ void main() {
         expect(session.packageId, 'pkg1');
       });
 
-      test('packageId Ã© nulo quando nÃ£o estÃ¡ no map', () {
+      test('packageId é nulo quando não está no map', () {
         final map = {
           'userId': 'user1',
           'clientId': 'client1',
@@ -126,7 +126,7 @@ void main() {
         expect(updated.clientId, original.clientId);
       });
 
-      test('mantÃ©m packageId quando nÃ£o especificado', () {
+      test('mantém packageId quando não especificado', () {
         final original = Session(
           id: '1',
           userId: 'user1',

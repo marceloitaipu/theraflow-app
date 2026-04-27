@@ -6,7 +6,7 @@ class Session {
   final String clientId;
   final DateTime dateTime;
   final String therapyType;
-  final String status; // confirmado/realizada/faltou/remarcado
+  final String status; // agendado/confirmado/realizada/faltou/cancelado/remarcado
   final double value;
   final String notes;
   final String paymentStatus; // pago/pendente
@@ -14,6 +14,22 @@ class Session {
   final DateTime updatedAt;
   final DateTime? deletedAt;
   final String? packageId; // ID do pacote vinculado (se houver)
+
+  // ── Campos de template clínico (Fase 2) ──────────────────────────────────
+  /// Como o cliente chegou hoje (estado emocional/físico inicial).
+  final String? howClientArrived;
+
+  /// O que foi feito durante a sessão.
+  final String? whatWasDone;
+
+  /// Orientações repassadas ao cliente.
+  final String? guidelines;
+
+  /// Próximos passos planejados para as próximas sessões.
+  final String? nextSteps;
+
+  /// Se true, a sessão é um rascunho e não conta nos indicadores.
+  final bool isDraft;
 
   Session({
     required this.id,
@@ -29,6 +45,11 @@ class Session {
     required this.updatedAt,
     this.deletedAt,
     this.packageId,
+    this.howClientArrived,
+    this.whatWasDone,
+    this.guidelines,
+    this.nextSteps,
+    this.isDraft = false,
   });
 
   Map<String, dynamic> toMap() => {
@@ -44,6 +65,11 @@ class Session {
         'updatedAt': updatedAt.toIso8601String(),
         'deletedAt': deletedAt?.toIso8601String(),
         'packageId': packageId,
+        'howClientArrived': howClientArrived,
+        'whatWasDone': whatWasDone,
+        'guidelines': guidelines,
+        'nextSteps': nextSteps,
+        'isDraft': isDraft ? 1 : 0,
       };
 
   static DateTime _parseDateTime(dynamic value) {
@@ -76,7 +102,19 @@ class Session {
       updatedAt: _parseDateTime(map['updatedAt']),
       deletedAt: map['deletedAt'] != null ? _parseDateTime(map['deletedAt']) : null,
       packageId: map['packageId'] as String?,
+      howClientArrived: map['howClientArrived'] as String?,
+      whatWasDone: map['whatWasDone'] as String?,
+      guidelines: map['guidelines'] as String?,
+      nextSteps: map['nextSteps'] as String?,
+      isDraft: _parseBool(map['isDraft']),
     );
+  }
+
+  static bool _parseBool(dynamic v) {
+    if (v == null) return false;
+    if (v is bool) return v;
+    if (v is int) return v != 0;
+    return false;
   }
 
   Session copyWith({
@@ -88,6 +126,11 @@ class Session {
     String? paymentStatus,
     String? packageId,
     DateTime? updatedAt,
+    String? howClientArrived,
+    String? whatWasDone,
+    String? guidelines,
+    String? nextSteps,
+    bool? isDraft,
   }) {
     return Session(
       id: id,
@@ -103,6 +146,11 @@ class Session {
       updatedAt: updatedAt ?? DateTime.now(),
       deletedAt: deletedAt,
       packageId: packageId ?? this.packageId,
+      howClientArrived: howClientArrived ?? this.howClientArrived,
+      whatWasDone: whatWasDone ?? this.whatWasDone,
+      guidelines: guidelines ?? this.guidelines,
+      nextSteps: nextSteps ?? this.nextSteps,
+      isDraft: isDraft ?? this.isDraft,
     );
   }
 }

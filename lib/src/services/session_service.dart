@@ -126,6 +126,11 @@ class SessionService {
     String status = 'confirmado',
     String paymentStatus = 'pendente',
     String? packageId,
+    String? howClientArrived,
+    String? whatWasDone,
+    String? guidelines,
+    String? nextSteps,
+    bool isDraft = false,
   }) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
@@ -145,6 +150,11 @@ class SessionService {
       'notes': notes ?? '',
       'paymentStatus': paymentStatus,
       'packageId': packageId,
+      'howClientArrived': howClientArrived,
+      'whatWasDone': whatWasDone,
+      'guidelines': guidelines,
+      'nextSteps': nextSteps,
+      'isDraft': isDraft ? 1 : 0,
       'createdAt': now.toIso8601String(),
       'updatedAt': now.toIso8601String(),
       'deletedAt': null,
@@ -189,6 +199,12 @@ class SessionService {
     String? notes,
     String? paymentStatus,
     String? packageId,
+    bool clearPackageId = false,
+    String? howClientArrived,
+    String? whatWasDone,
+    String? guidelines,
+    String? nextSteps,
+    bool? isDraft,
   }) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
@@ -214,7 +230,16 @@ class SessionService {
     if (value != null) updates['value'] = value;
     if (notes != null) updates['notes'] = notes;
     if (paymentStatus != null) updates['paymentStatus'] = paymentStatus;
-    if (packageId != null) updates['packageId'] = packageId;
+    if (packageId != null) {
+      updates['packageId'] = packageId;
+    } else if (clearPackageId) {
+      updates['packageId'] = null;
+    }
+    if (howClientArrived != null) updates['howClientArrived'] = howClientArrived;
+    if (whatWasDone != null) updates['whatWasDone'] = whatWasDone;
+    if (guidelines != null) updates['guidelines'] = guidelines;
+    if (nextSteps != null) updates['nextSteps'] = nextSteps;
+    if (isDraft != null) updates['isDraft'] = isDraft ? 1 : 0;
 
     if (kIsWeb) {
       await _sessionsCollection(userId).doc(id).update(updates);
@@ -298,5 +323,23 @@ class SessionService {
     }
 
     return sessions.first;
+  }
+
+  /// Verifica se existe sessão no mesmo horário (±[gapMinutes] minutos).
+  /// Ignora sessões deletadas, com status 'faltou' ou 'cancelado'.
+  /// [excludeSessionId] permite ignorar a própria sessão ao editar.
+  Future<bool> hasConflict(
+    DateTime dateTime, {
+    String? excludeSessionId,
+    int gapMinutes = 30,
+  }) async {
+    final gap = Duration(minutes: gapMinutes);
+    final sessions = await getSessions();
+    return sessions.any((s) {
+      if (s.deletedAt != null) return false;
+      if (s.status == 'faltou' || s.status == 'cancelado') return false;
+      if (s.id == excludeSessionId) return false;
+      return s.dateTime.difference(dateTime).abs() < gap;
+    });
   }
 }

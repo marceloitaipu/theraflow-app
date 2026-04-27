@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/app_services.dart';
+import '../../services/export_service.dart';
 import '../../widgets/section_title.dart';
 import '../../providers/theme_provider.dart';
 
@@ -105,6 +106,8 @@ class ProfileScreen extends StatelessWidget {
                   label: const Text('Sair'),
                 ),
               ),
+              const SectionTitle('Exportar dados'),
+              _ExportSection(),
             ],
           );
         },
@@ -123,5 +126,118 @@ class ProfileScreen extends StatelessWidget {
       default:
         return plan;
     }
+  }
+}
+
+// ─── Seção de exportação ─────────────────────────────────────────────────────
+class _ExportSection extends StatefulWidget {
+  @override
+  State<_ExportSection> createState() => _ExportSectionState();
+}
+
+class _ExportSectionState extends State<_ExportSection> {
+  bool _loading = false;
+
+  Future<void> _run(Future<void> Function() action) async {
+    if (_loading) return;
+    setState(() => _loading = true);
+    try {
+      await action();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao exportar: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final now = DateTime.now();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Column(
+        children: [
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          _ExportTile(
+            icon: Icons.people_outline,
+            label: 'Exportar clientes',
+            subtitle: 'Lista completa de clientes em CSV',
+            onTap: _loading ? null : () => _run(ExportService.instance.exportClients),
+          ),
+          _ExportTile(
+            icon: Icons.event_note_outlined,
+            label: 'Exportar sessões do mês',
+            subtitle: 'Sessões do mês atual',
+            onTap: _loading
+                ? null
+                : () => _run(() => ExportService.instance.exportSessions(
+                      start: DateTime(now.year, now.month, 1),
+                      end: DateTime(now.year, now.month + 1, 0, 23, 59, 59),
+                    )),
+          ),
+          _ExportTile(
+            icon: Icons.attach_money_outlined,
+            label: 'Exportar financeiro do mês',
+            subtitle: 'Receitas e pagamentos do mês atual',
+            onTap: _loading
+                ? null
+                : () => _run(() => ExportService.instance.exportFinance(
+                      start: DateTime(now.year, now.month, 1),
+                      end: DateTime(now.year, now.month + 1, 0, 23, 59, 59),
+                    )),
+          ),
+          _ExportTile(
+            icon: Icons.summarize_outlined,
+            label: 'Resumo mensal',
+            subtitle: 'Totais e indicadores do mês atual',
+            onTap: _loading
+                ? null
+                : () => _run(() => ExportService.instance.exportMonthlySummary(
+                      year: now.year,
+                      month: now.month,
+                    )),
+          ),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
+class _ExportTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final VoidCallback? onTap;
+
+  const _ExportTile({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(label),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
+        trailing: const Icon(Icons.file_download_outlined),
+        onTap: onTap,
+        enabled: onTap != null,
+      ),
+    );
   }
 }

@@ -68,7 +68,7 @@ class RevenueSparkline extends StatelessWidget {
                 Text(
                   'vs. ${points.length}m atrás',
                   style: theme.textTheme.bodySmall
-                      ?.copyWith(color: Colors.grey[600]),
+                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
               ],
             ),
@@ -92,8 +92,9 @@ class RevenueSparkline extends StatelessWidget {
               children: points
                   .map((p) => Text(
                         _shortMonthLabel(p.month),
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: Colors.grey[600], fontSize: 10),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            fontSize: 10),
                       ))
                   .toList(),
             ),

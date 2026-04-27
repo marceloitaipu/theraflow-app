@@ -20,7 +20,7 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
   final _type = TextEditingController(text: 'Massoterapia');
   final _value = TextEditingController(text: '150');
   final _notes = TextEditingController();
-  String _status = 'confirmado';
+  String _status = 'agendado';
   String _payment = 'pendente';
   DateTime _selectedDateTime = DateTime.now();
   String? _selectedClientId;
@@ -146,6 +146,36 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
 
     setState(() => _loading = true);
     try {
+      // Verificar conflito de horário
+      final conflict = await SessionService.instance.hasConflict(
+        _selectedDateTime,
+        excludeSessionId: widget.sessionId,
+      );
+      if (conflict && mounted) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Conflito de horário'),
+            content: const Text(
+                'Já existe uma sessão próxima a este horário (±30 min). Deseja agendar mesmo assim?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Agendar mesmo assim'),
+              ),
+            ],
+          ),
+        );
+        if (proceed != true) {
+          setState(() => _loading = false);
+          return;
+        }
+      }
+
       final value = double.tryParse(_value.text.replaceAll(',', '.')) ?? 0;
       final packageId = _usePackage && _activePackage != null ? _activePackage!.id : null;
 
@@ -159,6 +189,7 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
           notes: _notes.text.trim(),
           paymentStatus: _payment,
           packageId: packageId,
+          clearPackageId: packageId == null,
         );
       } else {
         await SessionService.instance.createSession(
@@ -306,11 +337,14 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
                 border: OutlineInputBorder(),
               ),
               items: const [
+                DropdownMenuItem(value: 'agendado', child: Text('Agendado')),
                 DropdownMenuItem(value: 'confirmado', child: Text('Confirmado')),
+                DropdownMenuItem(value: 'realizada', child: Text('Realizada')),
                 DropdownMenuItem(value: 'faltou', child: Text('Faltou')),
+                DropdownMenuItem(value: 'cancelado', child: Text('Cancelado')),
                 DropdownMenuItem(value: 'remarcado', child: Text('Remarcado')),
               ],
-              onChanged: (v) => setState(() => _status = v ?? 'confirmado'),
+              onChanged: (v) => setState(() => _status = v ?? 'agendado'),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(

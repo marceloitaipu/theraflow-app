@@ -9,7 +9,26 @@ class Client {
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? deletedAt;
-  final String status; // active, inactive
+  final String status; // active, inactive (soft-delete dimension)
+
+  // ── Campos CRM (Fase 1) ──────────────────────────────────────────────────
+  /// Objetivo do tratamento, ex: "tratar lombalgia", "reduzir estresse".
+  final String? goal;
+
+  /// Frequência ideal de retorno: "semanal", "quinzenal", "mensal".
+  final String? idealFrequency;
+
+  /// Tags livres: 'VIP', 'retorno', 'pacote', 'inadimplente', 'novo'.
+  final List<String> tags;
+
+  /// Status CRM manual: 'novo', 'ativo', 'pausado', 'em risco', 'inativo'.
+  final String clientStatus;
+
+  /// Próxima ação a tomar com este cliente, ex: "Ligar para confirmar retorno".
+  final String? nextAction;
+
+  /// Data sugerida para executar a próxima ação (lembrete).
+  final DateTime? nextActionDate;
 
   Client({
     required this.id,
@@ -21,6 +40,12 @@ class Client {
     required this.updatedAt,
     this.deletedAt,
     this.status = 'active',
+    this.goal,
+    this.idealFrequency,
+    this.tags = const [],
+    this.clientStatus = 'ativo',
+    this.nextAction,
+    this.nextActionDate,
   });
 
   /// Verifica se o cliente está ativo
@@ -38,6 +63,12 @@ class Client {
         'updatedAt': updatedAt.toIso8601String(),
         'deletedAt': deletedAt?.toIso8601String(),
         'status': status,
+        'goal': goal,
+        'idealFrequency': idealFrequency,
+        'tags': tags,
+        'clientStatus': clientStatus,
+        'nextAction': nextAction,
+        'nextActionDate': nextActionDate?.toIso8601String(),
       };
 
   static DateTime _parseDateTime(dynamic value) {
@@ -59,7 +90,21 @@ class Client {
         updatedAt: _parseDateTime(map['updatedAt']),
         deletedAt: map['deletedAt'] != null ? _parseDateTime(map['deletedAt']) : null,
         status: (map['status'] ?? 'active') as String,
+        goal: map['goal'] as String?,
+        idealFrequency: map['idealFrequency'] as String?,
+        tags: _parseTags(map['tags']),
+        clientStatus: (map['clientStatus'] ?? 'ativo') as String,
+        nextAction: map['nextAction'] as String?,
+        nextActionDate: map['nextActionDate'] != null
+            ? _parseDateTime(map['nextActionDate'])
+            : null,
       );
+
+  static List<String> _parseTags(dynamic value) {
+    if (value == null) return const [];
+    if (value is List) return value.map((e) => e.toString()).toList();
+    return const [];
+  }
 
   Client copyWith({
     String? name,
@@ -68,6 +113,12 @@ class Client {
     String? status,
     DateTime? updatedAt,
     DateTime? deletedAt,
+    String? goal,
+    String? idealFrequency,
+    List<String>? tags,
+    String? clientStatus,
+    String? nextAction,
+    DateTime? nextActionDate,
   }) {
     return Client(
       id: id,
@@ -79,6 +130,12 @@ class Client {
       updatedAt: updatedAt ?? DateTime.now(),
       deletedAt: deletedAt ?? this.deletedAt,
       status: status ?? this.status,
+      goal: goal ?? this.goal,
+      idealFrequency: idealFrequency ?? this.idealFrequency,
+      tags: tags ?? this.tags,
+      clientStatus: clientStatus ?? this.clientStatus,
+      nextAction: nextAction ?? this.nextAction,
+      nextActionDate: nextActionDate ?? this.nextActionDate,
     );
   }
 

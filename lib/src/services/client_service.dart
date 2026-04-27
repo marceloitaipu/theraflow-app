@@ -135,6 +135,12 @@ class ClientService {
     String? phone,
     String? notes,
     String? status,
+    String? goal,
+    String? idealFrequency,
+    List<String>? tags,
+    String? clientStatus,
+    String? nextAction,
+    DateTime? nextActionDate,
   }) async {
     final userId = _auth.currentUser?.uid;
     if (userId == null) throw Exception('Usuário não autenticado.');
@@ -157,6 +163,12 @@ class ClientService {
     if (phone != null) updates['phone'] = phone;
     if (notes != null) updates['notes'] = notes;
     if (status != null) updates['status'] = status;
+    if (goal != null) updates['goal'] = goal;
+    if (idealFrequency != null) updates['idealFrequency'] = idealFrequency;
+    if (tags != null) updates['tags'] = tags;
+    if (clientStatus != null) updates['clientStatus'] = clientStatus;
+    if (nextAction != null) updates['nextAction'] = nextAction;
+    if (nextActionDate != null) updates['nextActionDate'] = nextActionDate.toIso8601String();
 
     if (kIsWeb) {
       await _clientsCollection(userId).doc(id).update(updates);

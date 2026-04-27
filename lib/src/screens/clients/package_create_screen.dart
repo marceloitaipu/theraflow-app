@@ -238,7 +238,9 @@ class _PackageCreateScreenState extends State<PackageCreateScreen> {
                           ),
                           Text(
                             'Novo pacote de sessões',
-                            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                fontSize: 14),
                           ),
                         ],
                       ),
@@ -429,7 +431,9 @@ class _PackageCreateScreenState extends State<PackageCreateScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.grey[600])),
+          Text(label,
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
           Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
         ],
       ),

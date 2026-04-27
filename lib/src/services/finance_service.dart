@@ -7,6 +7,7 @@ import '../models/session.dart';
 import '../models/payment.dart';
 import '../database/database_helper.dart';
 import 'auth_service.dart';
+import 'client_service.dart';
 import 'incremental_sync_service.dart';
 import 'session_service.dart';
 
@@ -357,6 +358,89 @@ class FinanceService {
       messages: messages,
     );
   }
+
+  // ─── Ranking de clientes por receita ────────────────────────────────────
+
+  /// Retorna ranking de clientes ordenado por receita recebida no período.
+  /// Se [start] e [end] forem nulos, usa todos os dados disponíveis.
+  Future<List<ClientRevenueRankItem>> getClientRanking({
+    DateTime? start,
+    DateTime? end,
+    String? clientFilterId,
+  }) async {
+    late List<Session> sessions;
+    if (start != null && end != null) {
+      sessions = await _sessionService.getSessionsByPeriod(
+          start: start, end: end);
+    } else {
+      sessions = await _sessionService.getSessions();
+    }
+
+    // Agrupa por clientId
+    final Map<String, _ClientAgg> agg = {};
+    for (final s in sessions) {
+      if (s.deletedAt != null) continue;
+      if (s.status == 'cancelado' || s.status == 'faltou') continue;
+      if (clientFilterId != null && s.clientId != clientFilterId) continue;
+
+      final entry = agg.putIfAbsent(
+          s.clientId,
+          () => _ClientAgg(
+                clientId: s.clientId,
+              ));
+      if (s.paymentStatus == 'pago') {
+        entry.received += s.value;
+      } else {
+        entry.pending += s.value;
+      }
+      entry.sessionCount++;
+    }
+
+    if (agg.isEmpty) return [];
+
+    // Busca nomes dos clientes
+    final clientIds = agg.keys.toList();
+    for (final id in clientIds) {
+      try {
+        final client = await ClientService.instance.getClientById(id);
+        if (client != null) {
+          agg[id]!.clientName = client.name;
+        }
+      } catch (_) {}
+    }
+
+    final result = agg.values
+        .map((a) => ClientRevenueRankItem(
+              clientId: a.clientId,
+              clientName: a.clientName.isNotEmpty ? a.clientName : a.clientId,
+              received: a.received,
+              pending: a.pending,
+              sessionCount: a.sessionCount,
+            ))
+        .toList()
+      ..sort((a, b) => b.received.compareTo(a.received));
+
+    return result;
+  }
+
+  /// Ticket médio no período (receita recebida / número de sessões pagas).
+  Future<double> getAverageTicket({DateTime? start, DateTime? end}) async {
+    late List<Session> sessions;
+    if (start != null && end != null) {
+      sessions = await _sessionService.getSessionsByPeriod(
+          start: start, end: end);
+    } else {
+      sessions = await _sessionService.getSessions();
+    }
+    final paid = sessions.where((s) =>
+        s.paymentStatus == 'pago' &&
+        s.status != 'cancelado' &&
+        s.status != 'faltou' &&
+        s.deletedAt == null);
+    if (paid.isEmpty) return 0.0;
+    final total = paid.fold(0.0, (acc, s) => acc + s.value);
+    return total / paid.length;
+  }
 }
 
 // Classe para relatório mensal
@@ -464,4 +548,34 @@ class MonthlyRevenuePoint {
     required this.month,
     required this.received,
   });
+}
+
+/// Item do ranking financeiro por cliente.
+class ClientRevenueRankItem {
+  final String clientId;
+  final String clientName;
+  final double received;
+  final double pending;
+  final int sessionCount;
+
+  const ClientRevenueRankItem({
+    required this.clientId,
+    required this.clientName,
+    required this.received,
+    required this.pending,
+    required this.sessionCount,
+  });
+
+  double get total => received + pending;
+}
+
+/// Auxiliar interno de agregação por cliente.
+class _ClientAgg {
+  final String clientId;
+  String clientName = '';
+  double received = 0.0;
+  double pending = 0.0;
+  int sessionCount = 0;
+
+  _ClientAgg({required this.clientId});
 }

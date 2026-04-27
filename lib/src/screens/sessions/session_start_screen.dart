@@ -17,7 +17,11 @@ class SessionStartScreen extends StatefulWidget {
 
 class _SessionStartScreenState extends State<SessionStartScreen> {
   final _notesController = TextEditingController();
-  
+  final _howArrivedController = TextEditingController();
+  final _whatWasDoneController = TextEditingController();
+  final _guidelinesController = TextEditingController();
+  final _nextStepsController = TextEditingController();
+
   Session? _session;
   Client? _client;
   Session? _lastSession;
@@ -34,6 +38,10 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
   @override
   void dispose() {
     _notesController.dispose();
+    _howArrivedController.dispose();
+    _whatWasDoneController.dispose();
+    _guidelinesController.dispose();
+    _nextStepsController.dispose();
     super.dispose();
   }
 
@@ -55,6 +63,10 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
         
         // Preencher valores da sessão atual
         _notesController.text = _session!.notes;
+        _howArrivedController.text = _session!.howClientArrived ?? '';
+        _whatWasDoneController.text = _session!.whatWasDone ?? '';
+        _guidelinesController.text = _session!.guidelines ?? '';
+        _nextStepsController.text = _session!.nextSteps ?? '';
         _status = _session!.status;
         _paymentStatus = _session!.paymentStatus;
       }
@@ -74,12 +86,25 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
 
     setState(() => _loading = true);
     try {
-      // Atualizar sessão com status, pagamento e notas
+      // Atualizar sessão com status, pagamento, notas e campos clínicos
       await SessionService.instance.updateSession(
         _session!.id,
         status: _status,
         paymentStatus: _paymentStatus,
         notes: _notesController.text.trim(),
+        howClientArrived: _howArrivedController.text.trim().isEmpty
+            ? null
+            : _howArrivedController.text.trim(),
+        whatWasDone: _whatWasDoneController.text.trim().isEmpty
+            ? null
+            : _whatWasDoneController.text.trim(),
+        guidelines: _guidelinesController.text.trim().isEmpty
+            ? null
+            : _guidelinesController.text.trim(),
+        nextSteps: _nextStepsController.text.trim().isEmpty
+            ? null
+            : _nextStepsController.text.trim(),
+        isDraft: false,
       );
 
       // Se houver pacote vinculado, decrementar
@@ -123,6 +148,58 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
         );
         setState(() => _loading = false);
       }
+    }
+  }
+
+  void _copyFromLastSession() {
+    if (_lastSession == null) return;
+    setState(() {
+      // Prioriza campos clínicos; se ausentes, copia notas genéricas como referência
+      _howArrivedController.text = _lastSession!.howClientArrived ?? '';
+      _whatWasDoneController.text =
+          _lastSession!.whatWasDone ?? _lastSession!.notes;
+      _guidelinesController.text = _lastSession!.guidelines ?? '';
+      _nextStepsController.text = _lastSession!.nextSteps ?? '';
+    });
+  }
+
+  Future<void> _saveDraft() async {
+    if (_session == null) return;
+    setState(() => _loading = true);
+    try {
+      await SessionService.instance.updateSession(
+        _session!.id,
+        notes: _notesController.text.trim(),
+        howClientArrived: _howArrivedController.text.trim().isEmpty
+            ? null
+            : _howArrivedController.text.trim(),
+        whatWasDone: _whatWasDoneController.text.trim().isEmpty
+            ? null
+            : _whatWasDoneController.text.trim(),
+        guidelines: _guidelinesController.text.trim().isEmpty
+            ? null
+            : _guidelinesController.text.trim(),
+        nextSteps: _nextStepsController.text.trim().isEmpty
+            ? null
+            : _nextStepsController.text.trim(),
+        isDraft: true,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Rascunho salvo.'),
+            backgroundColor: Colors.blueGrey,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao salvar rascunho: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -256,9 +333,49 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
 
             const SizedBox(height: 24),
 
-            // Notas desta sessão
+            // Copiar da sessão anterior
+            if (_lastSession != null)
+              OutlinedButton.icon(
+                onPressed: _copyFromLastSession,
+                icon: const Icon(Icons.copy_all_outlined, size: 18),
+                label: const Text('Copiar da sessão anterior'),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(double.infinity, 44),
+                ),
+              ),
+
+            const SizedBox(height: 24),
+
+            // ── Template clínico ──────────────────────────────────────────
+            _buildClinicalField(
+              label: 'Como o cliente chegou?',
+              hint: 'Estado emocional, físico, o que trouxe hoje...',
+              controller: _howArrivedController,
+            ),
+            const SizedBox(height: 16),
+            _buildClinicalField(
+              label: 'O que foi feito na sessão',
+              hint: 'Técnicas, temas abordados, exercícios aplicados...',
+              controller: _whatWasDoneController,
+            ),
+            const SizedBox(height: 16),
+            _buildClinicalField(
+              label: 'Orientações ao cliente',
+              hint: 'Tarefas, recomendações, práticas entre sessões...',
+              controller: _guidelinesController,
+            ),
+            const SizedBox(height: 16),
+            _buildClinicalField(
+              label: 'Próximos passos',
+              hint: 'O que será trabalhado nas próximas sessões...',
+              controller: _nextStepsController,
+            ),
+
+            const SizedBox(height: 24),
+
+            // Notas livres desta sessão
             const Text(
-              'Notas desta sessão',
+              'Notas livres (opcional)',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
@@ -349,6 +466,17 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
 
             const SizedBox(height: 32),
 
+            // Salvar rascunho
+            OutlinedButton.icon(
+              onPressed: _loading ? null : _saveDraft,
+              icon: const Icon(Icons.save_outlined, size: 18),
+              label: const Text('Salvar rascunho'),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
+            const SizedBox(height: 12),
+
             // Botão Finalizar
             PrimaryButton(
               label: _loading ? 'Finalizando...' : 'Finalizar Sessão',
@@ -359,6 +487,30 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildClinicalField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: hint,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            filled: true,
+            fillColor: Colors.grey[50],
+          ),
+        ),
+      ],
     );
   }
 
@@ -381,14 +533,16 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
               Icon(
                 _lastSession != null ? Icons.history : Icons.info_outline,
                 size: 20,
-                color: _lastSession != null ? Colors.amber[700] : Colors.grey[600],
+                color: _lastSession != null ? Colors.amber[700] : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 8),
               Text(
                 _lastSession != null ? 'Última anotação' : 'Primeira sessão',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: _lastSession != null ? Colors.amber[800] : Colors.grey[700],
+                  color: _lastSession != null
+                      ? Colors.amber[700]
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -397,12 +551,15 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
           if (_lastSession != null && _lastSession!.notes.isNotEmpty) ...[
             Text(
               _lastSession!.notes,
-              style: TextStyle(color: Colors.grey[800]),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
             Text(
               'Em ${DateFormat('dd/MM/yyyy').format(_lastSession!.dateTime)}',
-              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ] else
             Text(
@@ -410,7 +567,7 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
                   ? 'Esta é a primeira sessão deste cliente.'
                   : 'Nenhuma anotação na sessão anterior.',
               style: TextStyle(
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -437,7 +594,7 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
               label,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? color : Colors.black87,
+                color: isSelected ? color : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -464,7 +621,7 @@ class _SessionStartScreenState extends State<SessionStartScreen> {
               label,
               style: TextStyle(
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected ? color : Colors.black87,
+                color: isSelected ? color : Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
