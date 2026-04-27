@@ -92,23 +92,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String _parseError(dynamic e) {
-    final errorString = e.toString().toLowerCase();
-    if (errorString.contains('user-not-found')) {
-      return 'Usuário não encontrado.';
-    } else if (errorString.contains('wrong-password') || errorString.contains('invalid-credential')) {
-      return 'Senha incorreta.';
-    } else if (errorString.contains('email-already-in-use')) {
-      return 'E-mail já cadastrado. Tente fazer login.';
-    } else if (errorString.contains('invalid-email')) {
-      return 'E-mail inválido.';
-    } else if (errorString.contains('weak-password')) {
-      return 'Senha muito fraca. Use pelo menos 6 caracteres.';
-    } else if (errorString.contains('too-many-requests')) {
-      return 'Muitas tentativas. Aguarde um momento.';
-    } else if (errorString.contains('network')) {
-      return 'Erro de conexão. Verifique sua internet.';
+    // Extrai a mensagem do Exception (auth_service já traduz para pt-BR)
+    String msg = e.toString();
+    if (msg.startsWith('Exception: ')) {
+      msg = msg.substring('Exception: '.length);
     }
-    return 'Erro ao autenticar. Tente novamente.';
+    // Verifica se ainda contém códigos brutos do Firebase
+    final lower = msg.toLowerCase();
+    if (lower.contains('user-not-found')) return 'Usuário não encontrado.';
+    if (lower.contains('wrong-password') ||
+        lower.contains('invalid-credential') ||
+        lower.contains('invalid_login_credentials')) {
+      return 'E-mail ou senha incorretos.';
+    }
+    if (lower.contains('email-already-in-use')) return 'E-mail já cadastrado. Tente fazer login.';
+    if (lower.contains('invalid-email')) return 'E-mail inválido.';
+    if (lower.contains('weak-password')) return 'Senha muito fraca. Use pelo menos 6 caracteres.';
+    if (lower.contains('too-many-requests')) return 'Muitas tentativas. Aguarde um momento.';
+    if (lower.contains('network')) return 'Erro de conexão. Verifique sua internet.';
+    // Retorna a mensagem já traduzida pelo auth_service
+    return msg.isNotEmpty ? msg : 'Erro ao autenticar. Tente novamente.';
   }
 
   @override

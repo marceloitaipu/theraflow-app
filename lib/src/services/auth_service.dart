@@ -259,6 +259,9 @@ class AuthService {
         return 'O navegador bloqueou o popup de autenticação.';
       case 'popup-closed-by-user':
         return 'Autenticação cancelada.';
+      case 'invalid-credential':
+      case 'INVALID_LOGIN_CREDENTIALS':
+        return 'E-mail ou senha incorretos.';
       default:
         return 'Erro ao autenticar: ${e.message}';
     }
