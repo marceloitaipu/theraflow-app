@@ -113,6 +113,19 @@ class HomeService {
       packages: allPackages,
     );
 
+    // Sessões de amanhã para lembretes WhatsApp
+    final tomorrow = DateTime(now.year, now.month, now.day + 1);
+    final dayAfter = DateTime(now.year, now.month, now.day + 2);
+    final tomorrowSessions = allSessions
+        .where((s) =>
+            s.deletedAt == null &&
+            s.dateTime.isAfter(tomorrow.subtract(const Duration(seconds: 1))) &&
+            s.dateTime.isBefore(dayAfter) &&
+            s.status != 'cancelado' &&
+            s.status != 'faltou')
+        .toList()
+      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
     return HomeSummary(
       todaySessions: todaySessions,
       nextSession: nextSession,
@@ -126,6 +139,7 @@ class HomeService {
       clientNamesById: clientNamesById,
       alerts: alerts,
       clientsWithoutNextSession: clientsWithoutNextSession,
+      tomorrowSessions: tomorrowSessions,
     );
   }
 }

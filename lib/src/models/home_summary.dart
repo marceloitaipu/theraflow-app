@@ -27,6 +27,9 @@ class HomeSummary {
   /// Clientes ativos sem próxima sessão agendada.
   final List<Client> clientsWithoutNextSession;
 
+  /// Sessões agendadas para amanhã (para envio de lembretes WhatsApp).
+  final List<Session> tomorrowSessions;
+
   const HomeSummary({
     required this.todaySessions,
     this.nextSession,
@@ -40,6 +43,7 @@ class HomeSummary {
     this.clientNamesById = const {},
     this.alerts = const [],
     this.clientsWithoutNextSession = const [],
+    this.tomorrowSessions = const [],
   });
 
   int get todayCount => todaySessions.length;

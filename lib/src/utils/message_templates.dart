@@ -1,4 +1,7 @@
-// Templates de mensagem WhatsApp prontos para uso.
+// ignore: depend_on_referenced_packages
+import 'package:url_launcher/url_launcher.dart';
+
+
 //
 // Variáveis disponíveis:
 //   {nome}   — nome do cliente
@@ -114,4 +117,18 @@ bool isValidBrazilianPhone(String phone) {
   final withoutCode =
       digits.startsWith('55') && digits.length > 11 ? digits.substring(2) : digits;
   return withoutCode.length >= 10 && withoutCode.length <= 11;
+}
+
+/// Abre o WhatsApp com mensagem pré-preenchida.
+/// Retorna true se conseguiu abrir, false caso contrário.
+Future<bool> openWhatsApp({required String phone, required String message}) async {
+  final number = sanitizePhoneForWhatsApp(phone);
+  if (number.isEmpty) return false;
+  final encoded = Uri.encodeComponent(message);
+  final uri = Uri.parse('https://wa.me/$number?text=$encoded');
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    return true;
+  }
+  return false;
 }

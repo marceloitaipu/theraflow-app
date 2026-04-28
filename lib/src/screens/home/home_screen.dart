@@ -7,6 +7,7 @@ import '../../models/home_summary.dart';
 import '../../services/app_services.dart';
 import '../../services/home_service.dart';
 import '../../services/performance_service.dart';
+import '../../utils/message_templates.dart';
 import '../../widgets/home_dashboard.dart';
 import '../../widgets/section_title.dart';
 
@@ -117,6 +118,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ] else
                   _EmptyToday(onSchedule: () => context.go('/agenda')),
+                if (summary.tomorrowSessions.isNotEmpty) ...[
+                  const SectionTitle('Sessões amanhã'),
+                  ...summary.tomorrowSessions.map(
+                    (s) => _TomorrowSessionTile(
+                      session: s,
+                      clientName: summary.clientNamesById[s.clientId] ?? 'Cliente',
+                    ),
+                  ),
+                ],
                 const SectionTitle('Desempenho do mês'),
                 _PerformanceSection(
                   year: DateTime.now().year,
@@ -781,6 +791,58 @@ class _MiniMetricCard extends StatelessWidget {
                 color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Tile de sessão amanhã com lembrete WhatsApp ─────────────────────────────
+class _TomorrowSessionTile extends StatelessWidget {
+  final Session session;
+  final String clientName;
+
+  const _TomorrowSessionTile({required this.session, required this.clientName});
+
+  @override
+  Widget build(BuildContext context) {
+    final timeFormat = DateFormat('HH:mm');
+    final dateStr = DateFormat('dd/MM').format(session.dateTime);
+    final timeStr = timeFormat.format(session.dateTime);
+
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.blue.withValues(alpha: 0.15),
+        child: Text(
+          clientName.isNotEmpty ? clientName[0].toUpperCase() : '?',
+          style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+        ),
+      ),
+      title: Text('$timeStr — $clientName'),
+      subtitle: Text(session.therapyType),
+      trailing: IconButton(
+        icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
+        tooltip: 'Enviar lembrete WhatsApp',
+        onPressed: () async {
+          final clients = await ClientService.instance.getClients();
+          final client = clients.where((c) => c.id == session.clientId).firstOrNull;
+          if (client == null || client.phone.isEmpty) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Cliente sem telefone cadastrado')),
+              );
+            }
+            return;
+          }
+          final msg = MessageTemplates.all
+              .firstWhere((t) => t.type == MessageTemplateType.reminderTomorrow)
+              .build(name: client.name, date: dateStr, time: timeStr);
+          final sent = await openWhatsApp(phone: client.phone, message: msg);
+          if (!sent && context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Não foi possível abrir o WhatsApp')),
+            );
+          }
+        },
       ),
     );
   }

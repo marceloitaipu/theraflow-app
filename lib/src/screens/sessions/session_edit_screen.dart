@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../config/app_config.dart';
 import '../../services/app_services.dart';
+import '../../utils/message_templates.dart';
 import '../../widgets/primary_button.dart';
 
 class SessionEditScreen extends StatefulWidget {
@@ -208,6 +209,56 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sessão salva!')),
         );
+        // Oferecer envio de confirmação via WhatsApp (apenas novas sessões com cliente com telefone)
+        if (widget.sessionId == null && _selectedClientId != null) {
+          final client = _clients.where((c) => c.id == _selectedClientId).firstOrNull;
+          if (client != null && client.phone.isNotEmpty) {
+            final dateStr = DateFormat('dd/MM').format(_selectedDateTime);
+            final timeStr = DateFormat('HH:mm').format(_selectedDateTime);
+            final msg = MessageTemplates.all
+                .firstWhere((t) => t.type == MessageTemplateType.confirmation)
+                .build(name: client.name, date: dateStr, time: timeStr, therapyType: _type.text.trim());
+
+            if (mounted) {
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Row(
+                    children: [
+                      Icon(Icons.chat, color: Color(0xFF25D366)),
+                      SizedBox(width: 8),
+                      Text('Enviar confirmação?'),
+                    ],
+                  ),
+                  content: Text(
+                    'Deseja enviar a confirmação da sessão para ${client.name} via WhatsApp?\n\n"$msg"',
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Não'),
+                    ),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        final sent = await openWhatsApp(phone: client.phone, message: msg);
+                        if (!sent && ctx.mounted) {
+                          ScaffoldMessenger.of(ctx).showSnackBar(
+                            const SnackBar(content: Text('Não foi possível abrir o WhatsApp')),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.send, size: 16),
+                      label: const Text('Enviar'),
+                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFF25D366)),
+                    ),
+                  ],
+                ),
+              );
+            }
+          }
+        }
         if (context.canPop()) {
           context.pop();
         } else {
