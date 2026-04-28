@@ -47,11 +47,13 @@ Future<void> _bootstrap() async {
     databaseFactory = databaseFactoryFfi;
   }
 
-  // Inicializar Firebase (guard contra dupla inicialização)
-  if (Firebase.apps.isEmpty) {
+  // Inicializar Firebase (guard contra dupla inicialização nativa no Android)
+  try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+  } on FirebaseException catch (e) {
+    if (e.code != 'duplicate-app') rethrow;
   }
 
   // Inicializar auth (desabilita reCAPTCHA Enterprise em debug web)
