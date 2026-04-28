@@ -47,10 +47,12 @@ Future<void> _bootstrap() async {
     databaseFactory = databaseFactoryFfi;
   }
 
-  // Inicializar Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Inicializar Firebase (guard contra dupla inicialização)
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
 
   // Inicializar auth (desabilita reCAPTCHA Enterprise em debug web)
   await AuthService.instance.initialize();
