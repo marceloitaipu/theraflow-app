@@ -73,7 +73,7 @@ class AuthService {
         id: credential.user!.uid,
         name: name,
         email: email,
-        plan: 'free',
+        plan: 'professional',
         createdAt: DateTime.now(),
         onboardingCompleted: false,
       );

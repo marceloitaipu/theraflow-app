@@ -368,30 +368,56 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
               onChanged: (v) => setState(() => _payment = v ?? 'pendente'),
             ),
             
-            // Card de Pacote Ativo
-            if (_canUsePackages && _activePackage != null) ...[
+            // Card de Pacote
+            if (_activePackage != null || !_canUsePackages) ...[
               const SizedBox(height: 16),
-              Card(
-                color: _usePackage ? Colors.green[50] : Colors.grey[100],
-                child: SwitchListTile(
-                  title: const Row(
-                    children: [
-                      Icon(Icons.inventory_2, size: 20),
-                      SizedBox(width: 8),
-                      Text('Usar pacote ativo'),
-                    ],
-                  ),
-                  subtitle: Text(
-                    '${_activePackage!.remainingSessions}/${_activePackage!.totalSessions} sessões restantes',
-                    style: TextStyle(
-                      color: _activePackage!.isLow ? Colors.orange : Colors.green,
+              if (!_canUsePackages)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.lock_outline, color: Colors.amber),
+                    title: Row(
+                      children: [
+                        const Text('Usar pacote ativo'),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.amber,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Text('PRO', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
+                    ),
+                    subtitle: const Text('Disponível no plano Profissional'),
+                    trailing: TextButton(
+                      onPressed: () => context.push('/paywall'),
+                      child: const Text('Desbloquear'),
                     ),
                   ),
-                  value: _usePackage,
-                  onChanged: (v) => setState(() => _usePackage = v),
-                  activeThumbColor: Colors.green,
+                )
+              else if (_activePackage != null)
+                Card(
+                  color: _usePackage ? Colors.green[50] : Colors.grey[100],
+                  child: SwitchListTile(
+                    title: const Row(
+                      children: [
+                        Icon(Icons.inventory_2, size: 20),
+                        SizedBox(width: 8),
+                        Text('Usar pacote ativo'),
+                      ],
+                    ),
+                    subtitle: Text(
+                      '${_activePackage!.remainingSessions}/${_activePackage!.totalSessions} sessões restantes',
+                      style: TextStyle(
+                        color: _activePackage!.isLow ? Colors.orange : Colors.green,
+                      ),
+                    ),
+                    value: _usePackage,
+                    onChanged: (v) => setState(() => _usePackage = v),
+                    activeThumbColor: Colors.green,
+                  ),
                 ),
-              ),
             ],
             
             const SizedBox(height: 16),
