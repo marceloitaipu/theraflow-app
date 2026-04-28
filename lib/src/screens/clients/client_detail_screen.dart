@@ -1330,7 +1330,7 @@ class _NextSessionBanner extends StatelessWidget {
 
           TextButton(
 
-            onPressed: () => context.go('/session/${session.id}'),
+            onPressed: () => context.push('/session/${session.id}'),
 
             child: const Text('Ver'),
 
@@ -1466,7 +1466,7 @@ class _SessionTile extends StatelessWidget {
 
           : const Icon(Icons.pending_outlined, color: Colors.orange),
 
-      onTap: () => context.go('/session/${session.id}'),
+      onTap: () => context.push('/session/${session.id}'),
 
     );
 

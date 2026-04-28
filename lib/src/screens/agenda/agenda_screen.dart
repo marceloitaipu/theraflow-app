@@ -91,7 +91,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.go('/session/new'),
+        onPressed: () => context.push('/session/new'),
         child: const Icon(Icons.add),
       ),
       body: Column(
@@ -162,7 +162,7 @@ class _AgendaScreenState extends State<AgendaScreen> {
                         const SizedBox(height: 8),
                         TextButton.icon(
                           onPressed: () =>
-                              context.go('/session/new?date=${_selectedDay.toIso8601String()}'),
+                              context.push('/session/new?date=${_selectedDay.toIso8601String()}'),
                           icon: const Icon(Icons.add, size: 16),
                           label: const Text('Agendar'),
                         ),
@@ -211,14 +211,14 @@ class _AgendaScreenState extends State<AgendaScreen> {
   Future<void> _handleAction(BuildContext context, Session session, _SessionAction action) async {
     switch (action) {
       case _SessionAction.editar:
-        context.go('/session/${session.id}');
+        context.push('/session/${session.id}');
       case _SessionAction.iniciar:
-        context.go('/session/${session.id}/start');
+        context.push('/session/${session.id}/start');
       case _SessionAction.confirmar:
         await SessionService.instance.updateSession(session.id, status: 'confirmado');
         setState(() {});
       case _SessionAction.remarcar:
-        context.go('/session/${session.id}');
+        context.push('/session/${session.id}');
       case _SessionAction.cancelar:
         final confirmed = await showDialog<bool>(
           context: context,

@@ -51,7 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/session/new'),
+        onPressed: () => context.push('/session/new'),
         icon: const Icon(Icons.add),
         label: const Text('Nova sessão'),
       ),
@@ -145,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _QuickAction(
             icon: Icons.add_circle_outline,
             label: 'Sessão',
-            onTap: () => context.go('/session/new'),
+            onTap: () => context.push('/session/new'),
           ),
           const SizedBox(width: 8),
           _QuickAction(
@@ -362,7 +362,7 @@ class _NextSessionCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () => context.go('/session/${session.id}'),
+                    onPressed: () => context.push('/session/${session.id}'),
                     icon: const Icon(Icons.edit, size: 16),
                     label: const Text('Editar'),
                   ),
@@ -370,7 +370,7 @@ class _NextSessionCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: FilledButton.icon(
-                    onPressed: () => context.go('/session/${session.id}/start'),
+                    onPressed: () => context.push('/session/${session.id}/start'),
                     icon: const Icon(Icons.play_arrow, size: 16),
                     label: const Text('Iniciar'),
                     style: FilledButton.styleFrom(backgroundColor: Colors.green),
@@ -419,11 +419,11 @@ class _SessionTile extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.play_circle_outline, color: Colors.green, size: 22),
             tooltip: 'Iniciar',
-            onPressed: () => context.go('/session/${session.id}/start'),
+            onPressed: () => context.push('/session/${session.id}/start'),
           ),
         ],
       ),
-      onTap: () => context.go('/session/${session.id}'),
+      onTap: () => context.push('/session/${session.id}'),
     );
   }
 

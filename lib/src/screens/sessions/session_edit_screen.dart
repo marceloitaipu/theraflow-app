@@ -208,7 +208,11 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Sessão salva!')),
         );
-        context.go('/home');
+        if (context.canPop()) {
+          context.pop();
+        } else {
+          context.go('/home');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -244,7 +248,11 @@ class _SessionEditScreenState extends State<SessionEditScreen> {
       try {
         await SessionService.instance.deleteSession(widget.sessionId!);
         if (mounted) {
-          context.go('/home');
+          if (context.canPop()) {
+            context.pop();
+          } else {
+            context.go('/home');
+          }
         }
       } catch (e) {
         if (mounted) {
