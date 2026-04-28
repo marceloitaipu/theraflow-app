@@ -139,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _QuickAction(
             icon: Icons.person_add_outlined,
             label: 'Cliente',
-            onTap: () => context.go('/clients/new'),
+            onTap: () => context.push('/clients/new'),
           ),
           const SizedBox(width: 8),
           _QuickAction(

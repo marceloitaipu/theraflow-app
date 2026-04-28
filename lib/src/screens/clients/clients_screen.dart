@@ -325,7 +325,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                 trailing: autoStatus != null
                     ? _AutoStatusBadge(status: autoStatus.status)
                     : _ClientStatusBadge(status: client.clientStatus),
-                onTap: () => context.go('/clients/${client.id}'),
+                onTap: () => context.push('/clients/${client.id}'),
               );
             },
           );
