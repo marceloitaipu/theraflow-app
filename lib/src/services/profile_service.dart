@@ -21,8 +21,14 @@ class ProfileService {
     String? firstClientName,
     String? firstClientPhone,
   }) async {
-    if (name.isEmpty) {
+    if (name.trim().isEmpty) {
       throw Exception('Informe seu nome.');
+    }
+    if (defaultDurationMinutes < 15) {
+      throw Exception('A duração mínima da sessão é de 15 minutos.');
+    }
+    if (defaultPrice < 0) {
+      throw Exception('O valor da sessão não pode ser negativo.');
     }
 
     final userId = _auth.currentUser?.uid;

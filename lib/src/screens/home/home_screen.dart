@@ -57,7 +57,10 @@ class _HomeScreenState extends State<HomeScreen> {
         label: const Text('Nova sessão'),
       ),
       body: RefreshIndicator(
-        onRefresh: () async => _load(),
+        onRefresh: () async {
+          _load();
+          await _summaryFuture?.catchError((_) {});
+        },
         child: FutureBuilder<HomeSummary>(
           future: _summaryFuture,
           builder: (context, snapshot) {

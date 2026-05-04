@@ -86,8 +86,10 @@ class SubscriptionService {
       }
       
       final periodEndTimestamp = data['currentPeriodEnd'];
-      if (periodEndTimestamp != null) {
-        _expiryDate = (periodEndTimestamp as dynamic).toDate();
+      if (periodEndTimestamp is Timestamp) {
+        _expiryDate = periodEndTimestamp.toDate();
+      } else if (periodEndTimestamp is String) {
+        _expiryDate = DateTime.tryParse(periodEndTimestamp);
       }
 
       // Mapear string para enum

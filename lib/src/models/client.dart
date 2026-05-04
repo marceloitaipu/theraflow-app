@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Client {
@@ -65,7 +66,7 @@ class Client {
         'status': status,
         'goal': goal,
         'idealFrequency': idealFrequency,
-        'tags': tags,
+        'tags': jsonEncode(tags),
         'clientStatus': clientStatus,
         'nextAction': nextAction,
         'nextActionDate': nextActionDate?.toIso8601String(),
@@ -103,6 +104,12 @@ class Client {
   static List<String> _parseTags(dynamic value) {
     if (value == null) return const [];
     if (value is List) return value.map((e) => e.toString()).toList();
+    if (value is String && value.isNotEmpty) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is List) return decoded.map((e) => e.toString()).toList();
+      } catch (_) {}
+    }
     return const [];
   }
 

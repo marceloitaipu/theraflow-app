@@ -78,24 +78,25 @@ class SessionService {
   Future<List<Session>> getTodaySessions() async {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
-    final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59);
+    final startOfTomorrow = DateTime(now.year, now.month, now.day + 1);
 
     final sessions = await getSessions();
     return sessions
         .where((s) =>
-            s.dateTime.isAfter(startOfDay) && s.dateTime.isBefore(endOfDay))
+            !s.dateTime.isBefore(startOfDay) &&
+            s.dateTime.isBefore(startOfTomorrow))
         .toList()
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }
 
-  // Buscar sessões por período
+  // Buscar sessões por período (start inclusivo, end exclusivo)
   Future<List<Session>> getSessionsByPeriod({
     required DateTime start,
     required DateTime end,
   }) async {
     final sessions = await getSessions();
     return sessions
-        .where((s) => s.dateTime.isAfter(start) && s.dateTime.isBefore(end))
+        .where((s) => !s.dateTime.isBefore(start) && s.dateTime.isBefore(end))
         .toList()
       ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
   }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -289,21 +290,75 @@ class IncrementalSyncService {
     }
   }
 
+  /// Colunas válidas por tabela. Campos extras vindos do Firestore são descartados
+  /// antes do insert/update no SQLite, evitando DatabaseException por colunas inexistentes.
+  static const _tableColumns = <String, Set<String>>{
+    'clients': {
+      'id', 'userId', 'name', 'phone', 'notes',
+      'createdAt', 'updatedAt', 'deletedAt', 'status',
+      'goal', 'idealFrequency', 'tags', 'clientStatus',
+      'nextAction', 'nextActionDate',
+      'synced', 'lastModified', 'deleted',
+    },
+    'sessions': {
+      'id', 'userId', 'clientId', 'dateTime', 'therapyType',
+      'status', 'value', 'notes', 'paymentStatus',
+      'createdAt', 'updatedAt', 'deletedAt', 'packageId',
+      'howClientArrived', 'whatWasDone', 'guidelines', 'nextSteps', 'isDraft',
+      'synced', 'lastModified', 'deleted',
+    },
+    'payments': {
+      'id', 'userId', 'sessionId', 'status', 'method', 'value',
+      'paidAt', 'createdAt', 'updatedAt', 'deletedAt',
+      'synced', 'lastModified', 'deleted',
+    },
+    'packages': {
+      'id', 'userId', 'clientId', 'name',
+      'totalSessions', 'remainingSessions', 'price', 'expirationDate',
+      'createdAt', 'updatedAt', 'deletedAt', 'status',
+      'synced', 'lastModified', 'deleted',
+    },
+  };
+
+  /// Converte tipos do Firestore para tipos suportados pelo SQLite e remove
+  /// campos não presentes no schema da tabela.
+  Map<String, dynamic> _sanitizeForSQLite(
+      String table, Map<String, dynamic> data) {
+    final allowed = _tableColumns[table];
+    final result = <String, dynamic>{};
+    for (final entry in data.entries) {
+      if (allowed != null && !allowed.contains(entry.key)) continue;
+      final value = entry.value;
+      if (value is Timestamp) {
+        result[entry.key] = value.toDate().toIso8601String();
+      } else if (value is List) {
+        result[entry.key] = jsonEncode(value);
+      } else if (value is Map) {
+        result[entry.key] = jsonEncode(value);
+      } else {
+        result[entry.key] = value;
+      }
+    }
+    return result;
+  }
+
   /// Mesclar registro do servidor com banco local (resolução de conflitos)
   Future<void> _mergeRecord(String table, String id, Map<String, dynamic> serverData) async {
     final db = await _db.database;
-    
+
+    final serverUpdatedAt = (serverData['updatedAt'] as Timestamp?)?.toDate();
+
     // Verificar se registro existe localmente
     final localResults = await db.query(table, where: 'id = ?', whereArgs: [id], limit: 1);
-    
+
     if (localResults.isEmpty) {
       // Não existe localmente - inserir
-      final data = Map<String, dynamic>.from(serverData);
+      final data = _sanitizeForSQLite(table, Map<String, dynamic>.from(serverData));
       data['id'] = id;
       data['synced'] = 1;
       data['lastModified'] = data['updatedAt'];
       data['deleted'] = data.containsKey('deletedAt') && data['deletedAt'] != null ? 1 : 0;
-      
+
       await db.insert(table, data, conflictAlgorithm: ConflictAlgorithm.replace);
       AppLogger.debug('Pull: Registro $id de $table inserido', 'IncrementalSyncService');
       return;
@@ -311,18 +366,17 @@ class IncrementalSyncService {
 
     final localData = localResults.first;
     final localUpdatedAt = DateTime.tryParse(localData['updatedAt'] as String? ?? '');
-    final serverUpdatedAt = (serverData['updatedAt'] as Timestamp?)?.toDate();
 
     // Estratégia: Last-Write-Wins
     if (serverUpdatedAt != null && localUpdatedAt != null) {
       if (serverUpdatedAt.isAfter(localUpdatedAt)) {
         // Servidor mais recente - atualizar local
-        final data = Map<String, dynamic>.from(serverData);
+        final data = _sanitizeForSQLite(table, Map<String, dynamic>.from(serverData));
         data['id'] = id;
         data['synced'] = 1;
         data['lastModified'] = data['updatedAt'];
         data['deleted'] = data.containsKey('deletedAt') && data['deletedAt'] != null ? 1 : 0;
-        
+
         await db.update(table, data, where: 'id = ?', whereArgs: [id]);
         AppLogger.debug('Pull: Registro $id de $table atualizado (servidor mais recente)', 'IncrementalSyncService');
       } else {
@@ -330,12 +384,12 @@ class IncrementalSyncService {
       }
     } else {
       // Se não houver timestamp, aplicar servidor
-      final data = Map<String, dynamic>.from(serverData);
+      final data = _sanitizeForSQLite(table, Map<String, dynamic>.from(serverData));
       data['id'] = id;
       data['synced'] = 1;
       data['lastModified'] = data['updatedAt'];
       data['deleted'] = data.containsKey('deletedAt') && data['deletedAt'] != null ? 1 : 0;
-      
+
       await db.update(table, data, where: 'id = ?', whereArgs: [id]);
       AppLogger.debug('Pull: Registro $id de $table atualizado (sem timestamp local)', 'IncrementalSyncService');
     }

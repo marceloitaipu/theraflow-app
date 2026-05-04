@@ -17,6 +17,7 @@ import 'services/finance_service_test.dart' as finance_service_test;
 import 'services/finance_classes_test.dart' as finance_classes_test;
 import 'services/billing_service_test.dart' as billing_service_test;
 import 'services/data_change_bus_test.dart' as data_change_bus_test;
+import 'services/alert_service_test.dart' as alert_service_test;
 import 'services/client_status_classifier_test.dart'
     as client_status_classifier_test;
 import 'services/performance_service_test.dart' as performance_service_test;
@@ -51,6 +52,7 @@ void main() {
   finance_classes_test.main();
   billing_service_test.main();
   data_change_bus_test.main();
+  alert_service_test.main();
   client_status_classifier_test.main();
   performance_service_test.main();
   export_service_test.main();

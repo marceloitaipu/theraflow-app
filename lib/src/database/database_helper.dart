@@ -34,7 +34,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 5,
       onCreate: _createDB,
       onUpgrade: _upgradeDB,
     );
@@ -91,6 +91,28 @@ class DatabaseHelper {
         SET remainingSessions = MAX(totalSessions - COALESCE(usedSessions, 0), 0)
       ''');
     }
+
+    if (oldVersion < 4) {
+      // sessions: adicionar campos de template clínico e rascunho
+      await db.execute('ALTER TABLE sessions ADD COLUMN howClientArrived TEXT');
+      await db.execute('ALTER TABLE sessions ADD COLUMN whatWasDone TEXT');
+      await db.execute('ALTER TABLE sessions ADD COLUMN guidelines TEXT');
+      await db.execute('ALTER TABLE sessions ADD COLUMN nextSteps TEXT');
+      await db.execute('ALTER TABLE sessions ADD COLUMN isDraft INTEGER DEFAULT 0');
+    }
+
+    if (oldVersion < 5) {
+      // clients: adicionar campos CRM ausentes no schema original
+      await db.execute("ALTER TABLE clients ADD COLUMN goal TEXT");
+      await db.execute("ALTER TABLE clients ADD COLUMN idealFrequency TEXT");
+      await db.execute("ALTER TABLE clients ADD COLUMN tags TEXT DEFAULT '[]'");
+      await db.execute("ALTER TABLE clients ADD COLUMN clientStatus TEXT DEFAULT 'ativo'");
+      await db.execute("ALTER TABLE clients ADD COLUMN nextAction TEXT");
+      await db.execute("ALTER TABLE clients ADD COLUMN nextActionDate TEXT");
+
+      // sync_queue: adicionar coluna de status para controle de retry
+      await db.execute("ALTER TABLE sync_queue ADD COLUMN status TEXT DEFAULT 'pending'");
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -113,6 +135,12 @@ class DatabaseHelper {
         updatedAt $textType,
         deletedAt $textNullable,
         status TEXT DEFAULT 'active',
+        goal $textNullable,
+        idealFrequency $textNullable,
+        tags TEXT DEFAULT '[]',
+        clientStatus TEXT DEFAULT 'ativo',
+        nextAction $textNullable,
+        nextActionDate $textNullable,
         synced $boolType,
         lastModified $textType,
         deleted $boolType
@@ -135,6 +163,11 @@ class DatabaseHelper {
         updatedAt $textType,
         deletedAt $textNullable,
         packageId $textNullable,
+        howClientArrived $textNullable,
+        whatWasDone $textNullable,
+        guidelines $textNullable,
+        nextSteps $textNullable,
+        isDraft $boolType,
         synced $boolType,
         lastModified $textType,
         deleted $boolType
@@ -190,7 +223,8 @@ class DatabaseHelper {
         recordId $textType,
         data $textType,
         createdAt $textType,
-        retryCount INTEGER DEFAULT 0
+        retryCount INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'pending'
       )
     ''');
 
@@ -266,12 +300,15 @@ class DatabaseHelper {
 
   Future<int> markClientDeleted(String id) async {
     final db = await database;
+    final now = DateTime.now().toIso8601String();
     return await db.update(
       'clients',
       {
         'deleted': 1,
+        'deletedAt': now,
+        'updatedAt': now,
         'synced': 0,
-        'lastModified': DateTime.now().toIso8601String(),
+        'lastModified': now,
       },
       where: 'id = ?',
       whereArgs: [id],
@@ -331,12 +368,15 @@ class DatabaseHelper {
 
   Future<int> markSessionDeleted(String id) async {
     final db = await database;
+    final now = DateTime.now().toIso8601String();
     return await db.update(
       'sessions',
       {
         'deleted': 1,
+        'deletedAt': now,
+        'updatedAt': now,
         'synced': 0,
-        'lastModified': DateTime.now().toIso8601String(),
+        'lastModified': now,
       },
       where: 'id = ?',
       whereArgs: [id],
@@ -448,12 +488,15 @@ class DatabaseHelper {
 
   Future<int> markPackageDeleted(String id) async {
     final db = await database;
+    final now = DateTime.now().toIso8601String();
     return await db.update(
       'packages',
       {
         'deleted': 1,
+        'deletedAt': now,
+        'updatedAt': now,
         'synced': 0,
-        'lastModified': DateTime.now().toIso8601String(),
+        'lastModified': now,
       },
       where: 'id = ?',
       whereArgs: [id],
@@ -461,6 +504,8 @@ class DatabaseHelper {
   }
 
   // ===== SYNC QUEUE =====
+
+  static const int maxSyncRetries = 5;
 
   Future<int> addToSyncQueue({
     required String operation,
@@ -476,13 +521,16 @@ class DatabaseHelper {
       'data': data,
       'createdAt': DateTime.now().toIso8601String(),
       'retryCount': 0,
+      'status': 'pending',
     });
   }
 
+  /// Retorna apenas itens com status 'pending' (exclui falhas permanentes).
   Future<List<Map<String, dynamic>>> getPendingSyncItems() async {
     final db = await database;
     return await db.query(
       'sync_queue',
+      where: "status = 'pending'",
       orderBy: 'createdAt ASC',
     );
   }
@@ -496,11 +544,41 @@ class DatabaseHelper {
     );
   }
 
-  Future<int> incrementRetryCount(int id) async {
+  /// Incrementa o contador de retentativas. Marca como 'failed' se atingir o
+  /// limite [maxSyncRetries], impedindo que o item bloqueie sincronizações futuras.
+  Future<void> incrementRetryCount(int id) async {
     final db = await database;
-    return await db.rawUpdate(
-      'UPDATE sync_queue SET retryCount = retryCount + 1 WHERE id = ?',
-      [id],
+    final rows = await db.query(
+      'sync_queue',
+      columns: ['retryCount'],
+      where: 'id = ?',
+      whereArgs: [id],
+      limit: 1,
+    );
+    if (rows.isEmpty) return;
+
+    final current = (rows.first['retryCount'] as int? ?? 0) + 1;
+    await db.update(
+      'sync_queue',
+      {
+        'retryCount': current,
+        if (current >= maxSyncRetries) 'status': 'failed',
+      },
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+  /// Remove itens com status 'failed' e itens com mais de [days] dias.
+  Future<void> pruneSyncQueue({int days = 30}) async {
+    final db = await database;
+    final cutoff = DateTime.now()
+        .subtract(Duration(days: days))
+        .toIso8601String();
+    await db.delete(
+      'sync_queue',
+      where: "status = 'failed' OR createdAt < ?",
+      whereArgs: [cutoff],
     );
   }
 

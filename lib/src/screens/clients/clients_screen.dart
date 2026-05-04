@@ -63,6 +63,12 @@ class _ClientsScreenState extends State<ClientsScreen> {
           ),
           TextButton(
             onPressed: () async {
+              if (nameController.text.trim().isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Informe o nome do cliente.')),
+                );
+                return;
+              }
               try {
                 await ClientService.instance.createClient(
                   name: nameController.text.trim(),

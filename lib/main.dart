@@ -41,8 +41,8 @@ Future<void> _bootstrap() async {
     if (!AppConfig.isWebTestMode) {
       databaseFactory = databaseFactoryFfiWeb;
     }
-  } else if (!defaultTargetPlatform.toString().contains('android') &&
-      !defaultTargetPlatform.toString().contains('iOS')) {
+  } else if (defaultTargetPlatform != TargetPlatform.android &&
+      defaultTargetPlatform != TargetPlatform.iOS) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
   }

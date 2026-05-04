@@ -269,6 +269,7 @@ class PackageService {
 
     // Atualizar localmente
     await _db.updatePackage(id, updates);
+    DataChangeBus.instance.notify('packages');
 
     // Se offline, adicionar à fila de sincronização
     if (!_sync.isOnline) {

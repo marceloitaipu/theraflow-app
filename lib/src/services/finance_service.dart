@@ -127,7 +127,8 @@ class FinanceService {
     required int month,
   }) async {
     final start = DateTime(year, month, 1);
-    final end = DateTime(year, month + 1, 0, 23, 59, 59);
+    // end é exclusivo: primeiro instante do mês seguinte (captura todo o último dia)
+    final end = DateTime(year, month + 1);
 
     final sessions = await _sessionService.getSessionsByPeriod(
       start: start,
